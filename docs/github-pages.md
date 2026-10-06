@@ -46,3 +46,5 @@ The user subsequently created the repository. The complete source was uploaded t
 ## Version 0.3 workflow separation
 
 The validated build uploads its static Pages artifact independently of Pages configuration. Configuration now runs in the deployment job, which has the required Pages permissions. This makes a successful build artifact available even when the repository owner has not enabled hosting; an unavailable Pages site blocks deployment rather than discarding build validation. Runtime assets use relative paths, so no Pages metadata is needed during the Vite build.
+
+[Version 0.3 CI run 37472166471](https://github.com/karmiphuc/pirate-crew-web/actions/runs/37472166471) confirms the build job succeeds and uploads the Pages artifact. Deployment configuration still returns HTTP 404 because a Pages site has not been enabled. Select Settings → Pages → GitHub Actions, then rerun the deployment workflow.

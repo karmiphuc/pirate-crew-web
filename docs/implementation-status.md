@@ -60,3 +60,7 @@ This supports bounded cleanup for this fixture; it does not establish the 60 FPS
 ## Published CI evidence
 
 Source version 0.2 was published in [commit b77bcd3](https://github.com/karmiphuc/pirate-crew-web/commit/b77bcd36abf81fea3ffa0c282e2ebd102fcd4880). [GitHub Actions run 37464965027](https://github.com/karmiphuc/pirate-crew-web/actions/runs/37464965027) passed npm installation, formatting, all 51 tests, production build, and the root/project-path Chromium hosting smoke. Deployment stopped at `configure-pages` because the repository Pages site is not enabled. Source publication and build validation are complete; no live Pages deployment is claimed.
+
+## Version 0.3 published CI evidence
+
+Source version 0.3 was published in [commit ce6e4dd](https://github.com/karmiphuc/pirate-crew-web/commit/ce6e4dd5e9601c3e2d1c06a655ec56c0926a07d3). [GitHub Actions run 37472166471](https://github.com/karmiphuc/pirate-crew-web/actions/runs/37472166471) completed the build job successfully: locked dependency installation, formatting, all 69 tests, production build, root/project-path Chromium checks, and upload of the static Pages artifact. The deployment job then failed at Pages configuration with `Get Pages site failed` / HTTP 404. The owner still needs Settings → Pages → GitHub Actions. No live site is claimed. This confirms that build verification/artifact delivery succeeds independently of hosting activation.
