@@ -1,0 +1,57 @@
+# Persistence and browser lifecycle
+
+## Save envelope
+
+Proposed fields: schemaVersion, buildVersion, contentVersion, generatorVersion, campaignId, checkpointId, savedAt, tick, rngState, phase, world, ships, pirates, inventory, activeRoute, and encounterOutcomes. `savedAt` is metadata only; elapsed real time never changes gameplay.
+
+Include enough state to resume the supported checkpoint. Do not serialize textures, DOM nodes, Phaser objects, cached paths, or graph instances. Rebuild derived structures and validate references on load.
+
+## Checkpoint policy
+
+MVP checkpoints occur at safe boundaries: departure, before encounter setup, after atomic resolution/loot, arrival, and port transactions. No arbitrary mid-combat save is required initially. UI labels manual save as a checkpoint and explains possible lost encounter progress.
+
+Save the new snapshot and slot metadata in one IndexedDB transaction; retain the previous valid checkpoint. Do not mark the checkpoint current until the transaction succeeds. Show saving/saved/failed feedback and allow export after failure. Never overwrite a recoverable living checkpoint solely because captain death was processed.
+
+## Import and compatibility
+
+Validate envelope version, maximum payload size, ranges, content IDs, uniqueness, and references before replacing state. Reject unsupported newer schemas with an explanation. Older supported schemas migrate through explicit version steps. Invalid imports preserve existing saves.
+
+Provide export/import of a versioned JSON file. Browser storage can be cleared or evicted; export offers a user-controlled backup. Cloud sync is deferred.
+
+## Lifecycle
+
+On visibility loss: pause immediately and attempt a safe checkpoint if available. Do not rely on unload events or an asynchronous save completing when a tab closes. Resume with a paused overlay; require player input to continue. Cap foreground frame-stall catch-up.
+
+Reference: [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API), [Page Visibility](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API).
+
+## Acceptance scenarios
+
+- Round-trip preserves exact authoritative checkpoint state and RNG state.
+- Simulated failed writes retain the previous valid checkpoint.
+- Malformed or oversized imports cannot replace an existing campaign.
+- Hidden-tab time does not advance any simulation system.
+- Post-loot reload does not award loot again.
+- Death recovery restores the pre-encounter state without duplicating inventory.
+
+## Write ordering and transition barriers
+
+One application-owned writer serializes saves. Each snapshot has campaign generation and monotonic revision; completion may update UI only for that generation/revision. Prepare an immutable supported-boundary snapshot before opening a transaction. Never clone/serialize the campaign every frame. Coalesce ordinary pending saves into one latest snapshot; required pre-encounter/transition saves are barriers and cannot be dropped.
+
+Freeze inputs that mutate the boundary while capturing it. Queue all required object-store writes and metadata changes within one transaction; await its completion, not only a request's success. Perform validation, unrelated asynchronous preparation, and migrations before opening it; do not await network/timers inside an active transaction. IndexedDB transactions have active/inactive windows. Reference: [IDBTransaction](https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction).
+
+Encounter entry in standard recovery mode requires a successfully committed living pre-encounter checkpoint. If storage fails, remain at the boundary and offer retry/export; do not silently enter combat without the promised recovery. Retain current plus previous checkpoint and the separately pinned pre-encounter checkpoint while it is needed. Prune obsolete records in a bounded transaction. Transaction completion is not a guarantee against OS/storage destruction; export remains useful.
+
+## Writable-tab ownership
+
+Use an origin-scoped Web Lock for the save database writer, and record the chosen supported-browser behavior in B01. Other tabs show a read-only notice rather than running a second writable campaign. A tab owns the lock across play; release on application disposal. If the required locking API is unavailable, disable persistent play with a clear compatibility message rather than using an unsafe localStorage lease. Use HTTPS (or a supported trustworthy local development origin) and verify API support before establishing the browser matrix. Reference: [Web Locks](https://developer.mozilla.org/en-US/docs/Web/API/Web_Locks_API). Acquire without stealing; only an explicit user action attempts acquisition from a read-only tab, then reloads fresh persisted state before enabling mutation.
+
+Campaign replacement waits for the writer to settle and invalidates outstanding callbacks. The persisted pointer changes only after validated replacement commits. Do not let late writes from the prior campaign update current metadata.
+
+## Additional acceptance scenarios
+
+- Rapid saves cannot leave an older revision current.
+- Loading/new game while a write completes does not apply old campaign feedback or data.
+- Two tabs cannot concurrently mutate the same save database.
+- Quota/unavailable storage blocks unsafe encounter entry while preserving play at the boundary.
+- Snapshot size and collection limits are checked before import replacement.
+- Closing/restarting panels and exporting files release listeners and object URLs.

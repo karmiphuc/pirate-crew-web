@@ -1,0 +1,71 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 1080
+  },
+  "renderer": "Chromium SwiftShader (headless software rendering)",
+  "fullLoop": "passed",
+  "panelCycles": 100,
+  "sceneRestarts": 10,
+  "exclusiveSaveTab": "passed",
+  "syntheticVisibility": "passed",
+  "contextLoss": "passed",
+  "encounterViewCycles": 50,
+  "quotaRollback": "passed",
+  "memory": {
+    "heapBefore": {
+      "usedSize": 8006496,
+      "totalSize": 8904704,
+      "embedderHeapUsedSize": 1583296,
+      "backingStorageSize": 11037380
+    },
+    "heapAfter": {
+      "usedSize": 8003672,
+      "totalSize": 8642560,
+      "embedderHeapUsedSize": 1216248,
+      "backingStorageSize": 11037427
+    },
+    "domBefore": {
+      "documents": 1,
+      "nodes": 296,
+      "jsEventListeners": 72
+    },
+    "domAfter": {
+      "documents": 1,
+      "nodes": 337,
+      "jsEventListeners": 72
+    }
+  },
+  "diagnostics": {
+    "frameMs": {
+      "count": 527,
+      "p50": 25,
+      "p95": 30,
+      "p99": 33.33000000000011
+    },
+    "tickMs": {
+      "count": 159,
+      "p50": 0,
+      "p95": 0.09999999962747097,
+      "p99": 0.20000000018626451
+    },
+    "stalls": 0,
+    "views": {
+      "actors": 4,
+      "subscriptions": 4,
+      "clouds": 3,
+      "textures": 7,
+      "shutdownHandlers": 13,
+      "destroyHandlers": 13
+    },
+    "graphs": 1,
+    "searches": 0,
+    "commands": 0,
+    "listeners": 5,
+    "saveWrites": 0,
+    "lock": "owned",
+    "tick": 11531,
+    "phase": "port"
+  },
+  "errors": []
+}
