@@ -38,3 +38,7 @@ Both the GitHub connector and CLI authenticate as `karmiphuc` (user ID 3367376).
 Direct `POST https://api.github.com/user/repos` requests for the intended private repository return HTTP 403, `Resource not accessible by integration`, using both API versions `2022-11-28` and `2026-03-10`. The response header `X-Accepted-Github-Permissions` reports `administration=write; repository_creation=write`; neither permission is present in the app installation. This is a confirmed permission mismatch, not a wrong owner, endpoint, API version, or restricted repository selection. GitHub's [authenticated-user repository creation endpoint](https://docs.github.com/en/rest/repos/repos#create-a-repository-for-the-authenticated-user) documents either of these permission sets as sufficient.
 
 The user subsequently created the repository. The complete source was uploaded through GitHub's contents and Git data APIs after Git transport authentication failed. Pages activation via `POST /repos/karmiphuc/pirate-crew-web/pages` returns HTTP 403, `Resource not accessible by integration`; enabling Pages in repository settings remains a required owner action. No credential values are stored here.
+
+## Version 0.2 publication
+
+[CI run 37464965027](https://github.com/karmiphuc/pirate-crew-web/actions/runs/37464965027) passed formatting, all 51 tests, the production build, and hosting checks. The Pages configuration step failed; deployment did not run. The owner must select GitHub Actions as the Pages source, then rerun the workflow or push a game update.
