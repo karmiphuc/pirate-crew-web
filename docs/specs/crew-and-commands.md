@@ -40,3 +40,9 @@ Critical injury triggers retreat unless hold-position was deliberately selected.
 Enforce bounded commands/tasks/notifications from [performance contract](performance-and-lifecycle.md). Replacing an order clears discarded target/path references. Task assignment uses dirty state with a bounded fallback; target selection starts with simple capped scans. Track pending path work separately from failures. Command previews while paused do not mutate authoritative state; queue validated intent for the next tick and revalidate then.
 
 Store target IDs, not closures capturing full entities/scenes. Task completion/death removes all reverse indexes and claims at a deterministic tick boundary. Only bounded numeric diagnostic traces survive encounter disposal.
+
+## Version 0.2 implementation
+
+Each living ally has one assigned duty and a bounded learned-skill list. Books cost 60 gold in port. Player commands interrupt duty work; reassignment clears pending orders and resumes work. Claims use ship/duty keys; a galley, medical station, or cannon has one worker, and cleaning/repair have one slot each. Work is deterministic and slower below 30 morale. Cooking converts one raw provision into two meals; timber repairs 12 hull health; medicine restores 25 health; cleaning reduces deck dirt. Routine work runs in port and during travel, but port time does not reduce needs.
+
+Pirates retain up to three owned weapons and can switch freely among bought weapons at port. Armor has two purchases up to eight protection. These are authored lightweight loadouts, not the original full inventory. Automatic critical retreat and the planned emergency-priority scheduler remain unimplemented.

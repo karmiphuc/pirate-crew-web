@@ -14,12 +14,12 @@ This is a dependency-ordered backlog, not a delivery commitment. Initial estimat
 | B08 Map and travel | B06, B07 | Seeded graph, route choice, travel consumption, one island |
 | B09 Integrated saves and lifecycle | B02–B08 | Integrate early save writer with all systems; checkpoint barriers, import/export, hidden-tab pause, recovery and teardown scenarios |
 | B10 First slice validation | B09 | Complete expedition and recorded unfamiliar-player observations |
-| B11 Content and progression | B10 | Three enemy templates, two islands, one boss, meaningful upgrades |
+| B11 Content and progression | B10 | Three enemy templates, two islands, four pirate lords, meaningful upgrades |
 | B12 Demo polish | B11 | Tutorial, settings, assets, stress/soak checks, all MVP gates |
 
 ## Next concrete implementation task
 
-B01 and B02: establish a runnable browser shell and headless simulation that can spawn a small ship and three pirates, accept a validated move command, advance fixed ticks, and expose command status. Keep placeholder art and no backend. Then implement the ship topology before adding combat content.
+The runnable loop and v0.2 systems are implemented. Next: block-level hull health/destruction and damaged navigation; then fishing/swimming, traits and item loot, procedural region generation, and closer sprite/UI/audio matching against a named reference build. Continue browser/storage/lifecycle verification for each addition.
 
 ## Checkpoints
 
@@ -32,3 +32,7 @@ Update documentation and decisions as experiments produce evidence. Do not mark 
 ## First implementation checkpoint
 
 Version 0.1.0 delivers the expedition loop plus substantial portions of B01–B09 and authored B11 content. Lifecycle/save/navigation tests run early. Work packages are not marked fully complete: station tasks, combat topology destruction, procedural map generation, broad browser/hardware profiling, and unfamiliar-player validation remain. See [implementation status](implementation-status.md).
+
+## Fidelity checkpoint 0.2
+
+Delivered station duties and claims, skill books, owned weapon choices/armor, movable stations, hull combat/repair/sinking, safe explicit plunder/capture, walkable islands and guards, four pirate lords, original effects, and schema-1 migration. See [fidelity tracker](fidelity.md) for the remaining gaps. No claim of full original-game equivalence is made.

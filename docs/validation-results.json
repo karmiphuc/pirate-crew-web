@@ -5,6 +5,11 @@
   },
   "renderer": "Chromium SwiftShader (headless software rendering)",
   "fullLoop": "passed",
+  "skillAndEquipmentPurchases": "passed",
+  "islandExplorationAndReturn": "passed",
+  "explicitPlunder": "passed",
+  "captureAndReload": "passed",
+  "audioMuteAndVoiceCap": "passed",
   "panelCycles": 100,
   "sceneRestarts": 10,
   "exclusiveSaveTab": "passed",
@@ -14,40 +19,40 @@
   "quotaRollback": "passed",
   "memory": {
     "heapBefore": {
-      "usedSize": 8006496,
-      "totalSize": 8904704,
-      "embedderHeapUsedSize": 1583296,
-      "backingStorageSize": 11037380
+      "usedSize": 8393528,
+      "totalSize": 9428992,
+      "embedderHeapUsedSize": 1624160,
+      "backingStorageSize": 11156085
     },
     "heapAfter": {
-      "usedSize": 8003672,
-      "totalSize": 8642560,
-      "embedderHeapUsedSize": 1216248,
-      "backingStorageSize": 11037427
+      "usedSize": 8303656,
+      "totalSize": 9166848,
+      "embedderHeapUsedSize": 1284792,
+      "backingStorageSize": 11156137
     },
     "domBefore": {
       "documents": 1,
-      "nodes": 296,
+      "nodes": 312,
       "jsEventListeners": 72
     },
     "domAfter": {
       "documents": 1,
-      "nodes": 337,
+      "nodes": 362,
       "jsEventListeners": 72
     }
   },
   "diagnostics": {
     "frameMs": {
-      "count": 527,
-      "p50": 25,
-      "p95": 30,
-      "p99": 33.33000000000011
+      "count": 465,
+      "p50": 28.339999999999964,
+      "p95": 35,
+      "p99": 38.33000000000011
     },
     "tickMs": {
-      "count": 159,
+      "count": 132,
       "p50": 0,
-      "p95": 0.09999999962747097,
-      "p99": 0.20000000018626451
+      "p95": 0.10000000149011612,
+      "p99": 0.19999999552965164
     },
     "stalls": 0,
     "views": {
@@ -61,10 +66,13 @@
     "graphs": 1,
     "searches": 0,
     "commands": 0,
+    "audioVoices": 0,
+    "tasks": 0,
+    "claims": 0,
     "listeners": 5,
     "saveWrites": 0,
     "lock": "owned",
-    "tick": 11531,
+    "tick": 12375,
     "phase": "port"
   },
   "errors": []

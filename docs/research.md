@@ -33,3 +33,7 @@ Preserve the connected ship/crew/expedition fantasy. Make ship layout functional
 ## Remaining research
 
 Before pursuing close mechanical fidelity, record the version played and inspect current recruitment, travel timing, cannon/boarding transitions, difficulty modes, and capture behavior. Capture original observations in a dated addendum. The user clarified personal-use remake intent with free/noncommercial sharing and attribution. Mechanical fidelity can be checked against a named reference build; the robustness-first MVP is not yet a complete feature-for-feature remake.
+
+## Fidelity follow-up, 2026-10-06
+
+Rechecked the Steam description and community documentation on [skills](https://pixelpiracy.fandom.com/wiki/Skills), [cooking](https://pixelpiracy.fandom.com/wiki/Cooking), [ship repair](https://pixelpiracy.fandom.com/wiki/Ship_Repair), and [plunder](https://pixelpiracy.fandom.com/wiki/Plunder). The pages describe taught crew skills, food preparation, repairs to damaged hull blocks, and a distinct post-battle plunder action. Version 0.2 implements those system categories plus capture and four authored pirate lords, using original content and provisional balance. Repairs are aggregate hull repairs at present; block destruction remains a gap. See the [fidelity tracker](fidelity.md). No current Steam build was executed, and community wiki details are not treated as verified current-build formulas.

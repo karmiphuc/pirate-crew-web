@@ -1,5 +1,13 @@
 import Phaser from "phaser";
-import { Campaign, nodeX, nodeY, Pirate, Ship, Tile } from "../sim/model";
+import {
+  Campaign,
+  nodeX,
+  nodeY,
+  Pirate,
+  Ship,
+  Station,
+  Tile,
+} from "../sim/model";
 import { Lifetime } from "../app/lifetime";
 export const TILE = 18;
 export const HOME_X = 230;
@@ -9,6 +17,7 @@ export interface ViewHost {
   state(): Campaign;
   selected(): readonly number[];
   draft(): Tile[] | null;
+  draftStations(): Station[] | null;
   reducedMotion(): boolean;
   update(delta: number): number;
   click(
@@ -44,7 +53,7 @@ function createTextures(scene: Phaser.Scene) {
   for (let i = 0; i < 4; i++) {
     const key = `pirate-${i}`;
     if (scene.textures.exists(key)) continue;
-    const texture = scene.textures.createCanvas(key, 16, 20)!;
+    const texture = scene.textures.createCanvas(key, 32, 20)!;
     const ctx = texture.context;
     const palette: Record<string, string> = {
       H: i === 0 ? "#192e35" : "#6a453a",
@@ -56,14 +65,19 @@ function createTextures(scene: Phaser.Scene) {
       D: "#13272f",
       W: "#dae7db",
     };
-    for (let y = 0; y < pattern.length; y++)
-      for (let x = 0; x < 16; x++) {
-        const c = pattern[y][x];
-        if (palette[c]) {
-          ctx.fillStyle = palette[c];
-          ctx.fillRect(x, y + 4, 1, 1);
+    for (let frame = 0; frame < 2; frame++)
+      for (let y = 0; y < pattern.length; y++)
+        for (let x = 0; x < 16; x++) {
+          let c = pattern[y][x];
+          if (frame === 1 && y >= 13)
+            c = (y === 15 ? "   DDD   DDD    " : "    BB   BB     ")[x];
+          if (palette[c]) {
+            ctx.fillStyle = palette[c];
+            ctx.fillRect(x + frame * 16, y + 4, 1, 1);
+          }
         }
-      }
+    texture.add("idle", 0, 0, 0, 16, 20);
+    texture.add("walk", 0, 16, 0, 16, 20);
     texture.refresh();
   }
 }
@@ -77,6 +91,7 @@ export class SeaScene extends Phaser.Scene {
   private seenPhase = "";
   private seenLocation = -1;
   private draftRef: Tile[] | null = null;
+  private stationRef: Station[] | null = null;
   private phaseLabel!: Phaser.GameObjects.Text;
   private shipLabel!: Phaser.GameObjects.Text;
   private enemyLabel!: Phaser.GameObjects.Text;
@@ -247,8 +262,12 @@ export class SeaScene extends Phaser.Scene {
         : s.phase === "travel"
           ? "UNDER SAIL  ·  A NEW HORIZON"
           : s.phase === "encounter"
-            ? "HOSTILE WATERS  ·  ALL HANDS ON DECK"
-            : "THE SEA IS YOURS TO EXPLORE",
+            ? s.ships[1]?.kind === "island"
+              ? "ISLAND LANDFALL  ·  TREASURE AWAITS"
+              : "HOSTILE WATERS  ·  ALL HANDS ON DECK"
+            : s.phase === "aftermath"
+              ? "BRING THE CREW HOME  ·  CLAIM YOUR PRIZE"
+              : "THE SEA IS YOURS TO EXPLORE",
     );
   }
   private drawPort(g: Phaser.GameObjects.Graphics) {
@@ -290,6 +309,37 @@ export class SeaScene extends Phaser.Scene {
     draft: Tile[] | null,
   ) {
     const tiles = draft ?? ship.tiles;
+    if (ship.kind === "island") {
+      for (const t of tiles) {
+        const x = ox + t.x * TILE,
+          y = SHIP_Y + t.y * TILE;
+        this.rect(g, x, y, TILE, TILE, t.y === 4 ? 0x748347 : 0x9a8159);
+        if (t.y === 4) this.rect(g, x, y, TILE, 5, 0x9dae63);
+        else this.rect(g, x + 3, y + 7, 6, 3, 0x756e50);
+      }
+      for (const tx of [3, 9, 18]) {
+        const x = ox + tx * TILE;
+        for (let y = 0; y < 7; y++)
+          this.rect(g, x + y * 2, 293 - y * 12, 7, 13, 0x87734a);
+        this.rect(g, x - 17, 216, 75, 8, 0x467657);
+        this.rect(g, x - 29, 226, 90, 7, 0x527f52);
+        this.rect(g, x + 6, 203, 15, 18, 0x52845b);
+      }
+      const x = ox + 14 * TILE,
+        y = SHIP_Y + 4 * TILE;
+      this.rect(g, x - 4, y - 16, 27, 16, 0x79553a);
+      this.rect(
+        g,
+        x - 5,
+        y - (this.host.state().phase === "aftermath" ? 25 : 20),
+        29,
+        6,
+        0xa67b49,
+      );
+      this.rect(g, x, y - 19, 3, 19, 0xdec075);
+      this.rect(g, x + 15, y - 19, 3, 19, 0xdec075);
+      return;
+    }
     // Mast and sail. Shared geometry, no per-frame generated textures.
     this.rect(g, ox + 9 * TILE + 4, 117, 6, SHIP_Y + 4 * TILE - 117, 0x675440);
     this.rect(g, ox + 6 * TILE, 143, 146, 5, 0x584734);
@@ -380,7 +430,9 @@ export class SeaScene extends Phaser.Scene {
         this.rect(g, x + 4, y + 12, 3, 2, 0x453e33);
       }
     }
-    for (const station of ship.stations) {
+    for (const station of ship.id === 1
+      ? (this.host.draftStations() ?? ship.stations)
+      : ship.stations) {
       const x = ox + station.x * TILE,
         y = SHIP_Y + (station.y + 1) * TILE;
       if (station.kind === "cannon") {
@@ -409,16 +461,59 @@ export class SeaScene extends Phaser.Scene {
       this.seenRevision !== s.ships[0].revision ||
       this.seenPhase !== s.phase ||
       this.seenLocation !== s.location ||
-      this.draftRef !== draft
+      this.draftRef !== draft ||
+      this.stationRef !== this.host.draftStations()
     ) {
       this.drawScenery();
       this.seenRevision = s.ships[0].revision;
       this.seenPhase = s.phase;
       this.seenLocation = s.location;
       this.draftRef = draft;
+      this.stationRef = this.host.draftStations();
     }
     const g = this.overlay;
     g.clear();
+    if (s.ships.length > 1) {
+      g.lineStyle(2, 0xc7b987, 0.7);
+      g.lineBetween(
+        HOME_X + 18 * TILE,
+        SHIP_Y + 4 * TILE - 2,
+        ENEMY_X,
+        SHIP_Y + 4 * TILE - 2,
+      );
+    }
+    for (const ship of s.ships)
+      if (ship.kind === "ship") {
+        const ox = ship.id === 1 ? HOME_X : ENEMY_X;
+        this.rect(g, ox + 25, 482, 240, 5, 0x1e3f47);
+        this.rect(
+          g,
+          ox + 25,
+          482,
+          (240 * ship.hp) / ship.maxHp,
+          5,
+          ship.hp < ship.maxHp * 0.35 ? 0xd88066 : 0xa7bd84,
+        );
+        if (ship.hp < ship.maxHp) {
+          const cracks = Math.min(8, Math.ceil((1 - ship.hp / ship.maxHp) * 8));
+          g.lineStyle(2, 0x332f29);
+          for (let i = 0; i < cracks; i++) {
+            const x = ox + (2 + i * 2) * TILE,
+              y = SHIP_Y + 5 * TILE;
+            g.lineBetween(x, y, x + 5, y + 5);
+            g.lineBetween(x + 5, y + 5, x + 1, y + 12);
+          }
+        }
+        for (let i = 0; i < Math.min(5, Math.floor(ship.dirt / 20)); i++)
+          this.rect(
+            g,
+            ox + (3 + i * 3) * TILE,
+            SHIP_Y + 4 * TILE - 3,
+            8,
+            3,
+            0x756134,
+          );
+      }
     for (const p of s.pirates) {
       if (p.hp <= 0) {
         this.actors.get(p.id)?.destroy();
@@ -432,6 +527,7 @@ export class SeaScene extends Phaser.Scene {
             0,
             0,
             `pirate-${p.side === "enemy" ? 1 : p.role === "captain" ? 0 : p.role === "gunner" ? 2 : 3}`,
+            "idle",
           )
           .setScale(2)
           .setOrigin(0.5, 1);
@@ -443,9 +539,18 @@ export class SeaScene extends Phaser.Scene {
         9;
       const y = SHIP_Y + (p.previousY + (p.y - p.previousY) * alpha + 1) * TILE;
       actor.setPosition(Math.round(x), Math.round(y));
+      const moving =
+        Math.abs(p.x - p.previousX) + Math.abs(p.y - p.previousY) > 0.001;
+      actor.setFrame(
+        moving && !this.host.reducedMotion() && Math.floor(s.tick / 5) % 2
+          ? "walk"
+          : "idle",
+      );
       actor.setFlipX(
-        p.targetId !== null &&
-          s.pirates.some((t) => t.id === p.targetId && t.x < p.x),
+        moving
+          ? p.x < p.previousX
+          : p.targetId !== null &&
+              s.pirates.some((t) => t.id === p.targetId && t.x < p.x),
       );
       if (this.host.selected().includes(p.id)) {
         g.lineStyle(2, 0xe8d394);

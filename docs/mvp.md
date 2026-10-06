@@ -14,7 +14,7 @@ Start in port, recruit at least one pirate, modify a valid starter ship, purchas
 - Starting crew of three; first slice supports five; later MVP ceiling of twelve player pirates subject to profiling.
 - Individual and group selection, pause, order feedback, move/attack/board/retreat and station tasks.
 - Health, hunger, morale, wages, healing, and basic experience progression.
-- Seeded small map: one region, three enemy ship templates, two island encounters, one boss.
+- Seeded small map: one region, three enemy ship templates, two island encounters, four pirate lords.
 - Melee and ranged equipment; a limited cannon exchange before boarding.
 - Gold and parts loot; return to port; equipment and station upgrades.
 - IndexedDB saves, previous checkpoint recovery, export/import, hidden-tab pause.
@@ -22,7 +22,7 @@ Start in port, recruit at least one pirate, modify a valid starter ship, purchas
 
 ## Deferred
 
-Multiplayer, accounts, cloud saves, mobile/portrait layouts, full buoyancy/flooding, pets, farming, large crafting trees, procedural quests, fleets, ship capture, negotiation/surrender, and permadeath mode. The full concept can revisit these after the slice passes.
+Multiplayer, accounts, cloud saves, mobile/portrait layouts, full buoyancy/flooding, pets, farming, large crafting trees, procedural quests, fleets, negotiation/surrender, and permadeath mode. The full concept can revisit these after the slice passes.
 
 ## Acceptance gates
 

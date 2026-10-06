@@ -14,7 +14,8 @@ Pixel Piracy is the reference game. Historical development is credited to Quadro
 | Project documentation | Authored for this project | Distribution license undecided | See local commit history | To be decided | Yes |
 | Procedural pixel art and scenery | Drawn in `src/game/scene.ts` and `src/style.css` for this project | Project distribution license undecided | New sprites, hulls, sails, port, chart | Project credit | Yes |
 | Phaser 3.90.0 | Phaser Studio / npm `phaser` | MIT; preserve package license when distributing | No vendor modifications | [Bundled license notices](../public/THIRD_PARTY_NOTICES.txt) | Yes |
-| Future audio/fonts/materials | Record individual origin | Record compatible license/permission before inclusion | Record modifications | Copy exact required credit | No audio/font assets yet |
+| Synthesized sound effects | Generated in `src/app/sound.ts` for this project | Project distribution license undecided | Original oscillator envelopes, no sampled recordings | Project credit | Yes |
+| Future audio/fonts/materials | Record individual origin | Record compatible license/permission before inclusion | Record modifications | Copy exact required credit | No external audio/font assets |
 
 Prefer original or compatible licensed materials for the prototype. Preserve license notices alongside actual included assets and expose credits in-game when implemented. Final project licensing must distinguish our own material from third-party material.
 

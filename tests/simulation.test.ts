@@ -21,6 +21,45 @@ function battle(sim: Simulation, id = 1) {
     { action: "board" },
   );
   run(sim, 1600);
+  expect(sim.state.phase).toBe("aftermath");
+  sim.queue(
+    sim.state.pirates
+      .filter((p) => p.side === "ally" && p.hp > 0)
+      .map((p) => p.id),
+    { action: "retreat" },
+  );
+  run(sim, 250);
+  expect(
+    sim.finishEncounter(),
+    JSON.stringify({
+      phase: sim.state.phase,
+      location: sim.state.location,
+      pirates: sim.state.pirates.map((p) => ({
+        name: p.name,
+        ship: p.shipId,
+        x: p.x,
+        y: p.y,
+        orders: p.orders,
+        hp: p.hp,
+      })),
+      notice: sim.state.notices.at(-1),
+    }),
+  ).toBe(true);
+}
+function island(sim: Simulation, id = 2) {
+  expect(sim.sail(id)).toBe(true);
+  run(sim, 220);
+  const ids = sim.state.pirates
+    .filter((p) => p.side === "ally")
+    .map((p) => p.id);
+  sim.queue(ids, { action: "board" });
+  run(sim, 800);
+  sim.collect(ids);
+  run(sim, 250);
+  expect(sim.state.phase).toBe("aftermath");
+  sim.queue(ids, { action: "retreat" });
+  run(sim, 250);
+  expect(sim.finishEncounter()).toBe(true);
 }
 describe("navigation and transactional edits", () => {
   it("connects upper deck through ladder and rejects a severed ladder", () => {
@@ -89,8 +128,7 @@ describe("campaign loop and bounded resources", () => {
   });
   it("cannot farm already-cleared islands", () => {
     const sim = new Simulation(createCampaign());
-    sim.sail(2);
-    run(sim, 200);
+    island(sim);
     expect(sim.state.phase).toBe("victory");
     const reward = sim.state.reward;
     sim.sail(0);
@@ -122,7 +160,15 @@ describe("campaign loop and bounded resources", () => {
     sim.state.food = 100;
     for (let i = 0; i < 4; i++) sim.recruit();
     for (const p of sim.state.pirates) sim.upgrade(p.id);
-    battle(sim, 6);
+    for (const id of [7, 8, 9, 6]) {
+      battle(sim, id);
+      if (id !== 6) {
+        expect(sim.state.phase).toBe("victory");
+        sim.sail(0);
+        run(sim, 120);
+        sim.rest();
+      }
+    }
     expect(sim.state.phase).toBe("won");
     expect(sim.state.world[6].cleared).toBe(true);
   });
@@ -140,8 +186,7 @@ describe("campaign loop and bounded resources", () => {
     sim.state.food = 999;
     sim.state.parts = 999;
     sim.state.gold = 1_000_000_000;
-    sim.sail(2);
-    run(sim, 220);
+    island(sim);
     expect(sim.state.food).toBe(999);
     expect(sim.state.parts).toBe(999);
     expect(sim.state.gold).toBe(1_000_000_000);
@@ -201,6 +246,8 @@ describe("campaign loop and bounded resources", () => {
       sim.state.phase = "port";
       sim.state.location = 0;
       sim.state.world[1].cleared = false;
+      sim.state.ships[0].hp = sim.state.ships[0].maxHp;
+      sim.state.meals = 30;
       sim.state.pirates.forEach((p) => {
         p.hp = p.maxHp;
         p.hunger = 100;

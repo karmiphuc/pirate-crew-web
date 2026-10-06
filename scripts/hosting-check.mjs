@@ -87,7 +87,7 @@ try {
         () => document.querySelectorAll(".crew-card").length === 4,
       );
       await page.click('[data-action="map"]');
-      assert.equal(await page.locator(".map-node").count(), 7);
+      assert.equal(await page.locator(".map-node").count(), 10);
       const notices = await context.request.get(
         origin + path + "THIRD_PARTY_NOTICES.txt",
       );

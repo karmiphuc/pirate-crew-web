@@ -15,7 +15,7 @@ The user created a public repository, which supports Pages on GitHub Free. Pages
 
 Vite uses `base: "./"`. All emitted bundle URLs are relative to the entry document, so the same artifact supports a repository path, account Pages root, or custom domain. In-game screens are modal panels rather than URL paths. Do not add history-based routes without revisiting Pages' lack of server rewrites. Open a project site using its trailing slash.
 
-`npm run test:hosting` serves the built artifact using a strict static server, with no fallback to `index.html`. It exercises both root and repository-path entry points, asset fetches, WebGL startup, recruitment, a persisted checkpoint after reload, seven map nodes, third-party notices, and absence of the development diagnostic hook. Local execution uses `/usr/bin/chromium` or `CHROMIUM_PATH`; CI installs Playwright Chromium and sets `PLAYWRIGHT_BUNDLED_CHROMIUM=1`.
+`npm run test:hosting` serves the built artifact using a strict static server, with no fallback to `index.html`. It exercises both root and repository-path entry points, asset fetches, WebGL startup, recruitment, a persisted checkpoint after reload, ten map nodes, third-party notices, and absence of the development diagnostic hook. Local execution uses `/usr/bin/chromium` or `CHROMIUM_PATH`; CI installs Playwright Chromium and sets `PLAYWRIGHT_BUNDLED_CHROMIUM=1`.
 
 ## Saves and operational limits
 
@@ -25,7 +25,7 @@ No service worker or offline install has been introduced. Normal HTTP cache beha
 
 ## Verification status
 
-Production build and all 24 simulation/storage/lifetime tests pass. Live Pages behavior, repository environment rules, and GitHub Actions execution must be checked after repository access is available. The hosting smoke test is a local production check, not a claim that Pages has deployed.
+Production build and all 51 simulation/storage/lifetime tests pass. Live Pages behavior, repository environment rules, and GitHub Actions execution must be checked after repository access is available. The hosting smoke test is a local production check, not a claim that Pages has deployed.
 
 The production browser smoke passes at both `/` and `/pirate-crew-web/`, with no browser errors. During each run the server exposes only the tested mount, so absolute root asset references fail the repository-path check.
 

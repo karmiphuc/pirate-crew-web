@@ -55,3 +55,7 @@ Campaign replacement waits for the writer to settle and invalidates outstanding 
 - Quota/unavailable storage blocks unsafe encounter entry while preserving play at the boundary.
 - Snapshot size and collection limits are checked before import replacement.
 - Closing/restarting panels and exporting files release listeners and object URLs.
+
+## Version 0.2 compatibility
+
+Schema 2 validates meals, ship dirt/cannon cooldown, learned skills, assigned duty, owned weapon locker, equipped weapon, and armor. Schema 1 migrates through a bounded copy, retaining crew/map/hull/gold and introducing six starter meals and guard duty; migration never mutates the imported object. Unsupported schemas are rejected. Current/previous slots and the database name remain unchanged. Work claims, progress, paths, and audio state are runtime resources and are rebuilt rather than serialized. Combat and `aftermath` are unsafe save phases; successful prize handling returns to a safe checkpoint.

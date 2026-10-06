@@ -4,7 +4,7 @@
 
 Seeded graph of nodes with region, encounter type, danger tier, discovery state, routes, and persistent outcome. Generate authored templates with controlled variation. Store mutable outcomes; revisiting a defeated encounter cannot duplicate its reward.
 
-First region includes a starter port, two island encounter templates, three enemy ship templates, and one boss. Validate connectivity and guarantee a low-risk early route with reachable resupply. Provide at least two viable route choices before the boss.
+First region includes a starter port, two island encounter templates, three enemy ship templates, and four pirate lords. Validate connectivity and guarantee a low-risk early route with reachable resupply. Provide at least two viable route choices before the boss.
 
 ## Travel
 

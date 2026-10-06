@@ -13,6 +13,7 @@ export type Phase =
   | "port"
   | "travel"
   | "encounter"
+  | "aftermath"
   | "victory"
   | "gameover"
   | "won";
@@ -27,16 +28,54 @@ export interface Station {
   y: number;
   kind: "cannon" | "food" | "medical";
 }
+export const DUTIES = [
+  "guard",
+  "cook",
+  "clean",
+  "repair",
+  "medic",
+  "gunner",
+] as const;
+export type Duty = (typeof DUTIES)[number];
+export const DUTY_NAMES: Record<Duty, string> = {
+  guard: "Boarding party",
+  cook: "Cook",
+  clean: "Deck cleaner",
+  repair: "Shipwright",
+  medic: "Doctor",
+  gunner: "Cannoneer",
+};
+export const WEAPONS = {
+  cutlass: { name: "Cutlass", price: 0, bonus: 0, range: 1.15, cooldown: 15 },
+  sabre: {
+    name: "Steel sabre",
+    price: 60,
+    bonus: 5,
+    range: 1.15,
+    cooldown: 13,
+  },
+  pistol: { name: "Flintlock", price: 85, bonus: 0, range: 5, cooldown: 22 },
+} as const;
+export type Weapon = keyof typeof WEAPONS;
 export interface Ship {
   id: number;
   name: string;
+  kind: "ship" | "island";
+  dirt: number;
+  cannonCooldown: number;
   tiles: Tile[];
   stations: Station[];
   hp: number;
   maxHp: number;
   revision: number;
 }
-export type Action = "move" | "attack" | "board" | "retreat";
+export type Action =
+  | "move"
+  | "attack"
+  | "board"
+  | "retreat"
+  | "collect"
+  | "cannon";
 export interface Order {
   action: Action;
   shipId?: number;
@@ -47,6 +86,11 @@ export interface Pirate {
   id: number;
   name: string;
   role: "captain" | "boarder" | "gunner" | "medic";
+  duty: Duty;
+  skills: Duty[];
+  weapon: Weapon;
+  ownedWeapons: Weapon[];
+  armor: number;
   side: "ally" | "enemy";
   shipId: number;
   x: number;
@@ -83,7 +127,7 @@ export interface Notice {
   tone: "info" | "good" | "bad";
 }
 export interface Campaign {
-  schemaVersion: 1;
+  schemaVersion: 2;
   campaignId: string;
   revision: number;
   tick: number;
@@ -98,6 +142,7 @@ export interface Campaign {
   travelTicks: number;
   gold: number;
   food: number;
+  meals: number;
   ammo: number;
   medicine: number;
   parts: number;
@@ -153,6 +198,9 @@ export function starterShip(id = 1, enemy = false): Ship {
   return {
     id,
     name: enemy ? "The Crooked Cutlass" : "The Wayward Gull",
+    kind: "ship",
+    dirt: 0,
+    cannonCooldown: 160,
     tiles,
     stations: [
       { x: 14, y: 3, kind: "cannon" },
@@ -183,6 +231,21 @@ export function makePirate(
         : index === 2
           ? "gunner"
           : "boarder",
+    duty:
+      side === "ally" && index === 1
+        ? "cook"
+        : index === 2
+          ? "gunner"
+          : "guard",
+    skills:
+      index === 1
+        ? ["guard", "cook"]
+        : index === 2
+          ? ["guard", "gunner"]
+          : ["guard"],
+    weapon: index === 2 ? "pistol" : "cutlass",
+    ownedWeapons: index === 2 ? ["cutlass", "pistol"] : ["cutlass"],
+    armor: 0,
     side,
     shipId: side === "ally" ? 1 : 2,
     x,
@@ -208,6 +271,7 @@ export function createCampaign(
   seed = 71031,
   campaignId = `voyage-${seed}`,
 ): Campaign {
+  seed = seed >>> 0 || 1;
   const world: WorldNode[] = [
     {
       id: 0,
@@ -227,7 +291,7 @@ export function createCampaign(
       kind: "pirate",
       danger: 1,
       cleared: false,
-      seed: seed + 1,
+      seed: (seed + 1) >>> 0,
     },
     {
       id: 2,
@@ -237,7 +301,7 @@ export function createCampaign(
       kind: "island",
       danger: 1,
       cleared: false,
-      seed: seed + 2,
+      seed: (seed + 2) >>> 0,
     },
     {
       id: 3,
@@ -247,7 +311,7 @@ export function createCampaign(
       kind: "pirate",
       danger: 2,
       cleared: false,
-      seed: seed + 3,
+      seed: (seed + 3) >>> 0,
     },
     {
       id: 4,
@@ -257,7 +321,7 @@ export function createCampaign(
       kind: "island",
       danger: 2,
       cleared: false,
-      seed: seed + 4,
+      seed: (seed + 4) >>> 0,
     },
     {
       id: 5,
@@ -267,7 +331,7 @@ export function createCampaign(
       kind: "pirate",
       danger: 3,
       cleared: false,
-      seed: seed + 5,
+      seed: (seed + 5) >>> 0,
     },
     {
       id: 6,
@@ -277,11 +341,41 @@ export function createCampaign(
       kind: "boss",
       danger: 4,
       cleared: false,
-      seed: seed + 6,
+      seed: (seed + 6) >>> 0,
+    },
+    {
+      id: 7,
+      x: 27,
+      y: 20,
+      name: "Captain Ashwake",
+      kind: "boss",
+      danger: 2,
+      cleared: false,
+      seed: (seed + 7) >>> 0,
+    },
+    {
+      id: 8,
+      x: 54,
+      y: 15,
+      name: "Lady Ironwake",
+      kind: "boss",
+      danger: 3,
+      cleared: false,
+      seed: (seed + 8) >>> 0,
+    },
+    {
+      id: 9,
+      x: 86,
+      y: 83,
+      name: "Dread Commodore",
+      kind: "boss",
+      danger: 3,
+      cleared: false,
+      seed: (seed + 9) >>> 0,
     },
   ];
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     campaignId,
     revision: 0,
     tick: 0,
@@ -296,6 +390,7 @@ export function createCampaign(
     travelTicks: 0,
     gold: 420,
     food: 18,
+    meals: 6,
     ammo: 12,
     medicine: 5,
     parts: 12,
@@ -321,4 +416,25 @@ export function notify(
   if (last?.text === text) return;
   s.notices.push({ id: ++s.noticeId, text, tone });
   if (s.notices.length > LIMITS.notices) s.notices.shift();
+}
+
+export function islandTerrain(name: string): Ship {
+  const tiles: Tile[] = [];
+  for (let x = 0; x < 21; x++) {
+    tiles.push({ x, y: 4, kind: "hull" });
+    if (x > 0 && x < 20) tiles.push({ x, y: 5, kind: "hull" });
+    if (x > 3 && x < 17) tiles.push({ x, y: 6, kind: "hull" });
+  }
+  return {
+    id: 2,
+    name,
+    kind: "island",
+    tiles,
+    stations: [],
+    hp: 100,
+    maxHp: 100,
+    dirt: 0,
+    cannonCooldown: 0,
+    revision: 0,
+  };
 }

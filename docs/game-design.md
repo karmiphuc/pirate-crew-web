@@ -40,11 +40,11 @@ Layout tradeoffs should be visible. A nearby medical station shortens retreats; 
 
 ## Progression and failure
 
-Earn gold, parts, equipment, and experience through expeditions. Start with a single region and one boss. Standard mode reloads a safe checkpoint after captain death; hardcore mode is deferred. Crew deaths during successful encounters persist. Avoid permanent account upgrades in the MVP.
+Earn gold, parts, equipment, and experience through expeditions. Start with a single region and four rival pirate lords. Standard mode reloads a safe checkpoint after captain death; hardcore mode is deferred. Crew deaths during successful encounters persist. Avoid permanent account upgrades in the MVP.
 
 ## Proposed later extensions
 
-Additional regions, factions, negotiation, surrender, rescue missions, ship capture, pets, tablet controls, and optional cloud saves. Each needs its own scope decision. Multiplayer requires a separate architecture and is outside the initial roadmap.
+Additional regions, factions, negotiation, surrender, rescue missions, pets, tablet controls, and optional cloud saves. Each needs its own scope decision. Multiplayer requires a separate architecture and is outside the initial roadmap.
 
 ## Success signal
 

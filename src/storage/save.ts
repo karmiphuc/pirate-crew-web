@@ -1,4 +1,4 @@
-import { Campaign, LIMITS } from "../sim/model";
+import { Campaign, LIMITS, DUTIES, WEAPONS } from "../sim/model";
 import { Navigation, Search, validateLayout } from "../sim/navigation";
 import { tileNode } from "../sim/model";
 const MAX = 1_000_000_000;
@@ -15,9 +15,40 @@ function text(s: unknown, max = 120): s is string {
   return typeof s === "string" && s.length > 0 && s.length <= max;
 }
 export function validateSave(value: unknown): Campaign {
+  // Migrate the first playable checkpoints without mutating the caller's object.
+  if (record(value) && value.schemaVersion === 1) {
+    if (
+      !Array.isArray(value.ships) ||
+      value.ships.length !== 1 ||
+      !Array.isArray(value.pirates) ||
+      value.pirates.length > LIMITS.allies
+    )
+      throw new Error("Invalid legacy collections.");
+    value = {
+      ...value,
+      schemaVersion: 2,
+      meals: 6,
+      ships: value.ships.map((s) =>
+        record(s) ? { ...s, kind: "ship", dirt: 0, cannonCooldown: 160 } : s,
+      ),
+      pirates: value.pirates.map((p) =>
+        record(p)
+          ? {
+              ...p,
+              duty: "guard",
+              skills: ["guard"],
+              weapon: p.role === "gunner" ? "pistol" : "cutlass",
+              armor: 0,
+              ownedWeapons:
+                p.role === "gunner" ? ["cutlass", "pistol"] : ["cutlass"],
+            }
+          : p,
+      ),
+    };
+  }
   if (
     !record(value) ||
-    value.schemaVersion !== 1 ||
+    value.schemaVersion !== 2 ||
     !text(value.campaignId) ||
     !["port", "travel", "victory", "won"].includes(String(value.phase))
   )
@@ -35,7 +66,7 @@ export function validateSave(value: unknown): Campaign {
     if (!integer(value[key])) throw new Error(`Invalid ${key}.`);
   if (!integer(value.rng, 1, 4294967295) || !integer(value.nextId, 3))
     throw new Error("Invalid random state or entity counter.");
-  for (const key of ["gold", "food", "ammo", "medicine", "parts"])
+  for (const key of ["gold", "food", "meals", "ammo", "medicine", "parts"])
     if (!integer(value[key], 0, key === "gold" ? MAX : 999))
       throw new Error(`Invalid inventory: ${key}.`);
   if (
@@ -87,6 +118,9 @@ export function validateSave(value: unknown): Campaign {
   if (
     !record(ship) ||
     ship.id !== 1 ||
+    ship.kind !== "ship" ||
+    !integer(ship.dirt, 0, 100) ||
+    !integer(ship.cannonCooldown, 0, 400) ||
     !text(ship.name) ||
     !integer(ship.revision) ||
     !bounded(ship.hp, 1, 1000) ||
@@ -106,16 +140,19 @@ export function validateSave(value: unknown): Campaign {
     )
       throw new Error("Invalid ship part.");
   const stations = new Set<string>();
+  const stationNodes = new Set<number>();
   for (const t of ship.stations) {
     if (
       !record(t) ||
       !integer(t.x, 0, 63) ||
       !integer(t.y, 0, 23) ||
       !["food", "medical", "cannon"].includes(String(t.kind)) ||
-      stations.has(String(t.kind))
+      stations.has(String(t.kind)) ||
+      stationNodes.has(tileNode(t.x as number, t.y as number))
     )
       throw new Error("Invalid station.");
     stations.add(String(t.kind));
+    stationNodes.add(tileNode(t.x as number, t.y as number));
   }
   const state = value as unknown as Campaign;
   const layoutError = validateLayout(state.ships[0], state.ships[0].tiles);
@@ -132,6 +169,21 @@ export function validateSave(value: unknown): Campaign {
       !text(p.name) ||
       p.side !== "ally" ||
       p.shipId !== 1 ||
+      !DUTIES.includes(p.duty as any) ||
+      !Array.isArray(p.skills) ||
+      p.skills.length < 1 ||
+      p.skills.length > DUTIES.length ||
+      p.skills.some((skill) => !DUTIES.includes(skill)) ||
+      new Set(p.skills).size !== p.skills.length ||
+      !p.skills.includes(p.duty) ||
+      !Object.hasOwn(WEAPONS, String(p.weapon)) ||
+      !Array.isArray(p.ownedWeapons) ||
+      p.ownedWeapons.length < 1 ||
+      p.ownedWeapons.length > 3 ||
+      p.ownedWeapons.some((w) => !Object.hasOwn(WEAPONS, String(w))) ||
+      new Set(p.ownedWeapons).size !== p.ownedWeapons.length ||
+      !p.ownedWeapons.includes(p.weapon) ||
+      !integer(p.armor, 0, 8) ||
       !["captain", "boarder", "gunner", "medic"].includes(String(p.role))
     )
       throw new Error("Invalid crew identity.");
@@ -178,7 +230,7 @@ export function validateSave(value: unknown): Campaign {
       throw new Error("Invalid journal.");
   // Only explicit fields enter the application. Unknown properties are discarded.
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     campaignId: state.campaignId,
     revision: state.revision,
     tick: state.tick,
@@ -188,6 +240,9 @@ export function validateSave(value: unknown): Campaign {
     ships: state.ships.map((s) => ({
       id: s.id,
       name: s.name,
+      kind: s.kind,
+      dirt: s.dirt,
+      cannonCooldown: s.cannonCooldown,
       hp: s.hp,
       maxHp: s.maxHp,
       revision: s.revision,
@@ -198,6 +253,11 @@ export function validateSave(value: unknown): Campaign {
       id: p.id,
       name: p.name,
       role: p.role,
+      duty: p.duty,
+      skills: [...p.skills],
+      weapon: p.weapon,
+      ownedWeapons: [...p.ownedWeapons],
+      armor: p.armor,
       side: p.side,
       shipId: p.shipId,
       x: p.x,
@@ -233,6 +293,7 @@ export function validateSave(value: unknown): Campaign {
     travelTicks: state.travelTicks,
     gold: state.gold,
     food: state.food,
+    meals: state.meals,
     ammo: state.ammo,
     medicine: state.medicine,
     parts: state.parts,

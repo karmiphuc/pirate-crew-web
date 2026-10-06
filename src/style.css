@@ -1023,3 +1023,45 @@ footer button {
     display: none;
   }
 }
+
+.duty-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.duty-item {
+  padding: 12px;
+  border: 1px solid #bcc2ae;
+  background: #e5dfc7;
+}
+.duty-item.active {
+  border: 2px solid #477267;
+  background: #d9e1c5;
+}
+.duty-item p {
+  font-size: 12px;
+  line-height: 1.5;
+  min-height: 36px;
+}
+.duty-item button {
+  width: 100%;
+  font-size: 12px;
+}
+.settings-grid button small {
+  display: block;
+  font-size: 11px;
+  margin-top: 6px;
+}
+#ship-readout {
+  color: #d8dfbd;
+  font-size: 10px;
+}
+@media (max-width: 650px) {
+  .duty-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  #ship-readout {
+    display: none;
+  }
+}
