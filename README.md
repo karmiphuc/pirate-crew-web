@@ -32,7 +32,7 @@ For a production preview, run `npx vite preview --host 0.0.0.0`. Production outp
 
 The game is a static SPA, ready for GitHub Pages. No backend, server rendering, or accounts are needed. Relative asset URLs support both a repository subpath and a custom domain. Menus stay within the page, so no server-side route rewrites are required.
 
-The [Pages workflow](.github/workflows/pages.yml) validates, builds, and deploys `dist/` on pushes to `main`. Enable **Settings → Pages → Source → GitHub Actions** once the repository exists. See [hosting setup and limitations](docs/github-pages.md). Repository creation/publication is currently blocked by the connected GitHub integration's permissions; no live deployment is claimed.
+The source is published at [karmiphuc/pirate-crew-web](https://github.com/karmiphuc/pirate-crew-web). The [Pages workflow](.github/workflows/pages.yml) validates, builds, and deploys `dist/` on pushes to `main`. Enable **Settings → Pages → Source → GitHub Actions**; the connected integration cannot change that setting. See [hosting setup and limitations](docs/github-pages.md). A live site is not claimed until deployment succeeds.
 
 Run `npm run build && npm run test:hosting` to test the production bundle at both `/` and `/pirate-crew-web/` using a strict static server. This checks asset requests, game startup, save reload, and the chart without the development diagnostic hook.
 

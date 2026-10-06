@@ -4,12 +4,12 @@ The playable game is a client-only SPA. GitHub Pages serves the production HTML,
 
 ## Deployment
 
-1. Create a GitHub repository and push this source to `main`. The connected integration currently rejects repository creation with `Resource not accessible by integration (createRepository)`.
+1. Source is uploaded to `main` in the user-created public repository [karmiphuc/pirate-crew-web](https://github.com/karmiphuc/pirate-crew-web).
 2. In repository **Settings → Pages**, select **GitHub Actions** as the source.
 3. Push to `main`, or run **Deploy game to GitHub Pages** manually from Actions. Its build job installs locked dependencies, checks formatting, runs simulation/storage tests, builds, and runs production browser hosting checks before uploading only `dist/`. The deployment job receives `pages: write` and `id-token: write` and publishes through the `github-pages` environment.
 4. Open the URL reported by the deployment job. For the intended repository it would normally be `https://karmiphuc.github.io/pirate-crew-web/`; this is an expected address, not a verified live site.
 
-GitHub Free supports Pages from public repositories. Pages from a private repository requires an eligible paid plan. The existing preference is a private source repository; choose an eligible plan or explicitly choose public source before publishing. A private source repository does not inherently make the default Pages website private.
+The user created a public repository, which supports Pages on GitHub Free. Pages from a private repository requires an eligible paid plan. A private source repository does not inherently make the default Pages website private.
 
 ## Routing and portability
 
@@ -37,4 +37,4 @@ Both the GitHub connector and CLI authenticate as `karmiphuc` (user ID 3367376).
 
 Direct `POST https://api.github.com/user/repos` requests for the intended private repository return HTTP 403, `Resource not accessible by integration`, using both API versions `2022-11-28` and `2026-03-10`. The response header `X-Accepted-Github-Permissions` reports `administration=write; repository_creation=write`; neither permission is present in the app installation. This is a confirmed permission mismatch, not a wrong owner, endpoint, API version, or restricted repository selection. GitHub's [authenticated-user repository creation endpoint](https://docs.github.com/en/rest/repos/repos#create-a-repository-for-the-authenticated-user) documents either of these permission sets as sufficient.
 
-Creation needs an authorized connection with one of those permissions, or creation of the empty repository through GitHub's UI. No credential values are stored here.
+The user subsequently created the repository. The complete source was uploaded through GitHub's contents and Git data APIs after Git transport authentication failed. Pages activation via `POST /repos/karmiphuc/pirate-crew-web/pages` returns HTTP 403, `Resource not accessible by integration`; enabling Pages in repository settings remains a required owner action. No credential values are stored here.
