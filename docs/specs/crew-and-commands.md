@@ -46,3 +46,11 @@ Store target IDs, not closures capturing full entities/scenes. Task completion/d
 Each living ally has one assigned duty and a bounded learned-skill list. Books cost 60 gold in port. Player commands interrupt duty work; reassignment clears pending orders and resumes work. Claims use ship/duty keys; a galley, medical station, or cannon has one worker, and cleaning/repair have one slot each. Work is deterministic and slower below 30 morale. Cooking converts one raw provision into two meals; timber repairs 12 hull health; medicine restores 25 health; cleaning reduces deck dirt. Routine work runs in port and during travel, but port time does not reduce needs.
 
 Pirates retain up to three owned weapons and can switch freely among bought weapons at port. Armor has two purchases up to eight protection. These are authored lightweight loadouts, not the original full inventory. Automatic critical retreat and the planned emergency-priority scheduler remain unimplemented.
+
+## Version 0.3 upkeep and traits
+
+A taught Fisher uses the reachable port-side rail, reserving one ship/duty slot. A catch takes 160 work ticks and adds one raw provision for the galley. Fishing stops at six raw provisions per living ally (inventory hard cap 999). Direct orders discard unfinished catch progress. Fishing and cooking can run concurrently; neither creates meals without the other resource step. All timing and reserve values are authored balance.
+
+New recruits have one previewed trait: Swift (20% movement increase), Industrious (25% work increase), Hearty (one hunger point per needs interval), or Gourmand (three). Ordinary hunger costs two. Effects use simulation ticks; low morale still halves work speed. Existing crew and migrated saves have neutral traits. Trait arrays allow at most two unique known values; opposing food traits are rejected. This is an original small catalogue, not a verified original-game trait list.
+
+Work-site selection uses graph-owned connected-component labels, built once with navigation. Finding a reachable repair/rail site scans the bounded graph without allocating a new path search or keeping extra world caches.

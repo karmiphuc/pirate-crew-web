@@ -59,3 +59,7 @@ Campaign replacement waits for the writer to settle and invalidates outstanding 
 ## Version 0.2 compatibility
 
 Schema 2 validates meals, ship dirt/cannon cooldown, learned skills, assigned duty, owned weapon locker, equipped weapon, and armor. Schema 1 migrates through a bounded copy, retaining crew/map/hull/gold and introducing six starter meals and guard duty; migration never mutates the imported object. Unsupported schemas are rejected. Current/previous slots and the database name remain unchanged. Work claims, progress, paths, and audio state are runtime resources and are rebuilt rather than serialized. Combat and `aftermath` are unsafe save phases; successful prize handling returns to a safe checkpoint.
+
+## Version 0.3 compatibility
+
+Schema 3 adds bounded unique trait arrays and per-tile wear. Schema 1 first takes the existing schema-2 migration; schema 2 then copies crew into schema 3 with neutral traits, preserving the map, RNG, inventory, hull health, and loadouts. Migration never mutates the caller. Missing legacy wear normalizes to zero; supplied wear must be an integer in 0..100 and ladders cannot carry wear. Unknown, duplicate, excess, or opposing food traits reject the import before replacement. Supported safe phases, database name, two-slot backup, and writer ownership remain unchanged. Runtime job targets/claims/progress are cleared when making checkpoints.

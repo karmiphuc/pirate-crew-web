@@ -54,9 +54,9 @@ Only one browser tab can own writable save state. Backgrounding pauses the voyag
 
 ## Current scope
 
-Version 0.2.0: one harbour, ten map locations, three pirate ship encounters, two explorable islands, four pirate lords, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/repairs/healing, hull combat, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1 checkpoints migrate without losing their original campaign map.
+Version 0.3.0: one harbour, ten map locations, three pirate ship encounters, two explorable islands, four pirate lords, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/fishing/repairs/healing, localized plank wear, hull combat, recruit traits and previews, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1 and version-2 checkpoints migrate without losing their original campaign map.
 
-This is a growing remake, not a verified 1:1 recreation. Art, names, interfaces, terrain, and balance are original. Individual hull-block destruction, full equipment/drop inventories, fishing, swimming, rum/toys, traits, procedural world topology, music/voice lines, pets, and full original content remain. Boarding uses a drawn rope with abstract transfers; navigation uses a deck/ladder graph. The [fidelity tracker](docs/fidelity.md) distinguishes reference behavior, delivered systems, and gaps.
+This is a growing remake, not a verified 1:1 recreation. Art, names, interfaces, terrain, and balance are original. Individual hull-block destruction, full equipment/drop inventories, swimming, rum/toys, the complete trait catalogue, procedural world topology, music/voice lines, pets, and full original content remain. Boarding uses a drawn rope with abstract transfers; navigation uses a deck/ladder graph. The [fidelity tracker](docs/fidelity.md) distinguishes reference behavior, delivered systems, and gaps.
 
 ## Robustness and verification
 
@@ -65,3 +65,5 @@ Simulation is renderer-independent, seeded, and fixed at 20 Hz with bounded catc
 See [implementation and measured checks](docs/implementation-status.md), [design/spec index](docs/README.md), [performance contract](docs/specs/performance-and-lifecycle.md), and [attribution](docs/attribution.md). Runtime checks are scoped evidence, not a guarantee of leak-free behavior on every device.
 
 No distribution license for project code/assets has been selected; free/noncommercial intent is recorded separately from third-party permissions.
+
+Version 0.3 management screens: [crew traits](docs/images/crew-traits.png) and [fishing duty](docs/images/fishing-duty.png).

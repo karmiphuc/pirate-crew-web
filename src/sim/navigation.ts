@@ -1,6 +1,7 @@
 import { LIMITS, Ship, Tile, tileNode, nodeX, nodeY } from "./model";
 export class Navigation {
   readonly nodes = new Map<number, number[]>();
+  private readonly components = new Map<number, number>();
   constructor(readonly ship: Ship) {
     const solid = new Set<number>();
     const ladders = new Set<number>();
@@ -33,6 +34,37 @@ export class Navigation {
       )
         edges.push(n + LIMITS.width);
     }
+    // Component labels belong to this graph; work-site selection needs no new BFS.
+    const queue: number[] = [];
+    for (const start of this.nodes.keys()) {
+      if (this.components.has(start)) continue;
+      queue.length = 0;
+      queue.push(start);
+      this.components.set(start, start);
+      for (let i = 0; i < queue.length; i++) {
+        for (const edge of this.nodes.get(queue[i]) ?? []) {
+          if (!this.components.has(edge)) {
+            this.components.set(edge, start);
+            queue.push(edge);
+          }
+        }
+      }
+    }
+  }
+  nearestReachable(x: number, y: number, start: number) {
+    const component = this.components.get(start);
+    if (component === undefined) return -1;
+    let nearest = -1,
+      distance = Infinity;
+    for (const [n, label] of this.components) {
+      if (label !== component) continue;
+      const d = Math.abs(nodeX(n) - x) + Math.abs(nodeY(n) - y);
+      if (d < distance) {
+        nearest = n;
+        distance = d;
+      }
+    }
+    return nearest;
   }
   nearest(x: number, y: number) {
     let result = -1,

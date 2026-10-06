@@ -281,6 +281,43 @@ try {
   );
   assert.equal((await state()).gold, checkpointGold);
   assert.match((await state()).ships[0].name, /captured/);
+  // Verify traits and fishing through the management UI, then exercise the galley loop.
+  assert.equal((await state()).schemaVersion, 3);
+  assert.deepEqual((await state()).pirates[3].traits, ["swift"]);
+  await page.click('[data-action="select"][data-id="6"]');
+  await page.click('[data-action="crew-settings"]');
+  assert.match(
+    await page.locator("#modal").textContent(),
+    /Swift: Moves 20% faster/,
+  );
+  await page.screenshot({ path: "artifacts/crew-traits.png", fullPage: true });
+  await page.click('[data-action="close"]');
+  await page.click('[data-action="select"][data-id="3"]');
+  await page.click('[data-action="crew-settings"]');
+  await page.click('[data-action="teach"][data-kind="fish"]');
+  await page.waitForFunction(
+    () =>
+      window.__privateer.state().pirates[0].skills.includes("fish") &&
+      window.__privateer.diagnostics().saveWrites === 0,
+  );
+  await page.screenshot({ path: "artifacts/fishing-duty.png", fullPage: true });
+  await page.click('[data-action="close"]');
+  await page.evaluate(() => {
+    const sim = window.__privateer.sim;
+    sim.state.food = 0;
+    sim.state.meals = 0;
+    for (let tick = 0; tick < 500; tick++) sim.tick();
+  });
+  assert.ok((await state()).notices.some((n) => /caught a fish/.test(n.text)));
+  assert.ok((await state()).meals > 0);
+  await page.click('[data-action="crew-settings"]');
+  await page.click('[data-action="duty"][data-kind="guard"]');
+  await page.waitForFunction(
+    () =>
+      window.__privateer.state().pirates[0].duty === "guard" &&
+      window.__privateer.diagnostics().saveWrites === 0,
+  );
+  await page.click('[data-action="close"]');
   // A second tab must not gain save ownership or advance a competing campaign.
   const other = await context.newPage();
   await other.goto(base);
@@ -444,6 +481,8 @@ try {
     renderer: "Chromium SwiftShader (headless software rendering)",
     fullLoop: "passed",
     skillAndEquipmentPurchases: "passed",
+    fishingAndGalley: "passed",
+    traitsAndSchema3: "passed",
     islandExplorationAndReturn: "passed",
     explicitPlunder: "passed",
     captureAndReload: "passed",

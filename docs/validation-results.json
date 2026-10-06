@@ -6,6 +6,8 @@
   "renderer": "Chromium SwiftShader (headless software rendering)",
   "fullLoop": "passed",
   "skillAndEquipmentPurchases": "passed",
+  "fishingAndGalley": "passed",
+  "traitsAndSchema3": "passed",
   "islandExplorationAndReturn": "passed",
   "explicitPlunder": "passed",
   "captureAndReload": "passed",
@@ -19,37 +21,37 @@
   "quotaRollback": "passed",
   "memory": {
     "heapBefore": {
-      "usedSize": 8393528,
+      "usedSize": 8426440,
       "totalSize": 9428992,
-      "embedderHeapUsedSize": 1624160,
-      "backingStorageSize": 11156085
+      "embedderHeapUsedSize": 2098896,
+      "backingStorageSize": 11175978
     },
     "heapAfter": {
-      "usedSize": 8303656,
+      "usedSize": 8361472,
       "totalSize": 9166848,
-      "embedderHeapUsedSize": 1284792,
-      "backingStorageSize": 11156137
+      "embedderHeapUsedSize": 1426656,
+      "backingStorageSize": 11175851
     },
     "domBefore": {
       "documents": 1,
-      "nodes": 312,
+      "nodes": 339,
       "jsEventListeners": 72
     },
     "domAfter": {
       "documents": 1,
-      "nodes": 362,
+      "nodes": 366,
       "jsEventListeners": 72
     }
   },
   "diagnostics": {
     "frameMs": {
-      "count": 465,
-      "p50": 28.339999999999964,
-      "p95": 35,
-      "p99": 38.33000000000011
+      "count": 499,
+      "p50": 30,
+      "p95": 48.340000000000146,
+      "p99": 59.98000000000029
     },
     "tickMs": {
-      "count": 132,
+      "count": 134,
       "p50": 0,
       "p95": 0.10000000149011612,
       "p99": 0.19999999552965164
@@ -72,7 +74,7 @@
     "listeners": 5,
     "saveWrites": 0,
     "lock": "owned",
-    "tick": 12375,
+    "tick": 12845,
     "phase": "port"
   },
   "errors": []

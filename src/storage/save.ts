@@ -1,4 +1,4 @@
-import { Campaign, LIMITS, DUTIES, WEAPONS } from "../sim/model";
+import { Campaign, LIMITS, DUTIES, WEAPONS, TRAITS } from "../sim/model";
 import { Navigation, Search, validateLayout } from "../sim/navigation";
 import { tileNode } from "../sim/model";
 const MAX = 1_000_000_000;
@@ -46,9 +46,18 @@ export function validateSave(value: unknown): Campaign {
       ),
     };
   }
+  if (record(value) && value.schemaVersion === 2) {
+    if (!Array.isArray(value.pirates) || value.pirates.length > LIMITS.allies)
+      throw new Error("Invalid legacy crew.");
+    value = {
+      ...value,
+      schemaVersion: 3,
+      pirates: value.pirates.map((p) => (record(p) ? { ...p, traits: [] } : p)),
+    };
+  }
   if (
     !record(value) ||
-    value.schemaVersion !== 2 ||
+    value.schemaVersion !== 3 ||
     !text(value.campaignId) ||
     !["port", "travel", "victory", "won"].includes(String(value.phase))
   )
@@ -136,7 +145,9 @@ export function validateSave(value: unknown): Campaign {
       !record(t) ||
       !integer(t.x, 0, 63) ||
       !integer(t.y, 1, 23) ||
-      !["hull", "ladder"].includes(String(t.kind))
+      !["hull", "ladder"].includes(String(t.kind)) ||
+      (t.damage !== undefined &&
+        (!integer(t.damage, 0, 100) || (t.kind === "ladder" && t.damage !== 0)))
     )
       throw new Error("Invalid ship part.");
   const stations = new Set<string>();
@@ -176,6 +187,13 @@ export function validateSave(value: unknown): Campaign {
       p.skills.some((skill) => !DUTIES.includes(skill)) ||
       new Set(p.skills).size !== p.skills.length ||
       !p.skills.includes(p.duty) ||
+      !Array.isArray(p.traits) ||
+      p.traits.length > 2 ||
+      p.traits.some(
+        (trait) => typeof trait !== "string" || !Object.hasOwn(TRAITS, trait),
+      ) ||
+      new Set(p.traits).size !== p.traits.length ||
+      (p.traits.includes("hearty") && p.traits.includes("gourmand")) ||
       !Object.hasOwn(WEAPONS, String(p.weapon)) ||
       !Array.isArray(p.ownedWeapons) ||
       p.ownedWeapons.length < 1 ||
@@ -230,7 +248,7 @@ export function validateSave(value: unknown): Campaign {
       throw new Error("Invalid journal.");
   // Only explicit fields enter the application. Unknown properties are discarded.
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     campaignId: state.campaignId,
     revision: state.revision,
     tick: state.tick,
@@ -246,7 +264,12 @@ export function validateSave(value: unknown): Campaign {
       hp: s.hp,
       maxHp: s.maxHp,
       revision: s.revision,
-      tiles: s.tiles.map((t) => ({ x: t.x, y: t.y, kind: t.kind })),
+      tiles: s.tiles.map((t) => ({
+        x: t.x,
+        y: t.y,
+        kind: t.kind,
+        damage: t.damage ?? 0,
+      })),
       stations: s.stations.map((t) => ({ x: t.x, y: t.y, kind: t.kind })),
     })),
     pirates: state.pirates.map((p) => ({
@@ -255,6 +278,7 @@ export function validateSave(value: unknown): Campaign {
       role: p.role,
       duty: p.duty,
       skills: [...p.skills],
+      traits: [...p.traits],
       weapon: p.weapon,
       ownedWeapons: [...p.ownedWeapons],
       armor: p.armor,

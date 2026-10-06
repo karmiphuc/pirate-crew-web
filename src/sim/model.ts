@@ -22,6 +22,8 @@ export interface Tile {
   x: number;
   y: number;
   kind: TileKind;
+  /** Local plank wear, 0..100. Worn planks retain structural support. */
+  damage?: number;
 }
 export interface Station {
   x: number;
@@ -35,6 +37,7 @@ export const DUTIES = [
   "repair",
   "medic",
   "gunner",
+  "fish",
 ] as const;
 export type Duty = (typeof DUTIES)[number];
 export const DUTY_NAMES: Record<Duty, string> = {
@@ -44,7 +47,26 @@ export const DUTY_NAMES: Record<Duty, string> = {
   repair: "Shipwright",
   medic: "Doctor",
   gunner: "Cannoneer",
+  fish: "Fisher",
 };
+export const TRAITS = {
+  swift: { name: "Swift", description: "Moves 20% faster." },
+  industrious: { name: "Industrious", description: "Works 25% faster." },
+  hearty: {
+    name: "Hearty",
+    description: "Uses half as much food between meals.",
+  },
+  gourmand: {
+    name: "Gourmand",
+    description: "Uses 50% more food between meals.",
+  },
+} as const;
+export type Trait = keyof typeof TRAITS;
+export function recruitTrait(index: number): Trait {
+  return (["swift", "industrious", "hearty", "gourmand"] as const)[
+    Math.max(0, index - 3) % 4
+  ];
+}
 export const WEAPONS = {
   cutlass: { name: "Cutlass", price: 0, bonus: 0, range: 1.15, cooldown: 15 },
   sabre: {
@@ -88,6 +110,7 @@ export interface Pirate {
   role: "captain" | "boarder" | "gunner" | "medic";
   duty: Duty;
   skills: Duty[];
+  traits: Trait[];
   weapon: Weapon;
   ownedWeapons: Weapon[];
   armor: number;
@@ -127,7 +150,7 @@ export interface Notice {
   tone: "info" | "good" | "bad";
 }
 export interface Campaign {
-  schemaVersion: 2;
+  schemaVersion: 3;
   campaignId: string;
   revision: number;
   tick: number;
@@ -245,6 +268,7 @@ export function makePirate(
           : ["guard"],
     weapon: index === 2 ? "pistol" : "cutlass",
     ownedWeapons: index === 2 ? ["cutlass", "pistol"] : ["cutlass"],
+    traits: side === "ally" && index >= 3 ? [recruitTrait(index)] : [],
     armor: 0,
     side,
     shipId: side === "ally" ? 1 : 2,
@@ -375,7 +399,7 @@ export function createCampaign(
     },
   ];
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     campaignId,
     revision: 0,
     tick: 0,

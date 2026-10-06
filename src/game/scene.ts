@@ -494,7 +494,18 @@ export class SeaScene extends Phaser.Scene {
           5,
           ship.hp < ship.maxHp * 0.35 ? 0xd88066 : 0xa7bd84,
         );
-        if (ship.hp < ship.maxHp) {
+        for (const t of ship.tiles) {
+          if (!(t.damage ?? 0)) continue;
+          const x = ox + t.x * TILE,
+            y = SHIP_Y + t.y * TILE;
+          g.lineStyle(2, (t.damage ?? 0) >= 80 ? 0xc36c48 : 0x332f29);
+          g.lineBetween(x + 3, y + 2, x + 10, y + 8);
+          g.lineBetween(x + 10, y + 8, x + 4, y + 15);
+        }
+        if (
+          ship.hp < ship.maxHp &&
+          !ship.tiles.some((t) => (t.damage ?? 0) > 0)
+        ) {
           const cracks = Math.min(8, Math.ceil((1 - ship.hp / ship.maxHp) * 8));
           g.lineStyle(2, 0x332f29);
           for (let i = 0; i < cracks; i++) {

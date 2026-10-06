@@ -5,6 +5,9 @@ import {
   Campaign,
   DUTIES,
   DUTY_NAMES,
+  TRAITS,
+  recruitTrait,
+  NAMES,
   Duty,
   WEAPONS,
   Weapon,
@@ -28,12 +31,12 @@ import { SeaScene, ViewHost } from "./game/scene";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
-<header class="masthead"><a class="brand" href="#" aria-label="Pixel Privateer home"><span class="brand-mark">☠</span><span><strong>PIXEL PRIVATEER<span class="beta">02</span></strong><small>A PIRATE’S LIFE · UNOFFICIAL BROWSER REMAKE</small></span></a><nav><button data-action="help" class="text-button">Captain’s guide</button><button data-action="settings" class="text-button">⚙ Settings</button><button data-action="save" class="save-button">↓ Save voyage</button></nav></header>
+<header class="masthead"><a class="brand" href="#" aria-label="Pixel Privateer home"><span class="brand-mark">☠</span><span><strong>PIXEL PRIVATEER<span class="beta">03</span></strong><small>A PIRATE’S LIFE · UNOFFICIAL BROWSER REMAKE</small></span></a><nav><button data-action="help" class="text-button">Captain’s guide</button><button data-action="settings" class="text-button">⚙ Settings</button><button data-action="save" class="save-button">↓ Save voyage</button></nav></header>
 <main>
  <section class="supplies" aria-label="Ship supplies"><div class="location"><span class="live-dot"></span><span id="location">Saltwater Harbour</span><small id="phase">IN PORT</small></div><div class="resources"><span><i class="coin">●</i><b id="gold">420</b> <small>GOLD</small></span><span><i>▣</i><b id="food">18</b> <small>FOOD</small></span><span><i>●</i><b id="ammo">12</b> <small>AMMO</small></span><span><i>✚</i><b id="medicine">5</b> <small>MEDICINE</small></span><span><i>▰</i><b id="parts">12</b> <small>TIMBER</small></span></div></section>
  <section class="voyage" aria-label="Side-view pirate game"><div class="scene-top"><div><span class="eyebrow">THE WAYWARD GULL</span><h1 id="scene-title">A small ship. A grand adventure.</h1><p id="objective">Stock the hold, gather your crew, and see what lies beyond the harbour.</p></div><button data-action="pause" id="pause" class="pause-button">Ⅱ Pause <kbd>SPACE</kbd></button></div><div id="game"></div><div id="scene-banner" class="scene-banner" hidden></div><div id="build-tools" class="build-tools" hidden><span>SHIPWRIGHT <small>Click grid to place / remove</small></span><button data-action="hull" class="active">Hull</button><button data-action="ladder">Ladder</button><button data-action="station-food">Move galley</button><button data-action="station-cannon">Move cannon</button><button data-action="station-medical">Move clinic</button><button data-action="apply-build" class="primary">Apply refit</button><button data-action="cancel-build">Cancel</button></div><div class="sea-compass" aria-hidden="true">N<br>✧</div><div class="scene-bottom"><span id="hint">Click a pirate to select · Click a deck to move · Space to pause</span><span id="ship-readout"></span><span id="save-state">Preparing logbook…</span></div></section>
  <section class="actionbar" aria-label="Crew actions"><div class="command-group"><button data-action="select-all">♟ Select crew</button><button data-action="board" id="board">⚔ Board / go ashore</button><button data-action="cannon" id="cannon">● Fire cannon</button><button data-action="retreat" id="retreat">↶ Retreat</button><button data-action="heal">✚ Treat wounds</button><button data-action="collect" id="collect" hidden>✦ Collect chest</button><button data-action="plunder" id="plunder" hidden>✦ Plunder / take spoils</button><button data-action="capture" id="capture" hidden>⚑ Capture ship</button><button data-action="escape" id="escape" hidden>↗ Break off</button></div><div class="command-group"><button data-action="build" id="build">▦ Build ship</button><button data-action="map" class="primary" id="chart">◇ Chart a course <span>→</span></button></div></section>
- <section class="below-deck"><div class="crew-panel"><div class="panel-heading"><h2>Your crew <span id="crew-count">3 / 12</span></h2><button data-action="recruit" id="recruit">+ Recruit <small>70 gold</small></button></div><div id="crew" class="crew-list"></div><div class="port-tools"><button data-action="crew-settings">☷ Duties & equipment</button><button data-action="shop">▣ Harbour market</button><button data-action="rest">☾ Tavern & repairs <small>25 gold</small></button><span id="crew-summary">Three souls, one horizon.</span></div></div><aside class="log-panel"><div class="panel-heading"><h2>Captain’s log</h2><span id="day">DAY 01</span></div><div id="journal" aria-live="polite"></div></aside></section>
+ <section class="below-deck"><div class="crew-panel"><div class="panel-heading"><h2>Your crew <span id="crew-count">3 / 12</span></h2><button data-action="recruit" id="recruit">+ Recruit <small>70 gold</small></button></div><div id="crew" class="crew-list"></div><div class="port-tools"><button data-action="crew-settings">☷ Duties & equipment</button><button data-action="shop">▣ Harbour market</button><button data-action="rest">☾ Tavern & repairs <small>25 gold</small></button><span id="recruit-preview"></span><span id="crew-summary">Three souls, one horizon.</span></div></div><aside class="log-panel"><div class="panel-heading"><h2>Captain’s log</h2><span id="day">DAY 01</span></div><div id="journal" aria-live="polite"></div></aside></section>
  <footer><span>Built for the love of pirate adventures.</span><button data-action="credits">Pixel Piracy tribute · Credits & attribution ↗</button><span id="diagnostics"></span></footer>
 </main><div id="toast" role="status" hidden></div><div id="modal" class="modal-backdrop" hidden></div>`;
 const escape = (value: string) =>
@@ -698,7 +701,7 @@ class Application implements ViewHost {
       );
       if (!p) body = "<p>Select a crew member first.</p>";
       else
-        body = `<p class="modal-intro"><strong>${escape(p.name)}</strong> · ${p.role} · Level ${p.level} · ${p.xp} XP · Gold ${s.gold}<br>Direct movement and combat orders interrupt work. Choose a duty to resume it.</p><h3>Duty roster</h3><div class="duty-grid">${DUTIES.map((d) => `<div class="duty-item ${p.duty === d ? "active" : ""}"><strong>${DUTY_NAMES[d]}</strong><p>${{ guard: "Free for boarding and fighting.", cook: "Galley: 1 raw provision → 2 cooked meals.", clean: "Clean decks protect crew morale.", repair: "1 timber repairs 12 hull health.", medic: "1 medicine restores 25 crew health.", gunner: "Works at the cannon and fires when ready." }[d]}</p><button data-action="${p.skills.includes(d) ? "duty" : "teach"}" data-id="${p.id}" data-kind="${d}" ${(!p.skills.includes(d) && s.phase !== "port") || p.duty === d ? "disabled" : ""}>${p.duty === d ? "Assigned" : p.skills.includes(d) ? "Assign duty" : "Skill book · 60 gold"}</button></div>`).join("")}</div><h3>Weapon locker</h3><div class="settings-grid">${Object.entries(
+        body = `<p class="modal-intro"><strong>${escape(p.name)}</strong> · ${p.role} · Level ${p.level} · ${p.xp} XP · Gold ${s.gold}<br>Direct movement and combat orders interrupt work. Choose a duty to resume it.</p><h3>Crew traits</h3><p>${p.traits.length ? p.traits.map((t) => `${TRAITS[t].name}: ${TRAITS[t].description}`).join("<br>") : "No special traits."}</p><h3>Duty roster</h3><div class="duty-grid">${DUTIES.map((d) => `<div class="duty-item ${p.duty === d ? "active" : ""}"><strong>${DUTY_NAMES[d]}</strong><p>${{ guard: "Free for boarding and fighting.", cook: "Galley: 1 raw provision → 2 cooked meals.", clean: "Clean decks protect crew morale.", repair: "1 timber repairs 12 hull health and up to 60% plank wear.", medic: "1 medicine restores 25 crew health.", gunner: "Works at the cannon and fires when ready.", fish: "Fishes from the rail: 1 raw provision per catch." }[d]}</p><button data-action="${p.skills.includes(d) ? "duty" : "teach"}" data-id="${p.id}" data-kind="${d}" ${(!p.skills.includes(d) && s.phase !== "port") || p.duty === d ? "disabled" : ""}>${p.duty === d ? "Assigned" : p.skills.includes(d) ? "Assign duty" : "Skill book · 60 gold"}</button></div>`).join("")}</div><h3>Weapon locker</h3><div class="settings-grid">${Object.entries(
           WEAPONS,
         )
           .map(
@@ -896,6 +899,11 @@ class Application implements ViewHost {
     for (const id of ["collect", "plunder", "capture", "escape"])
       (el(id) as HTMLButtonElement).disabled = this.busy;
     const port = s.phase === "port";
+    const nextTrait = TRAITS[recruitTrait(crew.length)];
+    el("recruit-preview").textContent =
+      port && crew.length < LIMITS.allies
+        ? `Next recruit: ${NAMES[crew.length % NAMES.length]} · ${nextTrait.name}: ${nextTrait.description}`
+        : "";
     for (const id of ["recruit", "build"])
       (el(id) as HTMLButtonElement).disabled = !port || this.busy;
     for (const id of ["board", "retreat"])

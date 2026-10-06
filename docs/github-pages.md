@@ -6,7 +6,7 @@ The playable game is a client-only SPA. GitHub Pages serves the production HTML,
 
 1. Source is uploaded to `main` in the user-created public repository [karmiphuc/pirate-crew-web](https://github.com/karmiphuc/pirate-crew-web).
 2. In repository **Settings → Pages**, select **GitHub Actions** as the source.
-3. Push to `main`, or run **Deploy game to GitHub Pages** manually from Actions. Its build job installs locked dependencies, checks formatting, runs simulation/storage tests, builds, and runs production browser hosting checks before uploading only `dist/`. The deployment job receives `pages: write` and `id-token: write` and publishes through the `github-pages` environment.
+3. Push to `main`, or run **Deploy game to GitHub Pages** manually from Actions. Its build job installs locked dependencies, checks formatting, runs simulation/storage tests, builds, and runs production browser hosting checks before uploading only `dist/`. The deployment job receives `pages: write` and `id-token: write`, configures Pages, and publishes through the `github-pages` environment.
 4. Open the URL reported by the deployment job. For the intended repository it would normally be `https://karmiphuc.github.io/pirate-crew-web/`; this is an expected address, not a verified live site.
 
 The user created a public repository, which supports Pages on GitHub Free. Pages from a private repository requires an eligible paid plan. A private source repository does not inherently make the default Pages website private.
@@ -25,7 +25,7 @@ No service worker or offline install has been introduced. Normal HTTP cache beha
 
 ## Verification status
 
-Production build and all 51 simulation/storage/lifetime tests pass. Live Pages behavior, repository environment rules, and GitHub Actions execution must be checked after repository access is available. The hosting smoke test is a local production check, not a claim that Pages has deployed.
+Production build and all 69 simulation/storage/lifetime tests pass. Live Pages behavior and repository environment rules remain unverified while Pages is disabled. GitHub Actions execution is tracked below. The hosting smoke test is a local production check, not a claim that Pages has deployed.
 
 The production browser smoke passes at both `/` and `/pirate-crew-web/`, with no browser errors. During each run the server exposes only the tested mount, so absolute root asset references fail the repository-path check.
 
@@ -42,3 +42,7 @@ The user subsequently created the repository. The complete source was uploaded t
 ## Version 0.2 publication
 
 [CI run 37464965027](https://github.com/karmiphuc/pirate-crew-web/actions/runs/37464965027) passed formatting, all 51 tests, the production build, and hosting checks. The Pages configuration step failed; deployment did not run. The owner must select GitHub Actions as the Pages source, then rerun the workflow or push a game update.
+
+## Version 0.3 workflow separation
+
+The validated build uploads its static Pages artifact independently of Pages configuration. Configuration now runs in the deployment job, which has the required Pages permissions. This makes a successful build artifact available even when the repository owner has not enabled hosting; an unavailable Pages site blocks deployment rather than discarding build validation. Runtime assets use relative paths, so no Pages metadata is needed during the Vite build.

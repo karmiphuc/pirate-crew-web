@@ -26,7 +26,7 @@ export class Simulation {
   private searches = new Map<number, Search>();
   private tasks = new Map<
     number,
-    { duty: Duty; goal: number; progress: number }
+    { duty: Duty; goal: number; progress: number; plank?: number }
   >();
   private claims = new Map<string, number>();
   disposed = false;
@@ -148,7 +148,7 @@ export class Simulation {
     const dx = x - p.x,
       dy = y - p.y;
     const d = Math.hypot(dx, dy);
-    const speed = 0.16;
+    const speed = 0.16 * (p.traits.includes("swift") ? 1.2 : 1);
     if (d <= speed) {
       p.x = x;
       p.y = y;
@@ -438,7 +438,15 @@ export class Simulation {
       home.dirt = Math.min(100, home.dirt + 3);
       for (const p of s.pirates)
         if (p.side === "ally" && p.hp > 0) {
-          p.hunger = Math.max(0, p.hunger - 2);
+          p.hunger = Math.max(
+            0,
+            p.hunger -
+              (p.traits.includes("hearty")
+                ? 1
+                : p.traits.includes("gourmand")
+                  ? 3
+                  : 2),
+          );
           if (p.hunger < 60 && s.meals > 0 && p.shipId === 1) {
             s.meals--;
             p.hunger = Math.min(100, p.hunger + 35);
@@ -701,9 +709,21 @@ export class Simulation {
             s.pirates.filter((a) => a.side === "ally" && a.hp > 0).length * 3,
           )
       );
+    if (duty === "fish")
+      return (
+        s.food <
+        Math.min(
+          999,
+          s.pirates.filter((a) => a.side === "ally" && a.hp > 0).length * 6,
+        )
+      );
     if (duty === "clean") return home.dirt > 0;
     if (duty === "repair")
-      return home.hp > 0 && home.hp < home.maxHp && s.parts > 0;
+      return (
+        home.hp > 0 &&
+        (home.hp < home.maxHp || home.tiles.some((t) => (t.damage ?? 0) > 0)) &&
+        s.parts > 0
+      );
     if (duty === "medic")
       return (
         s.medicine > 0 &&
@@ -757,10 +777,32 @@ export class Simulation {
         if (ordered) this.finish(p, "No working cannon station");
         return false;
       }
+      let damaged: Tile | undefined;
+      if (duty === "repair")
+        for (const tile of home.tiles) {
+          if ((tile.damage ?? 0) > (damaged?.damage ?? 0)) damaged = tile;
+        }
+      const graph = this.graph(1),
+        start = graph.nearest(p.x, p.y);
       const goal = station
         ? tileNode(station.x, station.y)
-        : this.graph(1).nearest(duty === "clean" ? 10 : 3, 3);
-      task = { duty, goal, progress: 0 };
+        : damaged
+          ? graph.nearestReachable(damaged.x, damaged.y - 1, start)
+          : graph.nearestReachable(
+              duty === "fish" ? 0 : duty === "clean" ? 10 : 3,
+              3,
+              start,
+            );
+      if (goal === -1) {
+        p.status = "No reachable work site";
+        return false;
+      }
+      task = {
+        duty,
+        goal,
+        progress: 0,
+        plank: damaged ? tileNode(damaged.x, damaged.y) : undefined,
+      };
       this.tasks.set(p.id, task);
       this.claims.set(key, p.id);
     }
@@ -783,19 +825,35 @@ export class Simulation {
             ? "Repairing hull"
             : duty === "medic"
               ? "Treating the crew"
-              : "Loading cannon";
+              : duty === "fish"
+                ? "Fishing off the rail"
+                : "Loading cannon";
     // Low morale slows work, without random scheduler decisions or wall-clock timers.
-    task.progress += p.morale < 30 ? 0.5 : 1;
-    const duration = duty === "gunner" ? 40 : duty === "repair" ? 80 : 60;
+    task.progress +=
+      (p.morale < 30 ? 0.5 : 1) * (p.traits.includes("industrious") ? 1.25 : 1);
+    const duration =
+      duty === "gunner"
+        ? 40
+        : duty === "fish"
+          ? 160
+          : duty === "repair"
+            ? 80
+            : 60;
     if (task.progress < duration) return true;
     if (duty === "cook") {
       s.food--;
       s.meals = Math.min(999, s.meals + 2);
     }
+    if (duty === "fish") {
+      s.food = Math.min(999, s.food + 1);
+      notify(s, `${p.name} caught a fish for the galley.`, "good");
+    }
     if (duty === "clean") home.dirt = Math.max(0, home.dirt - 20);
     if (duty === "repair") {
       s.parts--;
       home.hp = Math.min(home.maxHp, home.hp + 12);
+      const plank = home.tiles.find((t) => tileNode(t.x, t.y) === task.plank);
+      if (plank) plank.damage = Math.max(0, (plank.damage ?? 0) - 60);
     }
     if (duty === "medic") {
       const injured = s.pirates.find(
@@ -823,6 +881,15 @@ export class Simulation {
     }
     source.cannonCooldown = shipId === 1 ? 100 : 260;
     target.hp = Math.max(0, target.hp - (shipId === 1 ? 18 : 10));
+    const planks = target.tiles.filter(
+      (t) => t.kind === "hull" && (t.damage ?? 0) < 100,
+    );
+    const plank = planks[Math.floor(random(s) * planks.length)];
+    if (plank)
+      plank.damage = Math.min(
+        100,
+        (plank.damage ?? 0) + (shipId === 1 ? 60 : 40),
+      );
     const victims = s.pirates.filter(
       (p) =>
         p.hp > 0 &&
@@ -1066,6 +1133,7 @@ export class Simulation {
     s.gold -= 25;
     s.ships[0].hp = s.ships[0].maxHp;
     s.ships[0].dirt = 0;
+    for (const tile of s.ships[0].tiles) tile.damage = 0;
     this.tasks.clear();
     this.claims.clear();
     this.searches.clear();
@@ -1131,15 +1199,21 @@ export class Simulation {
       search.advance(1536);
       if (!search.path) return `${p.name} needs a safe, reachable deck.`;
     }
+    const existing = new Map(ship.tiles.map((t) => [tileNode(t.x, t.y), t]));
     const added = tiles.filter(
-      (t) =>
-        !ship.tiles.some(
-          (o) => o.x === t.x && o.y === t.y && o.kind === t.kind,
-        ),
+      (t) => existing.get(tileNode(t.x, t.y))?.kind !== t.kind,
     ).length;
     if (added > s.parts) return `Need ${added} timber; you have ${s.parts}.`;
     s.parts -= added;
-    ship.tiles = tiles.map((t) => ({ ...t }));
+    ship.tiles = tiles.map((t) => {
+      const old = existing.get(tileNode(t.x, t.y));
+      return {
+        x: t.x,
+        y: t.y,
+        kind: t.kind,
+        damage: old?.kind === t.kind ? (old.damage ?? 0) : 0,
+      };
+    });
     ship.stations = stations.map((t) => ({ ...t }));
     this.tasks.clear();
     this.claims.clear();

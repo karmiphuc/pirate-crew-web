@@ -255,11 +255,13 @@ describe("checkpoint evolution", () => {
     });
     const frozen = JSON.stringify(old);
     const migrated = validateSave(old);
-    expect(migrated.schemaVersion).toBe(2);
+    expect(migrated.schemaVersion).toBe(3);
     expect(migrated.meals).toBe(6);
     expect(migrated.gold).toBe(old.gold);
     expect(migrated.world).toEqual(old.world);
-    expect(migrated.ships[0].tiles).toEqual(old.ships[0].tiles);
+    expect(migrated.ships[0].tiles).toEqual(
+      old.ships[0].tiles.map((t: any) => ({ ...t, damage: 0 })),
+    );
     expect(JSON.stringify(old)).toBe(frozen);
   });
   it.each([

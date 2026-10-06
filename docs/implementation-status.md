@@ -1,10 +1,10 @@
 # First playable implementation
 
-Version: 0.2.0. Date: 2026-10-06. Previous baseline: 0.1.0.
+Version: 0.3.0. Date: 2026-10-06. Previous baseline: 0.2.0.
 
 ## Delivered
 
-TypeScript 5.9.3, Phaser 3.90.0, Vite 7.3.6; a single-thread renderer-independent simulation; new procedural pixel sprites and ship scenery; DOM management panels; authored ten-node chart with four pirate lords; real-time cannon/melee/pistol battles with pause; recruitment, supplies, upgrades, morale/hunger, wages, experience; ship/station editing and deck/ladder navigation; functional worker claims for cooking/cleaning/repair/medicine/gunnery; skill books, owned weapon lockers, armor; hull combat; explicit plunder/capture; island landing, guard combat and chest collection; escape; campaign victory; two-frame walking sprites and original synthesized effects; versioned IndexedDB checkpoints and JSON backups.
+TypeScript 5.9.3, Phaser 3.90.0, Vite 7.3.6; a single-thread renderer-independent simulation; new procedural pixel sprites and ship scenery; DOM management panels; authored ten-node chart with four pirate lords; real-time cannon/melee/pistol battles with pause; recruitment, supplies, upgrades, morale/hunger, wages, experience; ship/station editing and deck/ladder navigation; functional worker claims for cooking/cleaning/repair/medicine/gunnery; skill books, owned weapon lockers, armor; hull combat and localized plank wear/targeted repairs; fishing that supplies the galley; four recruit traits with visible previews; explicit plunder/capture; island landing, guard combat and chest collection; escape; campaign victory; two-frame walking sprites and original synthesized effects; versioned IndexedDB checkpoints and JSON backups.
 
 ## Architecture evidence
 
@@ -24,7 +24,7 @@ TypeScript 5.9.3, Phaser 3.90.0, Vite 7.3.6; a single-thread renderer-independen
 | Planned system | Current behavior |
 | --- | --- |
 | Task board / station workers | Delivered duties with exclusive claims and skilled workers at reachable stations. Emergency priority and critical-injury retreat are still deferred |
-| Ship destruction / damaged boarding paths | Hull damage, sinking, repair, and port layout invalidation delivered. Per-block destruction and damaged combat topology deferred |
+| Ship destruction / damaged boarding paths | Hull damage, localized plank wear, sinking, targeted repair, and port layout invalidation delivered. Per-block destruction and damaged combat topology deferred |
 | Boarding edge reservations and rope animation | One transfer per tick, valid deck endpoints; abstract crossing with no physical rope simulation |
 | Equipment instances and roles | Three owned weapon choices per pirate, armor, skill books and direct training; full item/drop inventory and proficiency stats deferred |
 | Seeded procedural world templates | Authored ten-node topology with stored seeds; seeded combat RNG; procedural topology generator deferred |
@@ -39,11 +39,11 @@ These limitations keep the implementation reviewable and playable without preten
 
 ## Validation
 
-`npm test`: 51 scenarios including connected upper decks, severed ladders, invalid edits, exact move completion, complete expedition, no duplicate island loot, deterministic battles, queue caps, failure feedback, captain death/checkpoint, escape safety, prepared boss victory, 50 simulation encounter cycles, idempotent disposal, malformed saves, ordered writes, injected quota failure, immutable snapshots, and subscription release. Expanded scenarios cover work-slot races, work interruption/death, resource-limited repairs/healing/cooking, skill books, owned loadouts, armor caps, hull sinking, explicit once-only prize handling, capture, guarded islands, fractional waypoint completion, station relocation, and bounded schema-1 migration.
+`npm test`: 69 scenarios including connected upper decks, severed ladders, invalid edits, exact move completion, complete expedition, no duplicate island loot, deterministic battles, queue caps, failure feedback, captain death/checkpoint, escape safety, prepared boss victory, 50 simulation encounter cycles, idempotent disposal, malformed saves, ordered writes, injected quota failure, immutable snapshots, and subscription release. Expanded scenarios cover work-slot races, work interruption/death, resource-limited repairs/healing/cooking, skill books, owned loadouts, armor caps, hull sinking, explicit once-only prize handling, capture, guarded islands, fractional waypoint completion, station relocation, and bounded schema-1 migration. Version 0.3 adds fishing/galley supply and reserve limits, cancellation of unfinished catches, trait effects on movement/work/needs, fixed repair targets under incoming hits, refit wear preservation, reachable work components, and immutable v1/v2 migration with malformed trait/wear rejection.
 
 `npm run build`: TypeScript and production build pass. `npm run format:check` checks readable source formatting. Dependency audit covers dev and production packages; initial older tooling was updated to patched versions.
 
-The Chromium integration script tests skill/equipment purchases, canvas station relocation, naval combat, explicit plunder, island landing/chest/return, ship capture and reload through visible controls, reload persistence, a second save tab, invalid and valid refits, 100 panel cycles, ten scene restarts, 50 rendered encounter fixture cycles, storage-failure rollback, audio mute/voice caps/context closure, WebGL context loss/restoration, and application disposal. It records frame/tick percentiles, heap/DOM counters, texture counts, and subscriptions to `artifacts/browser-report.json`.
+The Chromium integration script tests fishing skill purchase and real galley supply, visible recruit traits and schema-3 saves, skill/equipment purchases, canvas station relocation, naval combat, explicit plunder, island landing/chest/return, ship capture and reload through visible controls, reload persistence, a second save tab, invalid and valid refits, 100 panel cycles, ten scene restarts, 50 rendered encounter fixture cycles, storage-failure rollback, audio mute/voice caps/context closure, WebGL context loss/restoration, and application disposal. It records frame/tick percentiles, heap/DOM counters, texture counts, and subscriptions to `artifacts/browser-report.json`.
 
 Visibility testing in the integration script is synthetic; it verifies the handler, not every browser's real background/BFCache behavior. Encounter fixture cycles accelerate simulation but allow real render/cleanup frames. Heap comparisons use diagnostic forced GC; this is not the proposed 30-minute ordinary-GC soak.
 
@@ -53,9 +53,9 @@ A real baseline laptop/GPU; Chrome/Firefox/Safari browser matrix; full 30-minute
 
 ## Measured Chromium run
 
-See [machine-readable report](validation-results.json). Version 0.2 development build, headless Chromium with SwiftShader software rendering, 1440 × 1080 viewport. Latest scoped sample: frame p95 35 ms, tick p95 0.1 ms. Retained JS heap after diagnostic GC: 8,393,528 → 8,303,656 bytes across 50 rendered encounter cycles; listeners 72 → 72, textures 7 → 7, task/claim/search counters zero after cleanup. There were no page errors. Full UI purchase/combat/plunder/island/capture/reload flow passed, along with mute/voice cap and final AudioContext closure.
+See [machine-readable report](validation-results.json). Version 0.3 development build, headless Chromium with SwiftShader software rendering, 1440 × 1080 viewport. Latest scoped sample: frame p95 48.34 ms, tick p95 0.1 ms. Retained JS heap after diagnostic GC: 8,426,440 → 8,361,472 bytes across 50 rendered encounter cycles; listeners 72 → 72, textures 7 → 7, task/claim/search counters zero after cleanup. There were no page errors. Full UI fishing/galley, traits, purchase/combat/plunder/island/capture/reload flow passed, along with mute/voice cap and final AudioContext closure.
 
-This supports bounded cleanup for this fixture; it does not establish the 60 FPS hardware target, GPU memory recovery, or a 30-minute unforced-GC soak. DOM node samples varied 312 → 362 while listeners remained stable; these counts are recorded, not presented as proof that every detached object has been excluded. Production root/project-path hosting checks pass with the diagnostic hook absent, recruitment/save reload, ten-node chart, third-party notices, and no page errors.
+This supports bounded cleanup for this fixture; it does not establish the 60 FPS hardware target, GPU memory recovery, or a 30-minute unforced-GC soak. DOM node samples varied 339 → 366 while listeners remained stable; these counts are recorded, not presented as proof that every detached object has been excluded. Production root/project-path hosting checks pass with the diagnostic hook absent, recruitment/save reload, ten-node chart, third-party notices, and no page errors.
 
 ## Published CI evidence
 
