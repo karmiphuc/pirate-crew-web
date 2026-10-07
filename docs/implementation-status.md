@@ -96,3 +96,7 @@ The recorded full integration run precedes the final compact-layout CSS adjustme
 ## Version 0.6 visual refinement
 
 [Visual review](design/visual-refinement.md) records fresh captures, improvements and remaining limits. Three ID-derived non-captain appearance variants reuse four shared atlases; decoded atlas pixels increase by about 80 KiB, with no texture-count growth or schema change. Static sandy/rocky shore edges, sparse vegetation, foam, hull contact shadows, barrel hoops and medical-case straps replace remaining placeholder details. Island headline and desktop roster height are corrected. Final frame selection uses preallocated names and skips redundant frame changes. No simulation, navigation or save-format behavior changed.
+
+## Version 0.6 published CI evidence
+
+[Source commit 8c02ebf](https://github.com/karmiphuc/pirate-crew-web/commit/8c02ebf4d7044bb7eb73f3f22dd6d4fd2338c487) contains the visual refinement. [GitHub Actions run 37584996112](https://github.com/karmiphuc/pirate-crew-web/actions/runs/37584996112) passed the build job: locked installation, formatting, 92 tests, production build, root/project-path Chromium hosting checks and static artifact upload. Deployment still fails at Pages configuration because the repository Pages site is not enabled; no live deployment is claimed.
