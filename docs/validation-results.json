@@ -7,6 +7,7 @@
   "fullLoop": "passed",
   "opaquePixelArt": "passed",
   "idleBlinkAndReducedMotion": "passed",
+  "dynamicEquipmentLayers": "passed",
   "skillAndEquipmentPurchases": "passed",
   "fishingAndGalley": "passed",
   "traitsAndSchema4": "passed",
@@ -25,47 +26,48 @@
   "quotaRollback": "passed",
   "memory": {
     "heapBefore": {
-      "usedSize": 10709444,
+      "usedSize": 8781204,
       "totalSize": 12574720,
-      "embedderHeapUsedSize": 1897296,
-      "backingStorageSize": 11441783
+      "embedderHeapUsedSize": 1910648,
+      "backingStorageSize": 11466703
     },
     "heapAfter": {
-      "usedSize": 8832744,
-      "totalSize": 10215424,
-      "embedderHeapUsedSize": 1637984,
-      "backingStorageSize": 11441835
+      "usedSize": 8857476,
+      "totalSize": 9953280,
+      "embedderHeapUsedSize": 1621376,
+      "backingStorageSize": 11466755
     },
     "domBefore": {
       "documents": 1,
-      "nodes": 342,
+      "nodes": 325,
       "jsEventListeners": 75
     },
     "domAfter": {
       "documents": 1,
-      "nodes": 369,
+      "nodes": 374,
       "jsEventListeners": 75
     }
   },
   "diagnostics": {
     "frameMs": {
-      "count": 590,
-      "p50": 23.329999999999927,
-      "p95": 41.65,
-      "p99": 46.67000000000007
+      "count": 571,
+      "p50": 24.99999999999982,
+      "p95": 33.33000000000029,
+      "p99": 36.67999999999993
     },
     "tickMs": {
-      "count": 130,
+      "count": 136,
       "p50": 0,
       "p95": 0.10000000149011612,
-      "p99": 0.2000000011175871
+      "p99": 0.10000000149011612
     },
     "stalls": 0,
     "views": {
       "actors": 4,
+      "equipment": 4,
       "subscriptions": 4,
       "clouds": 3,
-      "textures": 8,
+      "textures": 9,
       "shutdownHandlers": 13,
       "destroyHandlers": 13
     },
@@ -79,7 +81,7 @@
     "listeners": 5,
     "saveWrites": 0,
     "lock": "owned",
-    "tick": 13038,
+    "tick": 13034,
     "phase": "port"
   },
   "errors": []

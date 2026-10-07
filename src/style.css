@@ -1114,3 +1114,21 @@ footer button {
     text-overflow: ellipsis;
   }
 }
+
+.portrait .held-item {
+  position: absolute;
+  inset: 0;
+  width: 46px;
+  height: 58px;
+  background-image: var(--pirate-equipment);
+  background-size: 138px 58px;
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+.portrait .held-item.sabre {
+  background-position: -46px 0;
+}
+.portrait .held-item.pistol {
+  background-position: -92px 0;
+}

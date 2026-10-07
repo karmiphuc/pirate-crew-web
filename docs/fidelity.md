@@ -1,11 +1,11 @@
 # Fidelity tracker
 
-Updated 2026-10-07 for version 0.6.2. This is a working comparison, not a claim of a verified 1:1 recreation. No Steam installation, original source, or extracted asset bundle is present in the workspace. Original build/version and exact formulas have not been measured. All sprites, scenery, names, sound effects, and balance shipped here are newly authored.
+Updated 2026-10-07 for version 0.7.0. This is a working comparison, not a claim of a verified 1:1 recreation. No Steam installation, original source, or extracted asset bundle is present in the workspace. Original build/version and exact formulas have not been measured. All sprites, scenery, names, sound effects, and balance shipped here are newly authored.
 
 | Reference behavior | Delivered browser behavior | Remaining fidelity gap |
 | --- | --- | --- |
 | Build a ship from parts | Connected hull/ladder editor; relocate cannon/galley/clinic; validation and timber transaction | Full part catalogue, furnishings, sails, item placement, original editor/UI |
-| Hire, equip and level crew | Recruitment, health/hunger/morale, XP/levels, owned cutlass/sabre/flintlock and armor; previewed recruits with four working traits | Original recruit selection, full trait/stats catalogue, original weapon/passive/consumable catalogue and item drops |
+| Hire, equip and level crew | Recruitment, health/hunger/morale, XP/levels, owned cutlass/sabre/flintlock and armor; independent held-item sprites and portraits follow equipped weapons; previewed recruits with four working traits | Original recruit selection, full trait/stats catalogue, original weapon/passive/consumable catalogue and item drops |
 | Train cooking/cleaning/repair skills | Books, duties, exclusive station claims, real resources/work, fishing feeding the galley, visible status | Original skill ranks, scheduler priorities, swimming, sailing and other skills |
 | Maintain hunger and morale | Cook raw provisions into meals; eat aboard; dirt lowers morale; wages on departure | Rum, toys, other food types, salary schedules and original balance |
 | Sail and board enemy ships | Chart, supplies/wages, tactical pause, validated paths, group boarding/return, one-gap jumps and bounded lower-deck falls | Physical ropes, swimming/rescue, boarding squads, diverse enemy AI |

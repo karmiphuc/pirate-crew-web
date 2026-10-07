@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { paintWeapon, WEAPON_FRAMES } from "./equipment-art";
 import {
   paintPirate,
   pirateVariant,
@@ -38,6 +39,21 @@ export interface ViewHost {
   contextRestored(): void;
 }
 function createTextures(scene: Phaser.Scene) {
+  if (!scene.textures.exists("pirate-equipment")) {
+    const texture = scene.textures.createCanvas("pirate-equipment", 96, 40)!;
+    WEAPON_FRAMES.forEach((weapon, index) => {
+      texture.context.save();
+      texture.context.translate(index * 32, 0);
+      paintWeapon(texture.context, weapon);
+      texture.context.restore();
+      texture.add(weapon, 0, index * 32, 0, 32, 40);
+    });
+    texture.refresh();
+  }
+  document.documentElement.style.setProperty(
+    "--pirate-equipment",
+    `url("${(scene.textures.get("pirate-equipment").getSourceImage() as HTMLCanvasElement).toDataURL()}")`,
+  );
   for (let i = 0; i < 4; i++) {
     const key = `pirate-${i}`;
     if (!scene.textures.exists(key)) {
@@ -84,6 +100,7 @@ export class SeaScene extends Phaser.Scene {
   private waves!: Phaser.GameObjects.Graphics;
   private overlay!: Phaser.GameObjects.Graphics;
   private actors = new Map<number, Phaser.GameObjects.Sprite>();
+  private equipment = new Map<number, Phaser.GameObjects.Sprite>();
   private seenEnemyRevision = -1;
   private seenRevision = -1;
   private seenPhase = "";
@@ -200,6 +217,9 @@ export class SeaScene extends Phaser.Scene {
     this.scope.dispose();
     for (let i = 0; i < 4; i++)
       document.documentElement.style.removeProperty(`--pirate-${i}`);
+    document.documentElement.style.removeProperty("--pirate-equipment");
+    for (const item of this.equipment.values()) item.destroy();
+    this.equipment.clear();
     for (const actor of this.actors.values()) actor.destroy();
     this.actors.clear();
     this.clouds.length = 0;
@@ -208,6 +228,7 @@ export class SeaScene extends Phaser.Scene {
   get counters() {
     return {
       actors: this.actors.size,
+      equipment: this.equipment.size,
       subscriptions: this.scope.count,
       clouds: this.clouds.length,
       textures: this.textures?.getTextureKeys().length ?? 0,
@@ -765,6 +786,8 @@ export class SeaScene extends Phaser.Scene {
       if (p.hp <= 0) {
         this.actors.get(p.id)?.destroy();
         this.actors.delete(p.id);
+        this.equipment.get(p.id)?.destroy();
+        this.equipment.delete(p.id);
         continue;
       }
       let actor = this.actors.get(p.id);
@@ -779,6 +802,10 @@ export class SeaScene extends Phaser.Scene {
           .setScale(1)
           .setOrigin(0.5, 1);
         this.actors.set(p.id, actor);
+        this.equipment.set(
+          p.id,
+          this.add.sprite(0, 0, "pirate-equipment", p.weapon).setOrigin(0.5, 1),
+        );
       }
       const x =
         (p.shipId === 1 ? HOME_X : ENEMY_X) +
@@ -817,6 +844,11 @@ export class SeaScene extends Phaser.Scene {
           : p.targetId !== null &&
               s.pirates.some((t) => t.id === p.targetId && t.x < p.x),
       );
+      const item = this.equipment.get(p.id)!;
+      if (item.frame.name !== p.weapon) item.setFrame(p.weapon);
+      item
+        .setPosition(actor.x, actor.y + (walking ? 1 : 0))
+        .setFlipX(actor.flipX);
       if (this.host.selected().includes(p.id)) {
         g.lineStyle(2, 0xe8d394);
         g.strokeEllipse(x, y + 1, 25, 6);
@@ -835,6 +867,8 @@ export class SeaScene extends Phaser.Scene {
       if (!s.pirates.some((p) => p.id === id && p.hp > 0)) {
         actor.destroy();
         this.actors.delete(id);
+        this.equipment.get(id)?.destroy();
+        this.equipment.delete(id);
       }
     this.waves.clear();
     const t = this.host.reducedMotion() ? 0 : _time * 0.012;

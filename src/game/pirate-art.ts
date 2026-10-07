@@ -15,7 +15,7 @@ export function paintPirate(
   variant = 0,
   blinking = false,
 ) {
-  const ink = "#293b43",
+  const ink = "#353341",
     gold = "#e2bc73",
     ivory = "#f5e7bd";
   const skin = ["#efbd91", "#dca57a", "#b9815c"][variant];
@@ -43,6 +43,10 @@ export function paintPirate(
   pixel("#617079", 19 + step, 33, 3, 2);
   pixel("#806346", 10 - step, 36, 6, 2);
   pixel("#806346", 18 + step, 36, 6, 2);
+  pixel(ink, 10 - step, 38, 6);
+  pixel(ink, 18 + step, 38, 6);
+  pixel(gold, 11 - step, 36, 2);
+  pixel(gold, 19 + step, 36, 2);
   pixel(gold, 12 - step, 35, 2);
   pixel(gold, 20 + step, 35, 2);
   pixel(ink, 12, 24, 10, 9);
@@ -50,6 +54,9 @@ export function paintPirate(
   pixel(coat, 12, 25, 10, 6);
   pixel(coat, 11, 27, 12, 4);
   pixel(clothShade, 12, 31, 10);
+  pixel(ivory, 13, 25, 2);
+  pixel(ivory, 20, 25, 2);
+  pixel(clothShade, 21, 27, 1, 3);
   pixel(ink, 8, 27, 3, 5);
   pixel(coat, 9, 27, 3, 3);
   pixel(skin, 9, 30, 3, 2);
@@ -89,10 +96,10 @@ export function paintPirate(
     pixel(ink, 12, 17, 3);
     pixel(ink, 19, 17, 3);
   } else {
-    pixel(ink, 12, 15, 3, 3);
-    pixel(ink, 19, 15, 3, 3);
-    pixel(ink, 13, 18, 2);
-    pixel(ink, 19, 18, 2);
+    pixel(ink, 12, 15, 2, 3);
+    pixel(ink, 20, 15, 2, 3);
+    pixel(ink, 12, 18);
+    pixel(ink, 20, 18);
     pixel(ivory, 13, 15);
     pixel(ivory, 20, 15);
   }
@@ -155,20 +162,6 @@ export function paintPirate(
     pixel(scarf, 9, 11, 15, 2);
     pixel(scarf, 7, 12, 3, 3);
     pixel(scarf, 6, 14, 2, 3);
-  }
-  if (role === 2) {
-    pixel(ink, 25, 28, 6, 3);
-    pixel("#b8c9bc", 26, 28, 4);
-    pixel("#806346", 25, 31, 2, 2);
-  } else {
-    pixel(ink, 26, 27, 2, 4);
-    pixel(ink, 27, 24, 2, 4);
-    pixel(ink, 28, 22, 2, 3);
-    pixel("#b8c9bc", 27, 28, 1, 3);
-    pixel(ivory, 28, 25, 1, 3);
-    pixel(ivory, 29, 22, 1, 3);
-    pixel(gold, 24, 31, 6);
-    pixel("#806346", 26, 32, 2, 2);
   }
   ctx.restore();
 }

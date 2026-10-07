@@ -1,6 +1,6 @@
 # First playable implementation
 
-Version: 0.6.2. Date: 2026-10-07. Previous baseline: 0.6.1.
+Version: 0.7.0. Date: 2026-10-07. Previous baseline: 0.6.2.
 
 ## Delivered
 
@@ -14,7 +14,7 @@ TypeScript 5.9.3, Phaser 3.90.0, Vite 7.3.6; a single-thread renderer-independen
 - Command capacity 64, orders eight/actor, twelve allies/enemies, notices 64. Work claims are keyed by ship/duty; at most one worker per slot and one task per actor. Orders, death, refits, capture, teardown, and disposal release claims/searches. Direct commands interrupt work.
 - Encounter teardown removes enemy entities, graphs, searches, paths, commands, and sprite bindings. Scene shutdown removes both paired shutdown/destroy handlers and external subscriptions.
 - No universal object pool, worker, ECS, spatial index, or per-frame world clone. Typed buffers serve bounded BFS scratch and timing samples only.
-- Four shared 96 × 120 sprite atlases provide idle/walk/blink frames and are created once; one shared backdrop texture supplies harbour and cropped open-sea frames; static ship/background graphics redraw on layout/phase changes. No per-frame generated textures or post-processing.
+- Four shared 96 × 120 body atlases provide idle/walk/blink frames; a shared 96 × 40 equipment atlas selects the actual equipped item independently; all are created once; one shared backdrop texture supplies harbour and cropped open-sea frames; static ship/background graphics redraw on layout/phase changes. No per-frame generated textures or post-processing.
 - Saves serialize through one writer with backpressure and transaction-complete acknowledgement. Mutation freezes during required writes. Port purchase failures restore pre-purchase state; departure writes precede combat.
 - Web Locks guards the browser save writer. Startup falls back to a previous valid checkpoint; invalid imports preserve current state.
 - Hidden-tab events pause and clear catch-up time. Context loss pauses, context restoration requires explicit resume. Generation/closed checks prevent stale application callbacks from reviving disposed simulation.
@@ -53,9 +53,9 @@ A real baseline laptop/GPU; Chrome/Firefox/Safari browser matrix; full 30-minute
 
 ## Measured Chromium run
 
-See [machine-readable report](validation-results.json). Version 0.6.2 development build, Chromium SwiftShader software rendering, 1440 × 1080 viewport. Scoped sample: frame p95 41.65 ms, tick p95 0.1 ms, zero stalls. Diagnostic-GC retained JS heap: 10,709,444 → 8,832,744 bytes across 50 rendered encounters; listeners 75 → 75, textures 8 → 8. All expedition, management, destruction, persistence, context and audio scenarios pass with no page errors. Atlas validation confirms all character alpha values are 0 or 255 and nine frames per 96 × 120 atlas. Idle blink and reduced-motion suppression pass.
+See [machine-readable report](validation-results.json). Version 0.7.0 development build, Chromium SwiftShader software rendering, 1440 × 1080 viewport. Scoped sample: frame p95 33.33 ms, tick p95 0.1 ms, zero stalls. Diagnostic-GC retained JS heap: 8,781,204 → 8,857,476 bytes across fifty rendered encounters; listeners 75 → 75, textures 9 → 9. Actor and equipment view counts finish at four each, matching living crew. All expedition, management, destruction, persistence, context, audio, dynamic equipment and final disposal scenarios pass with no page errors. Atlas validation confirms hard alpha edges and nine frames per 96 × 120 body atlas, plus three named frames in the 96 × 40 equipment atlas. Idle blink and reduced-motion suppression pass.
 
-This fixture supports bounded cleanup but does not establish 60 FPS on hardware or a 30-minute ordinary-GC soak. The software-rendered frame p95 is slower than the prior scoped sample; these are not controlled hardware comparisons. Heap snapshots and browser/hardware coverage remain outstanding. Production root and repository-path checks pass with diagnostics absent.
+This fixture supports bounded cleanup but does not establish 60 FPS on hardware or a 30-minute ordinary-GC soak. Heap snapshots and browser/hardware coverage remain outstanding. Production root and repository-path checks pass with diagnostics absent.
 
 ## Published CI evidence
 
@@ -108,3 +108,9 @@ The recorded full integration run precedes the final compact-layout CSS adjustme
 ## Version 0.6.2 cute crew iteration
 
 [Art iteration notes](design/cute-crew.md) record the larger faces, rounded stepped cheeks/jaws, eye glints, tiny smiles, shorter bodies/boots, softened palette and one-pixel walk bounce. Shared idle-blink frames follow the existing tick clock and respect reduced motion. Four atlases grow by 60 KiB decoded RGBA, with unchanged eight-texture/four-subscription targets. The accepted background, native actor scale, input targeting, navigation, simulation and save format remain unchanged.
+
+## Version 0.7.0 compact crew and dynamic equipment
+
+[Reference study and equipment design](design/kairosoft-and-equipment.md) document the inspected Kairosoft screenshots and original interpretation. Smaller eye marks, stronger outlines, restrained clothing highlights and boot soles improve small-scale readability. Weapons are removed from body art; a separate shared atlas supplies cutlass/sabre/pistol layers driven by actual equipment, including matching roster portraits.
+
+Each living actor owns one companion item view, released together on death/removal, scene shutdown and application disposal. The atlas adds 15 KiB decoded RGBA and one application-owned texture, bringing the expected total to nine. Existing crew limits bound item views to twenty-four; no timer, per-actor texture, simulation change or save-schema change is introduced.

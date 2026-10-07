@@ -54,7 +54,7 @@ Only one browser tab can own writable save state. Backgrounding pauses the voyag
 
 ## Current scope
 
-Version 0.6.2: one harbour, ten map locations, three pirate ship encounters, two explorable islands, four pirate lords, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/fishing/repairs/healing, destructible planks, one-gap jumps, lower-deck falls and targeted restoration, hull combat, recruit traits and previews, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1, version-2 and version-3 checkpoints migrate without losing their original campaign map.
+Version 0.7.0: one harbour, ten map locations, three pirate ship encounters, two explorable islands, four pirate lords, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/fishing/repairs/healing, destructible planks, one-gap jumps, lower-deck falls and targeted restoration, hull combat, recruit traits and previews, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1, version-2 and version-3 checkpoints migrate without losing their original campaign map.
 
 This is a growing remake, not a verified 1:1 recreation. Art, names, interfaces, terrain, and balance are original. Full equipment/drop inventories, swimming, rum/toys, the complete trait catalogue, procedural world topology, music/voice lines, pets, and full original content remain. Boarding uses a drawn rope with abstract transfers; navigation uses a deck/ladder graph. The [fidelity tracker](docs/fidelity.md) distinguishes reference behavior, delivered systems, and gaps.
 
@@ -81,3 +81,7 @@ Version 0.6.1 replaces the soft outlined crew with original raster pixel sprites
 Version 0.6.2 gives the crew a cuter pixel silhouette: larger faces, rounded stepped cheeks, eye glints, tiny smiles, short boots, pastel clothing and a gentle walk bounce. Shared idle-blink frames follow the game clock and respect reduced motion. [Art iteration notes](docs/design/cute-crew.md).
 
 ![Current cute pixel crew, enlarged from the running game's textures](docs/images/cute-crew.png)
+
+Version 0.7.0 studies Kairosoft’s compact pixel characters: smaller eyes, clearer outlines, and restrained clothing highlights. Weapons now render separately from bodies and follow the equipped cutlass, sabre, or pistol in both the world and roster. [Reference study and equipment design](docs/design/kairosoft-and-equipment.md).
+
+![Unarmed body variants and three independent weapon overlays](docs/images/crew-equipment.png)

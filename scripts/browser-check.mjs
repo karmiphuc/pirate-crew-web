@@ -86,6 +86,28 @@ try {
     assert.equal(atlas.frames, 9);
     assert.equal(atlas.softEdges, 0);
   }
+  const itemArt = await page.evaluate(() => {
+    const texture = window.__privateer.game.textures.get("pirate-equipment");
+    const source = texture.getSourceImage();
+    const pixels = source
+      .getContext("2d")
+      .getImageData(0, 0, source.width, source.height).data;
+    let softEdges = 0;
+    for (let i = 3; i < pixels.length; i += 4)
+      if (pixels[i] !== 0 && pixels[i] !== 255) softEdges++;
+    return {
+      width: source.width,
+      height: source.height,
+      frames: texture.getFrameNames().sort(),
+      softEdges,
+    };
+  });
+  assert.deepEqual(itemArt, {
+    width: 96,
+    height: 40,
+    frames: ["cutlass", "pistol", "sabre"],
+    softEdges: 0,
+  });
   // Renderer fixture: idle blink follows the simulation clock and reduced motion disables it.
   await page.evaluate(() => {
     const app = window.__privateer,
@@ -135,12 +157,57 @@ try {
       window.__privateer.diagnostics().saveWrites === 0,
   );
   await page.click('[data-action="duty"][data-kind="guard"]');
+  await page.evaluate(() => {
+    const scene = window.__privateer.game.scene.getScene("sea"),
+      id = window.__privateer.state().pirates[0].id;
+    window.__visualBody = scene.actors.get(id);
+    window.__visualItem = scene.equipment.get(id);
+  });
   await page.click('[data-action="equip"][data-kind="sabre"]');
   await page.waitForFunction(
     () =>
       window.__privateer.state().pirates[0].weapon === "sabre" &&
       window.__privateer.diagnostics().saveWrites === 0,
   );
+  await page.waitForFunction(() => {
+    const app = window.__privateer,
+      scene = app.game.scene.getScene("sea"),
+      id = app.state().pirates[0].id;
+    return scene.equipment.get(id).frame.name === "sabre";
+  });
+  assert.equal(
+    await page.locator(".crew-card.selected .held-item.sabre").count(),
+    1,
+  );
+  // Renderer-only fixture switches all existing loadouts without spending campaign resources.
+  await page.evaluate(() => {
+    const app = window.__privateer,
+      scene = app.game.scene.getScene("sea"),
+      pirate = app.sim.state.pirates[0];
+    const paused = app.paused,
+      weapon = pirate.weapon;
+    app.paused = true;
+    for (const next of ["pistol", "cutlass", "sabre"]) {
+      pirate.weapon = next;
+      scene.update(0, 0);
+      const body = scene.actors.get(pirate.id),
+        item = scene.equipment.get(pirate.id);
+      if (body !== window.__visualBody || item !== window.__visualItem)
+        throw new Error("Equipment switch must reuse body and item views");
+      if (
+        item.frame.name !== next ||
+        item.x !== body.x ||
+        item.flipX !== body.flipX ||
+        Math.abs(item.y - body.y) > 1
+      )
+        throw new Error("Equipment layer must follow loadout and pose");
+    }
+    pirate.weapon = weapon;
+    app.paused = paused;
+    scene.update(0, 0);
+    delete window.__visualBody;
+    delete window.__visualItem;
+  });
   await page.click('[data-action="armor"]');
   await page.waitForFunction(
     () =>
@@ -445,8 +512,9 @@ try {
   const restart = await diagnostics();
   assert.equal(restart.views.subscriptions, 4);
   assert.equal(restart.views.clouds, 3);
-  assert.equal(restart.views.textures, 8);
+  assert.equal(restart.views.textures, 9);
   assert.equal(restart.views.actors, (await state()).pirates.length);
+  assert.equal(restart.views.equipment, restart.views.actors);
   assert.equal(restart.views.destroyHandlers, before.views.destroyHandlers);
   assert.equal(restart.views.shutdownHandlers, before.views.shutdownHandlers);
   // Explicit visibility handler test; documented as synthetic rather than real background scheduling.
@@ -527,7 +595,8 @@ try {
     assert.equal(d.falls, 0);
     assert.ok(d.audioVoices <= 8);
     assert.equal(d.views.actors, 4);
-    assert.equal(d.views.textures, 8);
+    assert.equal(d.views.equipment, 4);
+    assert.equal(d.views.textures, 9);
   }
   // Muting immediately releases every owned voice; scene restarts retain one app audio owner.
   await page.click('[data-action="settings"]');
@@ -581,6 +650,7 @@ try {
     fullLoop: "passed",
     opaquePixelArt: "passed",
     idleBlinkAndReducedMotion: "passed",
+    dynamicEquipmentLayers: "passed",
     skillAndEquipmentPurchases: "passed",
     fishingAndGalley: "passed",
     traitsAndSchema4: "passed",
@@ -610,14 +680,25 @@ try {
   await page.screenshot({ path: "artifacts/compact.png", fullPage: true });
   await page.evaluate(async () => {
     const app = window.__privateer,
-      audioContext = app.sound.context;
+      audioContext = app.sound.context,
+      scene = app.game.scene.getScene("sea");
     await app.dispose();
+    window.__disposedScene = scene;
     if (audioContext && audioContext.state !== "closed")
       throw new Error("Audio context must close on disposal");
     if (app.sound.activeCount !== 0)
       throw new Error("Audio voices must release on disposal");
   });
-  await page.waitForTimeout(100);
+  // Phaser schedules game destruction on its next frame, after dispose resolves.
+  await page.waitForFunction(
+    () =>
+      document.querySelector("canvas") === null &&
+      window.__disposedScene.equipment.size === 0 &&
+      window.__disposedScene.actors.size === 0,
+  );
+  await page.evaluate(() => {
+    delete window.__disposedScene;
+  });
   assert.equal(await page.locator("canvas").count(), 0);
   assert.equal(errors.length, 0);
 } finally {

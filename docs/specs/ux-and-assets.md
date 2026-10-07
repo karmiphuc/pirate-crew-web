@@ -24,6 +24,8 @@ Original or suitably licensed modular pirate body/outfit sprites; idle/walk/atta
 
 Use one coherent grid and sprite scale, validated in the first visual prototype. Render sprites with nearest-neighbor sampling and integer-aligned camera positions. UI typography should remain legible rather than enforcing tiny pixel text everywhere.
 
+Keep weapons separate from body/outfit art. Select held-item frames from the equipped weapon rather than the character role, and keep world and roster representations consistent. Shared equipment atlases are application-owned; each living actor has one scene-owned item layer that follows facing and pose and is released with the actor. Version 0.7.0 delivers cutlass/sabre/pistol layers; see [reference study and implementation](../design/kairosoft-and-equipment.md).
+
 Maintain asset provenance with creator, source, license, modifications, and attribution requirements. Record applicable reuse permission before using reference-game assets; remake intent does not itself supply an asset license. Maintain [attribution](../attribution.md). Placeholder art is acceptable for the first slice and must be identified as such.
 
 ## Acceptance scenarios
