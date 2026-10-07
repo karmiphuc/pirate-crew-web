@@ -22,7 +22,7 @@ Guide recruitment, supplies, a valid ship edit, route preview, pause, boarding, 
 
 Original or suitably licensed modular pirate body/outfit sprites; idle/walk/attack/hurt/death animations; hull/deck/ladder/sail parts; station sprites; melee/ranged weapons; port and island tiles; sea/background layers; status/action icons; restrained combat effects; interface sounds; sea ambience and original/licensed music.
 
-Use one coherent grid and sprite scale, validated in the first visual prototype. Render sprites with nearest-neighbor sampling and integer-aligned camera positions. UI typography should remain legible rather than enforcing tiny pixel text everywhere.
+Use one coherent grid and sprite scale, validated in the first visual prototype. Render sprites with nearest-neighbor sampling and integer-aligned camera positions. Portrait body and held-item layers use the same whole-pixel scale and frame bounds. Responsive layouts must not crop the equipment layer or force essential crew status into unreadable columns. UI typography should remain legible rather than enforcing tiny pixel text everywhere.
 
 Keep weapons separate from body/outfit art. Select held-item frames from the equipped weapon rather than the character role, and keep world and roster representations consistent. Shared equipment atlases are application-owned; each living actor has one scene-owned item layer that follows facing and pose and is released with the actor. Version 0.7.0 delivers cutlass/sabre/pistol layers; see [reference study and implementation](../design/kairosoft-and-equipment.md).
 

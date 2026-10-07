@@ -1,6 +1,6 @@
 # First playable implementation
 
-Version: 0.7.0. Date: 2026-10-07. Previous baseline: 0.6.2.
+Version: 0.7.1. Date: 2026-10-07. Previous baseline: 0.7.0.
 
 ## Delivered
 
@@ -53,7 +53,7 @@ A real baseline laptop/GPU; Chrome/Firefox/Safari browser matrix; full 30-minute
 
 ## Measured Chromium run
 
-See [machine-readable report](validation-results.json). Version 0.7.0 development build, Chromium SwiftShader software rendering, 1440 × 1080 viewport. Scoped sample: frame p95 33.33 ms, tick p95 0.1 ms, zero stalls. Diagnostic-GC retained JS heap: 8,781,204 → 8,857,476 bytes across fifty rendered encounters; listeners 75 → 75, textures 9 → 9. Actor and equipment view counts finish at four each, matching living crew. All expedition, management, destruction, persistence, context, audio, dynamic equipment and final disposal scenarios pass with no page errors. Atlas validation confirms hard alpha edges and nine frames per 96 × 120 body atlas, plus three named frames in the 96 × 40 equipment atlas. Idle blink and reduced-motion suppression pass.
+See [machine-readable report](validation-results.json). Version 0.7.1 development build, Chromium SwiftShader software rendering, 1440 × 1080 viewport. Scoped sample: frame p95 30.01 ms, tick p95 0.1 ms, zero stalls. Diagnostic-GC retained JS heap: 8,801,344 → 8,907,240 bytes across fifty rendered encounters; listeners 75 → 75, textures 9 → 9. Actor and equipment view counts finish at four each, matching living crew. All expedition, management, destruction, persistence, context, audio, dynamic equipment, idle facing, integer portrait sizes and final disposal scenarios pass with no page errors. Body/item portrait dimensions match at 1440 px, 700 px and 375 px viewport widths; no phone page overflow. Atlas validation confirms hard alpha edges and nine frames per 96 × 120 body atlas, plus three named frames in the 96 × 40 equipment atlas. Idle blink and reduced-motion suppression pass.
 
 This fixture supports bounded cleanup but does not establish 60 FPS on hardware or a 30-minute ordinary-GC soak. Heap snapshots and browser/hardware coverage remain outstanding. Production root and repository-path checks pass with diagnostics absent.
 
@@ -114,3 +114,7 @@ The recorded full integration run precedes the final compact-layout CSS adjustme
 [Reference study and equipment design](design/kairosoft-and-equipment.md) document the inspected Kairosoft screenshots and original interpretation. Smaller eye marks, stronger outlines, restrained clothing highlights and boot soles improve small-scale readability. Weapons are removed from body art; a separate shared atlas supplies cutlass/sabre/pistol layers driven by actual equipment, including matching roster portraits.
 
 Each living actor owns one companion item view, released together on death/removal, scene shutdown and application disposal. The atlas adds 15 KiB decoded RGBA and one application-owned texture, bringing the expected total to nine. Existing crew limits bound item views to twenty-four; no timer, per-actor texture, simulation change or save-schema change is introduced.
+
+## Version 0.7.1 character silhouette redraw
+
+[Fresh visual review](design/crew-silhouettes.md) records the rejected baseline and successive original redraws: compact three-quarter faces, a sloped tricorn, distinct costume structures and hair clusters, coat tails, narrower boots, and an asymmetric walk pose. Desktop and single-column phone portraits use exact 2× scale; compact two-column layouts use 1× without clipping the independent equipment layer. Wider desktop cards and a single phone column preserve status text. A stopped actor retains its last facing direction. All five atlas dimensions, nine global textures, four scene subscriptions, simulation and schema 4 remain unchanged.

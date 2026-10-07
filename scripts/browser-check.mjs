@@ -132,6 +132,57 @@ try {
     app.lowMotion = motion;
     scene.update(0, 0);
   });
+  // A stopped character keeps the direction of its last step, including its held item.
+  await page.evaluate(() => {
+    const app = window.__privateer,
+      scene = app.game.scene.getScene("sea"),
+      p = app.sim.state.pirates[0];
+    const previousX = p.previousX,
+      targetId = p.targetId,
+      paused = app.paused;
+    app.paused = true;
+    p.targetId = null;
+    p.previousX = p.x + 0.1;
+    scene.update(0, 0);
+    if (!scene.actors.get(p.id).flipX || !scene.equipment.get(p.id).flipX)
+      throw new Error("Leftward step must face left");
+    p.previousX = p.x;
+    scene.update(0, 0);
+    if (!scene.actors.get(p.id).flipX || !scene.equipment.get(p.id).flipX)
+      throw new Error("Idle must retain last direction");
+    p.previousX = p.x - 0.1;
+    scene.update(0, 0);
+    if (scene.actors.get(p.id).flipX || scene.equipment.get(p.id).flipX)
+      throw new Error("Rightward step must face right");
+    p.previousX = previousX;
+    p.targetId = targetId;
+    app.paused = paused;
+    scene.update(0, 0);
+  });
+  const portraitSize = () =>
+    page.evaluate(() => {
+      const portrait = document.querySelector(".portrait"),
+        body = portrait.querySelector("i"),
+        item = portrait.querySelector(".held-item");
+      const size = (el) => [
+        el.getBoundingClientRect().width,
+        el.getBoundingClientRect().height,
+      ];
+      return {
+        portrait: size(portrait),
+        body: size(body),
+        item: size(item),
+        bodyAtlas: getComputedStyle(body).backgroundSize,
+        itemAtlas: getComputedStyle(item).backgroundSize,
+      };
+    });
+  assert.deepEqual(await portraitSize(), {
+    portrait: [64, 80],
+    body: [64, 80],
+    item: [64, 80],
+    bodyAtlas: "192px 240px",
+    itemAtlas: "192px 80px",
+  });
   await page.screenshot({ path: "artifacts/harbour.png", fullPage: true });
   await page.click('[data-action="recruit"]');
   await page.waitForFunction(
@@ -651,6 +702,7 @@ try {
     opaquePixelArt: "passed",
     idleBlinkAndReducedMotion: "passed",
     dynamicEquipmentLayers: "passed",
+    idleFacingAndIntegerPortraits: "passed",
     skillAndEquipmentPurchases: "passed",
     fishingAndGalley: "passed",
     traitsAndSchema4: "passed",
@@ -671,13 +723,28 @@ try {
     diagnostics: await diagnostics(),
     errors,
   };
-  await writeFile(
-    "artifacts/browser-report.json",
-    JSON.stringify(report, null, 2),
-  );
-  console.log(JSON.stringify(report, null, 2));
   await page.setViewportSize({ width: 700, height: 900 });
+  assert.deepEqual(await portraitSize(), {
+    portrait: [32, 40],
+    body: [32, 40],
+    item: [32, 40],
+    bodyAtlas: "96px 120px",
+    itemAtlas: "96px 40px",
+  });
   await page.screenshot({ path: "artifacts/compact.png", fullPage: true });
+  await page.setViewportSize({ width: 375, height: 812 });
+  assert.deepEqual(await portraitSize(), {
+    portrait: [64, 80],
+    body: [64, 80],
+    item: [64, 80],
+    bodyAtlas: "192px 240px",
+    itemAtlas: "192px 80px",
+  });
+  assert.equal(
+    await page.evaluate(() => document.documentElement.scrollWidth <= 375),
+    true,
+  );
+  await page.screenshot({ path: "artifacts/phone.png", fullPage: true });
   await page.evaluate(async () => {
     const app = window.__privateer,
       audioContext = app.sound.context,
@@ -701,6 +768,11 @@ try {
   });
   assert.equal(await page.locator("canvas").count(), 0);
   assert.equal(errors.length, 0);
+  await writeFile(
+    "artifacts/browser-report.json",
+    JSON.stringify(report, null, 2),
+  );
+  console.log(JSON.stringify(report, null, 2));
 } finally {
   await browser?.close();
   if (server && server.exitCode === null && server.signalCode === null) {

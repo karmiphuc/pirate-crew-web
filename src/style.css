@@ -360,7 +360,7 @@ main {
 }
 .crew-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 9px;
   max-height: 270px;
   overflow: auto;
@@ -380,8 +380,9 @@ main {
   background: #293f42;
 }
 .portrait {
-  width: 46px;
-  height: 58px;
+  --portrait-scale: 2;
+  width: calc(32px * var(--portrait-scale));
+  height: calc(40px * var(--portrait-scale));
   position: relative;
   display: inline-block;
   flex-shrink: 0;
@@ -392,12 +393,14 @@ main {
   display: block;
   position: absolute;
   inset: 0;
-  width: 46px;
-  height: 58px;
+  width: 100%;
+  height: 100%;
   background-image: var(--pirate-0);
   image-rendering: pixelated;
-  background-size: 138px 174px;
-  background-position: left var(--portrait-y, 0px);
+  background-size: calc(96px * var(--portrait-scale))
+    calc(120px * var(--portrait-scale));
+  background-position: 0
+    calc(-40px * var(--portrait-scale) * var(--portrait-variant, 0));
   background-repeat: no-repeat;
 }
 .portrait.boarder i {
@@ -850,7 +853,7 @@ footer button {
     font-size: 10px;
   }
   .crew-list {
-    grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   }
   .brand strong {
     font-size: 20px;
@@ -947,7 +950,7 @@ footer button {
     font-size: 11px;
   }
   .portrait {
-    width: 30px;
+    --portrait-scale: 1;
   }
   .crew-info > small {
     font-size: 7px;
@@ -1118,17 +1121,27 @@ footer button {
 .portrait .held-item {
   position: absolute;
   inset: 0;
-  width: 46px;
-  height: 58px;
+  width: 100%;
+  height: 100%;
   background-image: var(--pirate-equipment);
-  background-size: 138px 58px;
+  background-size: calc(96px * var(--portrait-scale))
+    calc(40px * var(--portrait-scale));
   background-position: 0 0;
   background-repeat: no-repeat;
   image-rendering: pixelated;
 }
 .portrait .held-item.sabre {
-  background-position: -46px 0;
+  background-position: calc(-32px * var(--portrait-scale)) 0;
 }
 .portrait .held-item.pistol {
-  background-position: -92px 0;
+  background-position: calc(-64px * var(--portrait-scale)) 0;
+}
+
+@media (max-width: 480px) {
+  .crew-list {
+    grid-template-columns: 1fr;
+  }
+  .portrait {
+    --portrait-scale: 2;
+  }
 }

@@ -838,12 +838,11 @@ export class SeaScene extends Phaser.Scene {
           : PIRATE_FRAMES.idle;
       const frame = frames[pirateVariant(p)];
       if (actor.frame.name !== frame) actor.setFrame(frame);
-      actor.setFlipX(
-        moving
-          ? p.x < p.previousX
-          : p.targetId !== null &&
-              s.pirates.some((t) => t.id === p.targetId && t.x < p.x),
-      );
+      if (moving) actor.setFlipX(p.x < p.previousX);
+      else if (p.targetId !== null) {
+        const target = s.pirates.find((t) => t.id === p.targetId && t.hp > 0);
+        if (target) actor.setFlipX(target.x < p.x);
+      }
       const item = this.equipment.get(p.id)!;
       if (item.frame.name !== p.weapon) item.setFrame(p.weapon);
       item

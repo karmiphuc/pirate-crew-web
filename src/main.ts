@@ -871,7 +871,7 @@ class Application implements ViewHost {
       el("crew").innerHTML = crew
         .map(
           (p) =>
-            `<button class="crew-card ${this.selection.includes(p.id) ? "selected" : ""}" data-action="select" data-id="${p.id}" aria-pressed="${this.selection.includes(p.id)}"><span class="portrait ${p.role}" style="--portrait-y:${-58 * pirateVariant(p)}px"><i></i><b class="held-item ${p.weapon}" aria-hidden="true"></b></span><span class="crew-info"><strong>${escape(p.name)} <small>LV.${p.level}</small></strong><span>${p.role.toUpperCase()} · ${DUTY_NAMES[p.duty]}</span><span class="health"><i style="width:${(100 * p.hp) / p.maxHp}%"></i></span><small>${Math.ceil(p.hp)} / ${p.maxHp} HP · ${escape(p.status)}</small><small>FOOD ${p.hunger}% · MORALE ${p.morale}%</small></span></button>`,
+            `<button class="crew-card ${this.selection.includes(p.id) ? "selected" : ""}" data-action="select" data-id="${p.id}" aria-pressed="${this.selection.includes(p.id)}"><span class="portrait ${p.role}" style="--portrait-variant:${pirateVariant(p)}"><i></i><b class="held-item ${p.weapon}" aria-hidden="true"></b></span><span class="crew-info"><strong>${escape(p.name)} <small>LV.${p.level}</small></strong><span>${p.role.toUpperCase()} · ${DUTY_NAMES[p.duty]}</span><span class="health"><i style="width:${(100 * p.hp) / p.maxHp}%"></i></span><small>${Math.ceil(p.hp)} / ${p.maxHp} HP · ${escape(p.status)}</small><small>FOOD ${p.hunger}% · MORALE ${p.morale}%</small></span></button>`,
         )
         .join("");
     }

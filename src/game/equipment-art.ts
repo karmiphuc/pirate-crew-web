@@ -8,7 +8,7 @@ export function paintWeapon(ctx: CanvasRenderingContext2D, weapon: Weapon) {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, w, h);
   };
-  const ink = "#353341",
+  const ink = "#282c38",
     gold = "#e2bc73",
     steel = "#b8c9c5",
     light = "#f5e7bd";
