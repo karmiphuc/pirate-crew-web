@@ -1,7 +1,20 @@
 import Phaser from "phaser";
-import { paintWeapon, WEAPON_FRAMES } from "./equipment-art";
+import {
+  paintWeapon,
+  WEAPON_FRAMES,
+  WEAPON_WIDTH,
+  WEAPON_POSES,
+  WEAPON_ANIMATIONS,
+  WEAPON_ATLAS_HEIGHT,
+} from "./equipment-art";
 import {
   paintPirate,
+  prepareCharacters,
+  characterIndex,
+  pirateCharacter,
+  HAND_ANCHORS,
+  PIRATE_WIDTH,
+  PIRATE_HEIGHT,
   pirateVariant,
   PIRATE_VARIANTS,
   PIRATE_FRAMES,
@@ -14,6 +27,7 @@ import {
   Ship,
   Station,
   Tile,
+  WEAPONS,
 } from "../sim/model";
 import { intact } from "../sim/navigation";
 import { Lifetime } from "../app/lifetime";
@@ -35,50 +49,75 @@ export interface ViewHost {
     pirateId: number | null,
     queue: boolean,
   ): void;
+  assetFailed(): void;
   contextLost(): void;
   contextRestored(): void;
 }
 function createTextures(scene: Phaser.Scene) {
   if (!scene.textures.exists("pirate-equipment")) {
-    const texture = scene.textures.createCanvas("pirate-equipment", 96, 40)!;
-    WEAPON_FRAMES.forEach((weapon, index) => {
-      texture.context.save();
-      texture.context.translate(index * 32, 0);
-      paintWeapon(texture.context, weapon);
-      texture.context.restore();
-      texture.add(weapon, 0, index * 32, 0, 32, 40);
-    });
+    const texture = scene.textures.createCanvas(
+      "pirate-equipment",
+      WEAPON_WIDTH * WEAPON_FRAMES.length,
+      WEAPON_ATLAS_HEIGHT,
+    )!;
+    WEAPON_POSES.forEach((pose, row) =>
+      WEAPON_FRAMES.forEach((weapon, column) => {
+        const x = column * WEAPON_WIDTH,
+          y = row * PIRATE_HEIGHT;
+        texture.context.save();
+        texture.context.translate(x, y);
+        paintWeapon(texture.context, weapon, pose);
+        texture.context.restore();
+        texture.add(
+          WEAPON_ANIMATIONS[weapon][pose],
+          0,
+          x,
+          y,
+          WEAPON_WIDTH,
+          PIRATE_HEIGHT,
+        );
+      }),
+    );
     texture.refresh();
   }
   document.documentElement.style.setProperty(
     "--pirate-equipment",
     `url("${(scene.textures.get("pirate-equipment").getSourceImage() as HTMLCanvasElement).toDataURL()}")`,
   );
+  const needsBodies = [0, 1, 2, 3].some(
+    (i) => !scene.textures.exists(`pirate-${i}`),
+  );
+  const sources = needsBodies
+    ? prepareCharacters(
+        scene.cache.custom["crew-source"].get("sheet") as HTMLImageElement,
+      )
+    : [];
   for (let i = 0; i < 4; i++) {
     const key = `pirate-${i}`;
     if (!scene.textures.exists(key)) {
       const texture = scene.textures.createCanvas(
         key,
-        96,
-        40 * PIRATE_VARIANTS,
+        PIRATE_WIDTH * Object.keys(PIRATE_FRAMES).length,
+        PIRATE_HEIGHT * PIRATE_VARIANTS,
       )!;
       for (let variant = 0; variant < PIRATE_VARIANTS; variant++) {
-        for (const [frame, walking, x] of [
-          ["idle", false, 0],
-          ["walk", true, 32],
-          ["blink", false, 64],
-        ] as const) {
+        let column = 0;
+        for (const frame of Object.keys(
+          PIRATE_FRAMES,
+        ) as (keyof typeof PIRATE_FRAMES)[]) {
+          const x = column++ * PIRATE_WIDTH;
           texture.context.save();
-          texture.context.translate(x, variant * 40);
-          paintPirate(texture.context, i, walking, variant, frame === "blink");
+          texture.context.translate(x, variant * PIRATE_HEIGHT);
+          const character = characterIndex(i, variant);
+          paintPirate(texture.context, sources[character], character, frame);
           texture.context.restore();
           texture.add(
             PIRATE_FRAMES[frame][variant],
             0,
             x,
-            variant * 40,
-            32,
-            40,
+            variant * PIRATE_HEIGHT,
+            PIRATE_WIDTH,
+            PIRATE_HEIGHT,
           );
         }
       }
@@ -92,9 +131,11 @@ function createTextures(scene: Phaser.Scene) {
       `url("${canvas.toDataURL()}")`,
     );
   }
+  scene.cache.custom["crew-source"]?.remove("sheet");
 }
 export class SeaScene extends Phaser.Scene {
   private scope = new Lifetime();
+  private artReady = false;
   private background!: Phaser.GameObjects.Image;
   private scenery!: Phaser.GameObjects.Graphics;
   private waves!: Phaser.GameObjects.Graphics;
@@ -115,6 +156,18 @@ export class SeaScene extends Phaser.Scene {
     super("sea");
   }
   preload() {
+    if ([0, 1, 2, 3].some((i) => !this.textures.exists(`pirate-${i}`))) {
+      const cache = this.cache.addCustom("crew-source");
+      const file = new Phaser.Loader.FileTypes.ImageFile(this.load, {
+        key: "crew-reference",
+        url: new URL("./assets/crew-source.png", import.meta.url).href,
+      });
+      // Decode the large original on the CPU; only the small final atlases reach the GPU.
+      file.addToCache = () => {
+        cache.add("sheet", file.data);
+      };
+      this.load.addFile(file);
+    }
     if (!this.textures.exists("sea-backdrop"))
       this.load.image(
         "sea-backdrop",
@@ -123,6 +176,38 @@ export class SeaScene extends Phaser.Scene {
   }
   create() {
     this.scope = new Lifetime();
+    this.artReady = false;
+    const release = () => {
+      this.events.off(Phaser.Scenes.Events.SHUTDOWN, release);
+      this.events.off(Phaser.Scenes.Events.DESTROY, release);
+      this.release();
+    };
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, release);
+    this.events.once(Phaser.Scenes.Events.DESTROY, release);
+    const needsBodies = [0, 1, 2, 3].some(
+      (i) => !this.textures.exists(`pirate-${i}`),
+    );
+    if (
+      (needsBodies && !this.cache.custom["crew-source"]?.exists("sheet")) ||
+      !this.textures.exists("sea-backdrop")
+    ) {
+      this.cache.custom["crew-source"]?.remove("sheet");
+      this.add
+        .text(
+          640,
+          250,
+          "Artwork could not load.\nReload to retry; your checkpoint is safe.",
+          {
+            fontFamily: "monospace",
+            fontSize: "20px",
+            color: "#fff0c8",
+            align: "center",
+          },
+        )
+        .setOrigin(0.5);
+      this.host.assetFailed();
+      return;
+    }
     createTextures(this);
     const backdrop = this.textures.get("sea-backdrop");
     if (!backdrop.has("open-sea"))
@@ -174,7 +259,7 @@ export class SeaScene extends Phaser.Scene {
         const px =
             (actor.shipId === 1 ? HOME_X : ENEMY_X) + actor.x * TILE + TILE / 2,
           py = SHIP_Y + actor.y * TILE + TILE;
-        if (Math.abs(p.x - px) < 22 && p.y > py - 44 && p.y < py + 8) {
+        if (Math.abs(p.x - px) < 22 && p.y > py - 60 && p.y < py + 8) {
           id = actor.id;
           shipId = actor.shipId;
           break;
@@ -203,17 +288,13 @@ export class SeaScene extends Phaser.Scene {
     this.scope.listen(this.game.canvas, "webglcontextrestored", () =>
       this.host.contextRestored(),
     );
-    const release = () => {
-      this.events.off(Phaser.Scenes.Events.SHUTDOWN, release);
-      this.events.off(Phaser.Scenes.Events.DESTROY, release);
-      this.release();
-    };
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, release);
-    this.events.once(Phaser.Scenes.Events.DESTROY, release);
     this.seenRevision = -1;
     this.drawScenery();
+    this.artReady = true;
   }
   private release() {
+    this.artReady = false;
+    this.cache.custom["crew-source"]?.remove("sheet");
     this.scope.dispose();
     for (let i = 0; i < 4; i++)
       document.documentElement.style.removeProperty(`--pirate-${i}`);
@@ -227,6 +308,8 @@ export class SeaScene extends Phaser.Scene {
   }
   get counters() {
     return {
+      artwork: this.artReady,
+      sourceImages: this.cache.custom["crew-source"]?.getKeys().length ?? 0,
       actors: this.actors.size,
       equipment: this.equipment.size,
       subscriptions: this.scope.count,
@@ -709,6 +792,7 @@ export class SeaScene extends Phaser.Scene {
     }
   }
   update(_time: number, delta: number) {
+    if (!this.artReady) return;
     const alpha = this.host.update(delta),
       s = this.host.state(),
       draft = this.host.draft();
@@ -831,32 +915,67 @@ export class SeaScene extends Phaser.Scene {
       const walking = moving && !reducedMotion && Math.floor(s.tick / 5) % 2;
       const blinking =
         !moving && !reducedMotion && (s.tick + p.id * 11) % 110 < 3;
-      const frames = walking
-        ? PIRATE_FRAMES.walk
-        : blinking
-          ? PIRATE_FRAMES.blink
-          : PIRATE_FRAMES.idle;
+      const target =
+        p.targetId !== null
+          ? s.pirates.find((t) => t.id === p.targetId)
+          : undefined;
+      const fighting =
+        (s.phase === "encounter" || s.phase === "aftermath") &&
+        (p.status === "Fighting" || p.status === "Firing pistol");
+      const sinceAttack = WEAPONS[p.weapon].cooldown - p.cooldown;
+      const pose =
+        !reducedMotion && fighting && !moving && p.cooldown > 0
+          ? sinceAttack >= 0 && sinceAttack < 3
+            ? "attack"
+            : target &&
+                target.hp > 0 &&
+                s.phase === "encounter" &&
+                p.cooldown <= 3
+              ? "ready"
+              : "idle"
+          : "idle";
+      const frames =
+        pose === "attack"
+          ? PIRATE_FRAMES.attack
+          : pose === "ready"
+            ? PIRATE_FRAMES.ready
+            : walking
+              ? PIRATE_FRAMES.walk
+              : blinking
+                ? PIRATE_FRAMES.blink
+                : PIRATE_FRAMES.idle;
       const frame = frames[pirateVariant(p)];
       if (actor.frame.name !== frame) actor.setFrame(frame);
       if (moving) actor.setFlipX(p.x < p.previousX);
-      else if (p.targetId !== null) {
-        const target = s.pirates.find((t) => t.id === p.targetId && t.hp > 0);
-        if (target) actor.setFlipX(target.x < p.x);
-      }
+      else if (target && target.hp > 0) actor.setFlipX(target.x < p.x);
       const item = this.equipment.get(p.id)!;
-      if (item.frame.name !== p.weapon) item.setFrame(p.weapon);
+      const itemFrame = WEAPON_ANIMATIONS[p.weapon][pose];
+      if (item.frame.name !== itemFrame) item.setFrame(itemFrame);
+      const hand = HAND_ANCHORS[pirateCharacter(p)],
+        offsetX = pose === "idle" ? hand[0] - 32 : 0,
+        offsetY = pose === "idle" ? hand[1] - 38 : 0;
       item
-        .setPosition(actor.x, actor.y + (walking ? 1 : 0))
+        .setPosition(
+          actor.x + offsetX * (actor.flipX ? -1 : 1),
+          actor.y + offsetY + (walking ? 1 : 0),
+        )
         .setFlipX(actor.flipX);
+      if (pose === "attack" && p.weapon === "pistol" && sinceAttack === 0) {
+        const direction = actor.flipX ? -1 : 1,
+          muzzleX = actor.x + direction * 28,
+          muzzleY = actor.y - 25;
+        this.rect(g, muzzleX, muzzleY, 3, 2, 0xffe1b0);
+        this.rect(g, muzzleX + direction * 3, muzzleY - 1, 2, 4, 0xe9bf68);
+      }
       if (this.host.selected().includes(p.id)) {
         g.lineStyle(2, 0xe8d394);
         g.strokeEllipse(x, y + 1, 25, 6);
       }
-      this.rect(g, x - 13, y - 42, 26, 3, 0x203b40);
+      this.rect(g, x - 13, y - 60, 26, 3, 0x203b40);
       this.rect(
         g,
         x - 13,
-        y - 42,
+        y - 60,
         (26 * p.hp) / p.maxHp,
         3,
         p.side === "enemy" ? 0xc77865 : 0x9fc288,

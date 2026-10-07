@@ -54,7 +54,7 @@ Only one browser tab can own writable save state. Backgrounding pauses the voyag
 
 ## Current scope
 
-Version 0.7.1: one harbour, ten map locations, three pirate ship encounters, two explorable islands, four pirate lords, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/fishing/repairs/healing, destructible planks, one-gap jumps, lower-deck falls and targeted restoration, hull combat, recruit traits and previews, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1, version-2 and version-3 checkpoints migrate without losing their original campaign map.
+Version 0.8.0: one harbour, ten map locations, three pirate ship encounters, two explorable islands, four pirate lords, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/fishing/repairs/healing, destructible planks, one-gap jumps, lower-deck falls and targeted restoration, hull combat, recruit traits and previews, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1, version-2 and version-3 checkpoints migrate without losing their original campaign map.
 
 This is a growing remake, not a verified 1:1 recreation. Art, names, interfaces, terrain, and balance are original. Full equipment/drop inventories, swimming, rum/toys, the complete trait catalogue, procedural world topology, music/voice lines, pets, and full original content remain. Boarding uses a drawn rope with abstract transfers; navigation uses a deck/ladder graph. The [fidelity tracker](docs/fidelity.md) distinguishes reference behavior, delivered systems, and gaps.
 
@@ -89,3 +89,7 @@ Version 0.7.0 studies Kairosoft’s compact pixel characters: smaller eyes, clea
 Version 0.7.1 redraws the crew’s silhouettes and costumes, adds compact three-quarter faces, corrects uneven/cropped portraits with whole-pixel scales, and preserves facing after movement stops. [Captured review and remaining art limits](docs/design/crew-silhouettes.md).
 
 ![Redrawn crew with independently equipped weapons](docs/images/crew-silhouette-redraw.png)
+
+Version 0.8.0 replaces crew source art with an original six-character design sheet adapted into larger hard-edged pixel sprites. Independent equipment now follows hand anchors, uses proportioned steel blades and detailed flintlocks, and has wind-up/strike poses, with paused and reduced-motion behaviour. Failed artwork requests stop gameplay safely until reload. [Source, runtime captures and resource decisions](docs/design/painted-pixel-crew.md).
+
+![Actual pixel crew and independent equipment](docs/images/painted-crew.png)

@@ -81,9 +81,9 @@ try {
     });
   });
   for (const atlas of rasterArt) {
-    assert.equal(atlas.width, 96);
-    assert.equal(atlas.height, 120);
-    assert.equal(atlas.frames, 9);
+    assert.equal(atlas.width, 200);
+    assert.equal(atlas.height, 168);
+    assert.equal(atlas.frames, 15);
     assert.equal(atlas.softEdges, 0);
   }
   const itemArt = await page.evaluate(() => {
@@ -103,11 +103,112 @@ try {
     };
   });
   assert.deepEqual(itemArt, {
-    width: 96,
-    height: 40,
-    frames: ["cutlass", "pistol", "sabre"],
+    width: 288,
+    height: 168,
+    frames: [
+      "cutlass",
+      "cutlass-attack",
+      "cutlass-ready",
+      "pistol",
+      "pistol-attack",
+      "pistol-ready",
+      "sabre",
+      "sabre-attack",
+      "sabre-ready",
+    ],
     softEdges: 0,
   });
+  assert.equal(
+    await page.evaluate(() =>
+      window.__privateer.game.textures.exists("crew-reference"),
+    ),
+    false,
+  );
+  assert.equal((await diagnostics()).views.sourceImages, 0);
+  await page.evaluate(async () => {
+    const { paintWeapon, WEAPON_FRAMES, WEAPON_POSES, WEAPON_WIDTH } =
+      await import("/src/game/equipment-art.ts");
+    const ctx = {
+      fillStyle: "",
+      fillRect(x, y, w, h) {
+        if (
+          ![x, y, w, h].every(Number.isInteger) ||
+          x < 0 ||
+          y < 0 ||
+          w <= 0 ||
+          h <= 0 ||
+          x + w > WEAPON_WIDTH ||
+          y + h > 56
+        )
+          throw new Error(
+            "Equipment painting must stay inside its whole-pixel frame",
+          );
+      },
+    };
+    for (const weapon of WEAPON_FRAMES)
+      for (const pose of WEAPON_POSES) paintWeapon(ctx, weapon, pose);
+  });
+  // Failed image requests stop invisible gameplay and allow a clean reload with the checkpoint intact.
+  for (const assetURL of ["**/crew-source.png*", "**/harbour.webp*"]) {
+    const assetContext = await browser.newContext();
+    const assetPage = await assetContext.newPage(),
+      assetErrors = [];
+    assetPage.on("pageerror", (e) => assetErrors.push(e.message));
+    await assetPage.route(assetURL, (route) => route.abort());
+    await assetPage.goto(base);
+    await assetPage.waitForFunction(
+      () =>
+        window.__privateer?.diagnostics().lock === "owned" &&
+        window.__privateer.artError,
+    );
+    assert.equal(
+      await assetPage.evaluate(
+        () => window.__privateer.diagnostics().views.sourceImages,
+      ),
+      0,
+    );
+    const blockedTick = await assetPage.evaluate(
+      () => window.__privateer.state().tick,
+    );
+    await assetPage.click('[data-action="pause"]');
+    await assetPage.waitForTimeout(300);
+    assert.equal(
+      await assetPage.evaluate(() => window.__privateer.state().tick),
+      blockedTick,
+    );
+    assert.match(
+      await assetPage.locator("#toast").textContent(),
+      /Artwork could not load/,
+    );
+    await assetPage.unroute(assetURL);
+    await assetPage.reload();
+    await assetPage.waitForFunction(
+      () =>
+        window.__privateer?.diagnostics().lock === "owned" &&
+        window.__privateer.diagnostics().views.artwork,
+    );
+    assert.equal(
+      await assetPage.evaluate(() =>
+        window.__privateer.game.textures.exists("crew-reference"),
+      ),
+      false,
+    );
+    assert.equal(
+      await assetPage.evaluate(
+        () => window.__privateer.diagnostics().views.textures,
+      ),
+      9,
+    );
+    assert.equal(
+      await assetPage.evaluate(
+        () => window.__privateer.diagnostics().views.sourceImages,
+      ),
+      0,
+    );
+    assert.equal(await assetPage.locator(".crew-card").count(), 3);
+    assert.equal(assetErrors.length, 0);
+    await assetContext.close();
+  }
   // Renderer fixture: idle blink follows the simulation clock and reduced motion disables it.
   await page.evaluate(() => {
     const app = window.__privateer,
@@ -159,6 +260,77 @@ try {
     app.paused = paused;
     scene.update(0, 0);
   });
+  // Animation is derived from authoritative cooldown/status; repeated paused renders do not advance it.
+  await page.evaluate(() => {
+    const app = window.__privateer,
+      scene = app.game.scene.getScene("sea"),
+      s = app.sim.state,
+      p = s.pirates[0];
+    const original = {
+      weapon: p.weapon,
+      cooldown: p.cooldown,
+      status: p.status,
+      targetId: p.targetId,
+      previousX: p.previousX,
+    };
+    const phase = s.phase,
+      paused = app.paused,
+      motion = app.lowMotion,
+      tick = s.tick;
+    app.paused = true;
+    app.lowMotion = false;
+    s.phase = "encounter";
+    p.previousX = p.x;
+    p.targetId = s.pirates[1].id;
+    for (const [weapon, cooldown] of [
+      ["cutlass", 15],
+      ["sabre", 13],
+      ["pistol", 22],
+    ]) {
+      p.weapon = weapon;
+      p.cooldown = cooldown;
+      p.status = weapon === "pistol" ? "Firing pistol" : "Fighting";
+      scene.update(0, 0);
+      const body = scene.actors.get(p.id),
+        item = scene.equipment.get(p.id);
+      if (
+        body.frame.name !== "attack-0" ||
+        item.frame.name !== weapon + "-attack"
+      )
+        throw new Error(
+          "Actual attack cooldown must select body and equipment strike frames",
+        );
+      scene.update(0, 0);
+      if (body.frame.name !== "attack-0" || s.tick !== tick)
+        throw new Error("Paused strike must remain still");
+      p.cooldown = 2;
+      scene.update(0, 0);
+      if (
+        body.frame.name !== "ready-0" ||
+        item.frame.name !== weapon + "-ready"
+      )
+        throw new Error("Late cooldown must prepare the next strike");
+      app.lowMotion = true;
+      scene.update(0, 0);
+      if (
+        body.frame.name.startsWith("attack") ||
+        body.frame.name.startsWith("ready") ||
+        item.frame.name !== weapon
+      )
+        throw new Error("Reduced motion must suppress attack animation");
+      app.lowMotion = false;
+      s.phase = "port";
+      scene.update(0, 0);
+      if (item.frame.name !== weapon)
+        throw new Error("Port must not animate a stale combat cooldown");
+      s.phase = "encounter";
+    }
+    Object.assign(p, original);
+    s.phase = phase;
+    app.paused = paused;
+    app.lowMotion = motion;
+    scene.update(0, 0);
+  });
   const portraitSize = () =>
     page.evaluate(() => {
       const portrait = document.querySelector(".portrait"),
@@ -177,11 +349,11 @@ try {
       };
     });
   assert.deepEqual(await portraitSize(), {
-    portrait: [64, 80],
-    body: [64, 80],
-    item: [64, 80],
-    bodyAtlas: "192px 240px",
-    itemAtlas: "192px 80px",
+    portrait: [80, 112],
+    body: [80, 112],
+    item: [192, 112],
+    bodyAtlas: "400px 336px",
+    itemAtlas: "576px 336px",
   });
   await page.screenshot({ path: "artifacts/harbour.png", fullPage: true });
   await page.click('[data-action="recruit"]');
@@ -648,6 +820,7 @@ try {
     assert.equal(d.views.actors, 4);
     assert.equal(d.views.equipment, 4);
     assert.equal(d.views.textures, 9);
+    assert.equal(d.views.sourceImages, 0);
   }
   // Muting immediately releases every owned voice; scene restarts retain one app audio owner.
   await page.click('[data-action="settings"]');
@@ -703,6 +876,10 @@ try {
     idleBlinkAndReducedMotion: "passed",
     dynamicEquipmentLayers: "passed",
     idleFacingAndIntegerPortraits: "passed",
+    combatPosesPauseAndReducedMotion: "passed",
+    artworkFailureAndReload: "passed",
+    sourceImageReleased: "passed",
+    equipmentFrameBounds: "passed",
     skillAndEquipmentPurchases: "passed",
     fishingAndGalley: "passed",
     traitsAndSchema4: "passed",
@@ -725,20 +902,20 @@ try {
   };
   await page.setViewportSize({ width: 700, height: 900 });
   assert.deepEqual(await portraitSize(), {
-    portrait: [32, 40],
-    body: [32, 40],
-    item: [32, 40],
-    bodyAtlas: "96px 120px",
-    itemAtlas: "96px 40px",
+    portrait: [40, 56],
+    body: [40, 56],
+    item: [96, 56],
+    bodyAtlas: "200px 168px",
+    itemAtlas: "288px 168px",
   });
   await page.screenshot({ path: "artifacts/compact.png", fullPage: true });
   await page.setViewportSize({ width: 375, height: 812 });
   assert.deepEqual(await portraitSize(), {
-    portrait: [64, 80],
-    body: [64, 80],
-    item: [64, 80],
-    bodyAtlas: "192px 240px",
-    itemAtlas: "192px 80px",
+    portrait: [80, 112],
+    body: [80, 112],
+    item: [192, 112],
+    bodyAtlas: "400px 336px",
+    itemAtlas: "576px 336px",
   });
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth <= 375),

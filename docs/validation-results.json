@@ -9,6 +9,10 @@
   "idleBlinkAndReducedMotion": "passed",
   "dynamicEquipmentLayers": "passed",
   "idleFacingAndIntegerPortraits": "passed",
+  "combatPosesPauseAndReducedMotion": "passed",
+  "artworkFailureAndReload": "passed",
+  "sourceImageReleased": "passed",
+  "equipmentFrameBounds": "passed",
   "skillAndEquipmentPurchases": "passed",
   "fishingAndGalley": "passed",
   "traitsAndSchema4": "passed",
@@ -27,16 +31,16 @@
   "quotaRollback": "passed",
   "memory": {
     "heapBefore": {
-      "usedSize": 8801344,
-      "totalSize": 12574720,
-      "embedderHeapUsedSize": 1921688,
-      "backingStorageSize": 11475998
+      "usedSize": 9074480,
+      "totalSize": 13099008,
+      "embedderHeapUsedSize": 2085032,
+      "backingStorageSize": 12023390
     },
     "heapAfter": {
-      "usedSize": 8907240,
-      "totalSize": 10215424,
-      "embedderHeapUsedSize": 1664552,
-      "backingStorageSize": 11476050
+      "usedSize": 8983572,
+      "totalSize": 9953280,
+      "embedderHeapUsedSize": 1651696,
+      "backingStorageSize": 12023442
     },
     "domBefore": {
       "documents": 1,
@@ -51,19 +55,21 @@
   },
   "diagnostics": {
     "frameMs": {
-      "count": 585,
-      "p50": 23.340000000000146,
-      "p95": 30.01000000000022,
-      "p99": 31.670000000000073
+      "count": 600,
+      "p50": 23.329999999999927,
+      "p95": 33.32999999999993,
+      "p99": 35.009999999999856
     },
     "tickMs": {
-      "count": 130,
+      "count": 134,
       "p50": 0,
       "p95": 0.10000000149011612,
-      "p99": 0.2000000011175871
+      "p99": 0.19999999925494194
     },
     "stalls": 0,
     "views": {
+      "artwork": true,
+      "sourceImages": 0,
       "actors": 4,
       "equipment": 4,
       "subscriptions": 4,
@@ -82,7 +88,7 @@
     "listeners": 5,
     "saveWrites": 0,
     "lock": "owned",
-    "tick": 13038,
+    "tick": 13241,
     "phase": "port"
   },
   "errors": []

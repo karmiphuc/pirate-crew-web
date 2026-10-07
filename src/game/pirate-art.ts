@@ -1,255 +1,226 @@
-/** Original raster sprites. Integer pixels only; four bounded shared atlases. */
+/** Original Image Gen character art, adapted once to bounded, hard-edge pixel atlases. */
+export const PIRATE_WIDTH = 40;
+export const PIRATE_HEIGHT = 56;
+export const PIRATE_VARIANTS = 3;
 export const PIRATE_FRAMES = {
   idle: ["idle-0", "idle-1", "idle-2"],
   walk: ["walk-0", "walk-1", "walk-2"],
   blink: ["blink-0", "blink-1", "blink-2"],
+  ready: ["ready-0", "ready-1", "ready-2"],
+  attack: ["attack-0", "attack-1", "attack-2"],
 } as const;
-export const PIRATE_VARIANTS = PIRATE_FRAMES.idle.length;
-export function pirateVariant(pirate: { id: number; role: string }): number {
-  return pirate.role === "captain" ? 0 : (pirate.id + 1) % PIRATE_VARIANTS;
+export type PirateFrame = keyof typeof PIRATE_FRAMES;
+const NAMED_VARIANTS: Readonly<Record<string, number>> = {
+  "Molly Flint": 0,
+  "Red Anne": 0,
+  "Old Salt": 1,
+  "Pegleg Pete": 2,
+  Bonny: 0,
+};
+export function pirateVariant(pirate: {
+  id: number;
+  role: string;
+  name?: string;
+}): number {
+  return pirate.role === "captain"
+    ? 0
+    : ((pirate.name ? NAMED_VARIANTS[pirate.name] : undefined) ??
+        (pirate.id + 1) % PIRATE_VARIANTS);
 }
+export function characterIndex(role: number, variant: number): number {
+  return role === 0 ? 0 : role === 1 ? 5 : role === 2 ? 4 : variant + 1;
+}
+export const HAND_ANCHORS = [
+  [32, 38],
+  [32, 38],
+  [30, 38],
+  [29, 38],
+  [33, 38],
+  [31, 38],
+] as const;
+export function pirateCharacter(pirate: {
+  id: number;
+  role: string;
+  side?: string;
+  name?: string;
+}): number {
+  return pirate.side === "enemy"
+    ? 5
+    : pirate.role === "captain"
+      ? 0
+      : pirate.role === "gunner"
+        ? 4
+        : pirateVariant(pirate) + 1;
+}
+const CROPS = [
+  [18, 64, 338, 622],
+  [372, 124, 340, 563],
+  [746, 128, 305, 562],
+  [1110, 121, 286, 566],
+  [1449, 131, 362, 558],
+  [1813, 131, 324, 557],
+] as const;
+const PALETTE = [
+  "#192333",
+  "#303346",
+  "#454353",
+  "#304560",
+  "#456981",
+  "#7392a4",
+  "#8d6438",
+  "#c79346",
+  "#e9bf68",
+  "#8d563e",
+  "#bf7b53",
+  "#eaa276",
+  "#ffd1a1",
+  "#ffe1b0",
+  "#e5af79",
+  "#f8c58e",
+  "#ffe2b2",
+  "#b7aa84",
+  "#e5d5a4",
+  "#fff0c8",
+  "#513b32",
+  "#815035",
+  "#b76533",
+  "#d98447",
+  "#e7a264",
+  "#743345",
+  "#a44849",
+  "#ce6654",
+  "#ee9273",
+  "#445340",
+  "#74825b",
+  "#a3aa69",
+  "#305761",
+  "#507e88",
+  "#87afb1",
+  "#3e424b",
+  "#5c6060",
+  "#3c2e2c",
+].map((hex) => [
+  parseInt(hex.slice(1, 3), 16),
+  parseInt(hex.slice(3, 5), 16),
+  parseInt(hex.slice(5, 7), 16),
+]);
+/** Six local canvases exist only during shared-atlas creation, then become unreachable. */
+export function prepareCharacters(
+  image: CanvasImageSource,
+): HTMLCanvasElement[] {
+  return CROPS.map(([sx, sy, sw, sh], index) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = PIRATE_WIDTH;
+    canvas.height = PIRATE_HEIGHT;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+    ctx.imageSmoothingEnabled = false;
+    const height = index === 0 ? 52 : 50,
+      width = Math.round((sw * height) / sh),
+      left = Math.floor((PIRATE_WIDTH - width) / 2);
+    ctx.drawImage(
+      image,
+      sx,
+      sy,
+      sw,
+      sh,
+      left,
+      PIRATE_HEIGHT - 2 - height,
+      width,
+      height,
+    );
+    const raster = ctx.getImageData(0, 0, PIRATE_WIDTH, PIRATE_HEIGHT),
+      data = raster.data;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] < 160) {
+        data[i] = data[i + 1] = data[i + 2] = data[i + 3] = 0;
+        continue;
+      }
+      let best = PALETTE[0],
+        distance = Infinity;
+      for (const color of PALETTE) {
+        const dr = data[i] - color[0],
+          dg = data[i + 1] - color[1],
+          db = data[i + 2] - color[2],
+          d = dr * dr + dg * dg + db * db;
+        if (d < distance) {
+          best = color;
+          distance = d;
+        }
+      }
+      data[i] = best[0];
+      data[i + 1] = best[1];
+      data[i + 2] = best[2];
+      data[i + 3] = 255;
+    }
+    ctx.putImageData(raster, 0, 0);
+    return canvas;
+  });
+}
+// Eye marks and costume tones are specific to the six original designs.
+const EYES = [
+  [24, 28, 19],
+  [25, 29, 18],
+  [23, 27, 17],
+  [22, 27, 17],
+  [21, 26, 16],
+  [24, null, 16],
+] as const;
+const CHEEKS = [
+  [26, 21],
+  [27, 21],
+  [25, 20],
+  [25, 20],
+  [24, 18],
+  [26, 19],
+] as const;
+const SKIN = ["#f8c58e", "#f8c58e", "#f8c58e", "#bf7b53", "#f8c58e", "#f8c58e"];
+const SLEEVES = [
+  "#304560",
+  "#e5d5a4",
+  "#e5d5a4",
+  "#e5d5a4",
+  "#e5d5a4",
+  "#e5d5a4",
+];
 export function paintPirate(
   ctx: CanvasRenderingContext2D,
-  role: number,
-  walking: boolean,
-  variant = 0,
-  blinking = false,
+  source: HTMLCanvasElement,
+  character: number,
+  frame: PirateFrame,
 ) {
-  const ink = "#282c38",
-    gold = "#ddb765",
-    ivory = "#fff0c6";
-  const skin = ["#f1bf8e", "#dca277", "#b9805e"][variant];
-  const shade = ["#c88760", "#ad7052", "#87513e"][variant];
-  const hair = ["#85513b", "#574238", "#443a37"][variant];
-  const hairLight = ["#b57646", "#806044", "#76604a"][variant];
-  const coat = [
-    "#416a8a",
-    "#b95352",
-    "#458d87",
-    ["#855969", "#819156", "#577b91"][variant],
-  ][role];
-  const coatLight = [
-    "#7295ab",
-    "#e1896b",
-    "#78b9aa",
-    ["#b7828c", "#b4bc7f", "#86b0bf"][variant],
-  ][role];
-  const coatShade = [
-    "#30485f",
-    "#803d45",
-    "#326363",
-    ["#513b50", "#566441", "#354f69"][variant],
-  ][role];
+  const walking = frame === "walk";
+  ctx.drawImage(source, 0, walking ? 1 : 0);
   const px = (color: string, x: number, y: number, w = 1, h = 1) => {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, w, h);
   };
-  ctx.save();
-  ctx.translate(0, walking ? 1 : 0);
-  // A short asymmetric stride: one planted boot, one lifted heel, rather than a split-legged block.
-  px(ink, 12, 32, 4, 6);
-  px(ink, 18, 32, 4, walking ? 4 : 6);
-  px("#66737a", 13, 32, 2, 3);
-  px("#66737a", 19, 32, 2, 2);
-  px(ink, 11, 36, 6, 3);
-  px(ink, walking ? 20 : 18, walking ? 35 : 36, 5, 3);
-  px("#77543c", 12, 36, 4, 2);
-  px("#77543c", walking ? 21 : 19, walking ? 35 : 36, 3, 2);
-  px(gold, 13, 36, 1);
-  px(gold, walking ? 21 : 19, walking ? 35 : 36, 1);
-  // Narrow coat, fitted shoulders, offset lapels and a small diagonal sash.
-  px(ink, 13, 24, 7, 1);
-  px(ink, 11, 25, 12, 6);
-  px(ink, 12, 31, 10, 3);
-  px(coat, 12, 25, 10, 7);
-  px(coatShade, 12, 30, 2, 3);
-  px(coatShade, 20, 27, 2, 6);
-  px(coatLight, 12, 25, 2, 3);
-  px(ivory, 16, 25, 3, 5);
-  px("#d0b893", 17, 29, 2);
-  px(ink, 9, 26, 3, 5);
-  px(coat, 10, 26, 2, 3);
-  px(coatLight, 10, 26);
-  px(skin, 10, 29, 2, 2);
-  px(shade, 10, 31, 2);
-  px(ink, 22, 26, 4, 5);
-  px(coat, 22, 27, 3, 2);
-  px(coatLight, 23, 27, 2);
-  px(skin, 23, 29, 3, 2);
-  px(shade, 24, 31, 2);
-  px(coatShade, 12, 31, 10);
-  px(ink, 12, 32, 10);
-  px(role === 1 ? "#655d64" : "#784b3b", 12, 30, 10);
-  px(gold, 17, 30, 2, 2);
-  px(ivory, 17, 30);
-  if (role === 0) {
-    px(gold, 14, 25, 1, 5);
-    px(gold, 20, 26, 1, 4);
-    px(coatShade, 19, 32, 3);
-    px(ink, 10, 31, 3, 4);
-    px(coat, 11, 31, 2, 3);
-    px(gold, 11, 33);
-    px(ink, 21, 31, 3, 4);
-    px(coatShade, 21, 31, 2, 3);
-    px(gold, 21, 33);
-  } else {
-    px(coatShade, 14, 25, 1, 2);
-    px(coatShade, 20, 25, 1, 2);
+  if (walking) {
+    // Lift the forward boot, retaining the shared foot baseline and frame bounds.
+    ctx.clearRect(21, 46, 16, 10);
+    ctx.drawImage(source, 21, 45, 16, 10, 22, 44, 16, 10);
+  } else if (frame === "blink") {
+    const [left, right, y] = EYES[character],
+      [cx, cy] = CHEEKS[character];
+    const color = source.getContext("2d")!.getImageData(cx, cy, 1, 1).data;
+    const skin = `rgb(${color[0]},${color[1]},${color[2]})`;
+    for (const x of [left, right])
+      if (x !== null) {
+        px(skin, x, y, 2, 3);
+        px("#303346", x, y + 1, 2);
+      }
+  } else if (frame === "ready" || frame === "attack") {
+    const [handX] = HAND_ANCHORS[character];
+    ctx.clearRect(handX - 1, 35, PIRATE_WIDTH - handX + 1, 8);
+    if (frame === "ready") {
+      px("#192333", 28, 33, 5, 8);
+      px(SLEEVES[character], 29, 34, 3, 6);
+      px("#192333", 31, 32, 5, 5);
+      px(SKIN[character], 32, 33, 3, 3);
+    } else {
+      px("#192333", 28, 34, 9, 5);
+      px(SLEEVES[character], 29, 35, 6, 3);
+      px("#192333", 35, 34, 5, 5);
+      px(SKIN[character], 36, 35, 3, 3);
+    }
   }
-  if (role === 2) {
-    // Rolled sleeves and a leather cross-body strap give the gunner a working silhouette.
-    px(ivory, 10, 27, 2, 2);
-    px(ivory, 23, 27, 2, 2);
-    px("#77543c", 13, 25, 2);
-    px("#77543c", 15, 26, 2);
-    px("#77543c", 17, 27, 2);
-    px("#77543c", 19, 28, 2);
-    px(gold, 17, 27);
-  } else if (role === 3 && variant === 0) {
-    // Cream blouse under a plum waistcoat; gathered sleeve, open V neck and red neckerchief.
-    px(ivory, 10, 26, 2, 3);
-    px(ivory, 22, 26, 3, 3);
-    px(coat, 13, 26, 2, 4);
-    px(coatShade, 20, 26, 2, 4);
-    px(ivory, 16, 25, 4, 2);
-    px("#bc5d4d", 17, 25, 3);
-    px("#bc5d4d", 18, 26, 2);
-    px(coatLight, 14, 28);
-    px(gold, 20, 29);
-  } else if (role === 3 && variant === 1) {
-    // Olive sleeveless vest and a cream collar.
-    px(ivory, 10, 26, 2, 3);
-    px(ivory, 23, 27, 2, 2);
-    px(coatShade, 14, 26, 2, 4);
-    px(coatShade, 20, 26, 2, 4);
-    px(gold, 20, 27);
-    px(gold, 20, 29);
-  } else if (role === 3) {
-    // Blue sailor stripes and brown suspenders keep this costume distinct from a vest.
-    px(ivory, 12, 26, 10);
-    px(ivory, 12, 28, 10);
-    px(coatLight, 12, 27, 10);
-    px("#77543c", 14, 25, 1, 5);
-    px("#77543c", 20, 25, 1, 5);
-    px(ivory, 10, 27, 2);
-    px(ivory, 23, 27, 2);
-  }
-  // Compact three-quarter head: hair at the back, light on the nose, tiny eyes, tapered chin.
-  px(ink, 13, 12, 8);
-  px(ink, 11, 13, 12, 2);
-  px(ink, 10, 15, 14, 6);
-  px(ink, 11, 21, 12, 2);
-  px(ink, 13, 23, 8);
-  px(ink, 15, 24, 5);
-  px(skin, 13, 14, 9, 8);
-  px(skin, 12, 16, 11, 5);
-  px(skin, 14, 22, 7);
-  px(shade, 12, 19, 1, 3);
-  px(shade, 14, 22, 3);
-  px(skin, 16, 23, 3, 2);
-  px(skin, 23, 18, 2, 2);
-  px(ivory, 22, 18);
-  px(shade, 23, 20);
-  px(hair, 11, 14, 3, 4);
-  px(hairLight, 12, 14, 2, 2);
-  px(hair, 11, 18, 2, 3);
-  px(skin, 10, 18, 2, 3);
-  px(shade, 10, 20);
-  px(gold, 10, 21);
-  px(hair, 16, 16, 2);
-  px(hair, 21, 16, 2);
-  if (blinking) {
-    px(ink, 16, 18, 2);
-    px(ink, 21, 18, 2);
-  } else {
-    px(ink, 17, 17, 1, 2);
-    px(ink, 22, 17, 1, 2);
-  }
-  px("#d28c75", 15, 20);
-  px(shade, 21, 21);
-  px(shade, 19, 22);
-  if (role === 0) {
-    // Curved stepped tricorn: raised middle, sloping brim ends, no castle-like towers.
-    px(ink, 15, 7, 5);
-    px(ink, 12, 8, 10);
-    px(ink, 10, 9, 13);
-    px(ink, 8, 10, 17);
-    px(ink, 6, 11, 21);
-    px(ink, 7, 12, 20);
-    px(ink, 9, 13, 16);
-    px(coatShade, 15, 8, 5);
-    px(coat, 13, 9, 8, 2);
-    px(coatLight, 15, 9, 4);
-    px(coat, 8, 11, 17);
-    px(gold, 8, 12, 17);
-    px(gold, 6, 10, 2);
-    px(gold, 25, 10, 2);
-    px(ivory, 16, 10, 2);
-    px(ink, 17, 10);
-    px("#e59879", 25, 8, 2, 2);
-    px("#e59879", 26, 6, 2, 2);
-    px(ivory, 27, 5);
-    px(ivory, 26, 7);
-    px(hair, 15, 22, 2);
-    px(hair, 19, 23, 2);
-    px(hair, 17, 24, 3);
-    px(hairLight, 18, 24);
-  } else if (role === 1) {
-    // Wrapped scarf with a stepped knot and loose tail; the patch stays independent of the eyes.
-    px(ink, 13, 10, 9);
-    px(ink, 11, 11, 13);
-    px(coat, 13, 11, 9);
-    px(coatLight, 14, 11, 5);
-    px(coat, 11, 12, 13, 3);
-    px(coatShade, 11, 14, 13);
-    px(gold, 15, 12, 6);
-    px(coat, 9, 13, 3, 3);
-    px(coatShade, 8, 16, 2, 3);
-    px(coat, 7, 18, 2);
-    px(ink, 21, 17, 3, 3);
-    px(ink, 19, 16, 2);
-    px(hair, 16, 23, 5);
-    px(hairLight, 17, 23, 2);
-  } else if (role === 2) {
-    px(ink, 13, 10, 8);
-    px(ink, 11, 11, 12);
-    px(coatLight, 13, 11, 8);
-    px(coat, 11, 12, 12, 3);
-    px(ivory, 11, 13, 12);
-    px(coatShade, 10, 14, 14);
-    px(coat, 23, 13, 2, 2);
-    px(coatShade, 24, 15, 2, 2);
-  } else if (variant === 0) {
-    // Tousled fringe and a small ponytail, with a loose end instead of a square hair curtain.
-    px(ink, 14, 10, 4);
-    px(ink, 12, 11, 9);
-    px(hair, 14, 11, 5);
-    px(hair, 12, 12, 10, 3);
-    px(hairLight, 14, 12, 4);
-    px(hair, 11, 14, 3, 7);
-    px(hair, 14, 14, 3, 2);
-    px(hair, 18, 14, 3);
-    px(ink, 9, 20, 2, 3);
-    px(hair, 8, 22, 3, 3);
-    px(hair, 7, 25, 3, 2);
-    px(hairLight, 8, 23, 1, 2);
-    px(gold, 10, 21);
-    px(skin, 18, 15, 3);
-  } else {
-    px(ink, 15, 9, 4);
-    px(ink, 12, 10, 10);
-    px(hair, 15, 10, 4);
-    px(hair, 12, 11, 10, 3);
-    px(hairLight, 13, 11, 4);
-    px(hair, 11, 13, 3, 3);
-    px(hair, 20, 13, 2);
-    const scarf = variant === 1 ? "#98ad70" : "#81b8b2";
-    px(scarf, 11, 13, 13, 2);
-    px(ivory, 14, 13, 6);
-    px(coatShade, 11, 15, 3);
-    px(scarf, 9, 14, 3, 3);
-    px(scarf, 8, 17, 2, 2);
-    px(scarf, 7, 19, 2);
-  }
-  ctx.restore();
 }

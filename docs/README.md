@@ -8,6 +8,7 @@ Initial baseline: 2026-10-05. Design documents describe the target; the implemen
 | [Implementation status](implementation-status.md) | Delivered behavior, departures, verification, and remaining evidence |
 | [GitHub Pages](github-pages.md) | Static SPA deployment, production hosting checks, and storage limits |
 | [Attribution](attribution.md) | Personal-use/free-noncommercial intent, credits, and material permissions |
+| [Character art and combat poses](design/painted-pixel-crew.md) | Original generated source, actual pixel conversion, independent combat poses and asset lifetime |
 | [Crew silhouette redraw](design/crew-silhouettes.md) | Rejected baseline, original redesign, portrait scaling and facing corrections |
 | [Compact crew and equipment](design/kairosoft-and-equipment.md) | Kairosoft reference observations, original art, independent item layers and ownership |
 | [Fidelity tracker](fidelity.md) | Reference mechanics, delivered coverage, and remaining differences |

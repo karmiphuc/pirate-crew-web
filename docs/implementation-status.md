@@ -1,6 +1,6 @@
 # First playable implementation
 
-Version: 0.7.1. Date: 2026-10-07. Previous baseline: 0.7.0.
+Version: 0.8.0. Date: 2026-10-07. Previous baseline: 0.7.1.
 
 ## Delivered
 
@@ -14,7 +14,7 @@ TypeScript 5.9.3, Phaser 3.90.0, Vite 7.3.6; a single-thread renderer-independen
 - Command capacity 64, orders eight/actor, twelve allies/enemies, notices 64. Work claims are keyed by ship/duty; at most one worker per slot and one task per actor. Orders, death, refits, capture, teardown, and disposal release claims/searches. Direct commands interrupt work.
 - Encounter teardown removes enemy entities, graphs, searches, paths, commands, and sprite bindings. Scene shutdown removes both paired shutdown/destroy handlers and external subscriptions.
 - No universal object pool, worker, ECS, spatial index, or per-frame world clone. Typed buffers serve bounded BFS scratch and timing samples only.
-- Four shared 96 × 120 body atlases provide idle/walk/blink frames; a shared 96 × 40 equipment atlas selects the actual equipped item independently; all are created once; one shared backdrop texture supplies harbour and cropped open-sea frames; static ship/background graphics redraw on layout/phase changes. No per-frame generated textures or post-processing.
+- Four shared 200 × 168 body atlases provide idle/walk/blink/ready/attack frames; a shared 288 × 168 equipment atlas selects the actual equipped item and combat pose independently; original source art is decoded into a bounded CPU image cache, converted once, and released without uploading the full source to the GPU; one shared backdrop texture supplies harbour and cropped open-sea frames; static ship/background graphics redraw on layout/phase changes. No per-frame generated textures or post-processing.
 - Saves serialize through one writer with backpressure and transaction-complete acknowledgement. Mutation freezes during required writes. Port purchase failures restore pre-purchase state; departure writes precede combat.
 - Web Locks guards the browser save writer. Startup falls back to a previous valid checkpoint; invalid imports preserve current state.
 - Hidden-tab events pause and clear catch-up time. Context loss pauses, context restoration requires explicit resume. Generation/closed checks prevent stale application callbacks from reviving disposed simulation.
@@ -53,7 +53,7 @@ A real baseline laptop/GPU; Chrome/Firefox/Safari browser matrix; full 30-minute
 
 ## Measured Chromium run
 
-See [machine-readable report](validation-results.json). Version 0.7.1 development build, Chromium SwiftShader software rendering, 1440 × 1080 viewport. Scoped sample: frame p95 30.01 ms, tick p95 0.1 ms, zero stalls. Diagnostic-GC retained JS heap: 8,801,344 → 8,907,240 bytes across fifty rendered encounters; listeners 75 → 75, textures 9 → 9. Actor and equipment view counts finish at four each, matching living crew. All expedition, management, destruction, persistence, context, audio, dynamic equipment, idle facing, integer portrait sizes and final disposal scenarios pass with no page errors. Body/item portrait dimensions match at 1440 px, 700 px and 375 px viewport widths; no phone page overflow. Atlas validation confirms hard alpha edges and nine frames per 96 × 120 body atlas, plus three named frames in the 96 × 40 equipment atlas. Idle blink and reduced-motion suppression pass.
+See [machine-readable report](validation-results.json). Version 0.8.0 development build, Chromium SwiftShader software rendering, 1440 × 1080 viewport. Scoped sample: frame p95 33.33 ms, tick p95 0.1 ms, zero stalls. Diagnostic-GC retained JS heap: 9,074,480 → 8,983,572 bytes across fifty rendered encounters; listeners 75 → 75, textures 9 → 9. Body and equipment view counts finish at four each, matching living crew. All expedition, management, destruction, persistence, context, audio, equipment, combat poses, pause/reduced motion, failed-artwork/reload and final disposal checks pass with no page errors. Portrait geometry is verified at 1440 px, 700 px and 375 px viewport widths, with no phone page overflow. Atlas checks confirm opaque/transparent alpha, fifteen frames per 200 × 168 body atlas, nine frames in the 288 × 168 equipment atlas, all equipment painting within frame bounds, and release of the raw source image, without a raw source GPU texture. Supplemental checks confirm both crew-source and background request failures release the CPU source immediately and reload safely. A final targeted check confirms the full pistol fits its portrait gutter without clipping or covering text at all three viewport widths.
 
 This fixture supports bounded cleanup but does not establish 60 FPS on hardware or a 30-minute ordinary-GC soak. Heap snapshots and browser/hardware coverage remain outstanding. Production root and repository-path checks pass with diagnostics absent.
 
@@ -83,7 +83,7 @@ The final scoped Chromium run precedes the additional legacy diagonal-corner mig
 
 Shaped tricorns, headwraps, bandanas, faces, coats, boots and visible weapons replace identical rectangular bodies. DOM portraits use the same four atlases as the scene. Plank grain, staggered seams, cloth folds, rigging, brass cannon details and curved palms replace flat placeholder scenery. The simulation, hit-supported deck geometry and save schema remain unchanged.
 
-The 1931 × 813 backdrop is 390,592 bytes as WebP (about 382 KiB), with roughly 6 MiB of decoded RGBA pixels before driver overhead. Its harbour/open-sea crop shares one global application texture; it is not recreated per actor, encounter or frame. Eight total Phaser textures are expected across restarts. Scene-owned portrait CSS variables are removed on shutdown and restored on activation. No particles, shaders, texture-per-actor caches or new animation timers were introduced. Static scenery still redraws on relevant revisions rather than on every tick.
+The 1931 × 813 backdrop is 390,592 bytes as WebP (about 382 KiB), with roughly 6 MiB of decoded RGBA pixels before browser decoder overhead. Its harbour/open-sea crop shares one global application texture; it is not recreated per actor, encounter or frame. Eight total Phaser textures are expected across restarts. Scene-owned portrait CSS variables are removed on shutdown and restored on activation. No particles, shaders, texture-per-actor caches or new animation timers were introduced. Static scenery still redraws on relevant revisions rather than on every tick.
 
 See [visual review and provenance](design/visual-review.md). This is a substantial original art pass, not a reproduction of the Steam game's assets or a completed 1:1 remake. Island shore outlines and some station props remain simple; richer character animation is still deferred.
 
@@ -118,3 +118,9 @@ Each living actor owns one companion item view, released together on death/remov
 ## Version 0.7.1 character silhouette redraw
 
 [Fresh visual review](design/crew-silhouettes.md) records the rejected baseline and successive original redraws: compact three-quarter faces, a sloped tricorn, distinct costume structures and hair clusters, coat tails, narrower boots, and an asymmetric walk pose. Desktop and single-column phone portraits use exact 2× scale; compact two-column layouts use 1× without clipping the independent equipment layer. Wider desktop cards and a single phone column preserve status text. A stopped actor retains its last facing direction. All five atlas dimensions, nine global textures, four scene subscriptions, simulation and schema 4 remain unchanged.
+
+## Version 0.8.0 character art and combat poses
+
+[Source and runtime art review](design/painted-pixel-crew.md) records the original generated character sheet and its hard-edge 38-colour conversion into native 40 × 56 body frames. Character silhouettes, expressions and costumes replace the preceding procedural bodies. Explicit hand anchors keep independent weapons aligned in-world and in portraits. Shared body/item wind-up and strike frames derive from actual cooldown/status, freeze when paused, respect reduced motion, and suppress stale port combat state.
+
+The source PNG adds 1,273,328 downloaded bytes and about 6 MiB temporary decoded source pixels before browser decoder overhead; browsers can retain their own asset cache. The raw source stays in a bounded CPU cache only during conversion and is never uploaded as a GPU texture; its cache entry and six local conversion canvases are not retained. Shared body/item atlas RGBA grows by 519 KiB to 714 KiB, with unchanged nine global textures, bounded actor/item views and four subscriptions. Required artwork load failures show a retry message and stop simulation; reload recovers with the checkpoint intact. No save-schema or combat-rule change is introduced. Hurt/death animation remains deferred.

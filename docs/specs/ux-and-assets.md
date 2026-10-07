@@ -24,7 +24,7 @@ Original or suitably licensed modular pirate body/outfit sprites; idle/walk/atta
 
 Use one coherent grid and sprite scale, validated in the first visual prototype. Render sprites with nearest-neighbor sampling and integer-aligned camera positions. Portrait body and held-item layers use the same whole-pixel scale and frame bounds. Responsive layouts must not crop the equipment layer or force essential crew status into unreadable columns. UI typography should remain legible rather than enforcing tiny pixel text everywhere.
 
-Keep weapons separate from body/outfit art. Select held-item frames from the equipped weapon rather than the character role, and keep world and roster representations consistent. Shared equipment atlases are application-owned; each living actor has one scene-owned item layer that follows facing and pose and is released with the actor. Version 0.7.0 delivers cutlass/sabre/pistol layers; see [reference study and implementation](../design/kairosoft-and-equipment.md).
+Keep weapons separate from body/outfit art. Select held-item frames from the equipped weapon rather than the character role, and keep world and roster representations consistent. Shared equipment atlases are application-owned; each living actor has one scene-owned item layer that follows facing and pose and is released with the actor. Version 0.8.0 delivers cutlass/sabre/pistol layers with shared idle/ready/attack frames and explicit hand anchors; see [source and implementation](../design/painted-pixel-crew.md).
 
 Maintain asset provenance with creator, source, license, modifications, and attribution requirements. Record applicable reuse permission before using reference-game assets; remake intent does not itself supply an asset license. Maintain [attribution](../attribution.md). Placeholder art is acceptable for the first slice and must be identified as such.
 
@@ -39,3 +39,5 @@ Maintain asset provenance with creator, source, license, modifications, and attr
 ## Rendering and teardown requirements
 
 Use dirty DOM updates and bounded notifications rather than rebuilding management panels every frame. Panel close releases external listeners, observers, timers, and view bindings. Atlas ownership is application-wide; encounter views do not delete shared assets. Profile decoded image/audio memory and canvas backing scale. Context loss and failed asset loads have explicit recovery UI. See [performance contract](performance-and-lifecycle.md).
+
+Required artwork-load failures must stop gameplay with a visible retry instruction and preserve the checkpoint. Shared atlas creation must release its raw CPU source image and local conversion buffers without uploading the full original to the GPU, retain only bounded final atlases, and avoid source reloads on ordinary scene restarts. Combat pose timing follows authoritative cooldown/state and respects pause/reduced motion.

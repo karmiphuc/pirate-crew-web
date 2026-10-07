@@ -362,14 +362,14 @@ main {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 9px;
-  max-height: 270px;
+  max-height: 330px;
   overflow: auto;
 }
 .crew-card {
   display: flex;
   text-align: left;
   align-items: center;
-  gap: 11px;
+  gap: 24px;
   padding: 11px;
   background: #1d363e;
   border: 1px solid #3e5353;
@@ -381,13 +381,13 @@ main {
 }
 .portrait {
   --portrait-scale: 2;
-  width: calc(32px * var(--portrait-scale));
-  height: calc(40px * var(--portrait-scale));
+  width: calc(40px * var(--portrait-scale));
+  height: calc(56px * var(--portrait-scale));
   position: relative;
   display: inline-block;
   flex-shrink: 0;
   background: radial-gradient(ellipse at 50% 90%, #be986d26, transparent 70%);
-  overflow: hidden;
+  overflow: visible;
 }
 .portrait i {
   display: block;
@@ -397,13 +397,14 @@ main {
   height: 100%;
   background-image: var(--pirate-0);
   image-rendering: pixelated;
-  background-size: calc(96px * var(--portrait-scale))
-    calc(120px * var(--portrait-scale));
+  background-size: calc(200px * var(--portrait-scale))
+    calc(168px * var(--portrait-scale));
   background-position: 0
-    calc(-40px * var(--portrait-scale) * var(--portrait-variant, 0));
+    calc(-56px * var(--portrait-scale) * var(--portrait-variant, 0));
   background-repeat: no-repeat;
 }
-.portrait.boarder i {
+.portrait.boarder i,
+.portrait.medic i {
   background-image: var(--pirate-3);
 }
 .portrait.gunner i {
@@ -944,7 +945,7 @@ footer button {
   }
   .crew-card {
     padding: 8px;
-    gap: 7px;
+    gap: 24px;
   }
   .crew-info strong {
     font-size: 11px;
@@ -1120,26 +1121,28 @@ footer button {
 
 .portrait .held-item {
   position: absolute;
-  inset: 0;
-  width: 100%;
+  top: calc(var(--hand-y, 0) * 1px * var(--portrait-scale));
+  left: calc((-28px + var(--hand-x, 0) * 1px) * var(--portrait-scale));
+  width: calc(96px * var(--portrait-scale));
   height: 100%;
   background-image: var(--pirate-equipment);
-  background-size: calc(96px * var(--portrait-scale))
-    calc(40px * var(--portrait-scale));
+  background-size: calc(288px * var(--portrait-scale))
+    calc(168px * var(--portrait-scale));
   background-position: 0 0;
   background-repeat: no-repeat;
   image-rendering: pixelated;
 }
 .portrait .held-item.sabre {
-  background-position: calc(-32px * var(--portrait-scale)) 0;
+  background-position: calc(-96px * var(--portrait-scale)) 0;
 }
 .portrait .held-item.pistol {
-  background-position: calc(-64px * var(--portrait-scale)) 0;
+  background-position: calc(-192px * var(--portrait-scale)) 0;
 }
 
 @media (max-width: 480px) {
   .crew-list {
     grid-template-columns: 1fr;
+    max-height: none;
   }
   .portrait {
     --portrait-scale: 2;
