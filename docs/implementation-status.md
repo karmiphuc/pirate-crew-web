@@ -88,3 +88,7 @@ The 1931 × 813 backdrop is 390,592 bytes as WebP (about 382 KiB), with roughly 
 See [visual review and provenance](design/visual-review.md). This is a substantial original art pass, not a reproduction of the Steam game's assets or a completed 1:1 remake. Island shore outlines and some station props remain simple; richer character animation is still deferred.
 
 The recorded full integration run precedes the final compact-layout CSS adjustment that hides the long hint at 750 pixels and below. This adjustment was checked with a fresh 700-pixel capture, TypeScript/build and production hosting checks; simulation and renderer code are unchanged from the recorded stress run.
+
+## Version 0.5 published CI evidence
+
+[Source commit 4f7ad10](https://github.com/karmiphuc/pirate-crew-web/commit/4f7ad10381efd9058793202f23723f008a9c2094) contains the original art overhaul. [GitHub Actions run 37577096341](https://github.com/karmiphuc/pirate-crew-web/actions/runs/37577096341) passed its build job: locked installation, formatting, 92 tests, production build, Chromium root/project-path hosting checks and static artifact upload. Deployment failed at `configure-pages` with `Get Pages site failed` / `Not Found` because the repository Pages site is not enabled. The owner must select Settings → Pages → GitHub Actions; no live site is claimed.

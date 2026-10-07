@@ -52,3 +52,7 @@ The validated build uploads its static Pages artifact independently of Pages con
 ## Version 0.4 publication
 
 [CI run 37575251396](https://github.com/karmiphuc/pirate-crew-web/actions/runs/37575251396) passed all 92 tests, production build and both browser hosting mounts; the static Pages artifact was uploaded. Deployment remains blocked by Pages configuration returning HTTP 404. The repository owner still needs Settings → Pages → GitHub Actions before rerunning deployment.
+
+## Version 0.5 published CI evidence
+
+[Source commit 4f7ad10](https://github.com/karmiphuc/pirate-crew-web/commit/4f7ad10381efd9058793202f23723f008a9c2094) contains the original art overhaul. [GitHub Actions run 37577096341](https://github.com/karmiphuc/pirate-crew-web/actions/runs/37577096341) passed its build job: locked installation, formatting, 92 tests, production build, Chromium root/project-path hosting checks and static artifact upload. Deployment failed at `configure-pages` with `Get Pages site failed` / `Not Found` because the repository Pages site is not enabled. The owner must select Settings → Pages → GitHub Actions; no live site is claimed.
