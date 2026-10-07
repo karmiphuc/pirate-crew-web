@@ -74,3 +74,7 @@ Destroyed station access disables work. Sailing, escape and prize handling refus
 Port rest uses a transient rollback snapshot so an isolated/falling crew member can be recovered before the new checkpoint is written. Failed writes restore both prior campaign state and fall origin, preserving drop penalties. Player and enemy cannons both stop when station support is destroyed.
 
 The final scoped Chromium run precedes the additional legacy diagonal-corner migration normalization and guide text; those final changes were checked by the 92-test suite, TypeScript/build and production hosting smoke. The renderer/simulation ownership and movement code are the same as the recorded stress run.
+
+## Version 0.4 published CI evidence
+
+[Source commit c374ac7](https://github.com/karmiphuc/pirate-crew-web/commit/c374ac7a32c16f93917c1ba499f7ccfa91702b76) contains the version 0.4 implementation. [GitHub Actions run 37575251396](https://github.com/karmiphuc/pirate-crew-web/actions/runs/37575251396) passed the build job: locked installation, formatting, 92 tests, TypeScript/Vite build, root/project-path Chromium hosting checks, and static artifact upload. Deployment configuration failed with `Get Pages site failed` / HTTP 404 because Pages is not enabled. Build/artifact delivery is complete; no live deployment is claimed.
