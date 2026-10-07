@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { pirateVariant } from "./game/pirate-art";
 import { Soundscape } from "./app/sound";
 import "./style.css";
 import {
@@ -31,7 +32,7 @@ import { SeaScene, ViewHost } from "./game/scene";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
-<header class="masthead"><a class="brand" href="#" aria-label="Pixel Privateer home"><span class="brand-mark">☠</span><span><strong>PIXEL PRIVATEER<span class="beta">05</span></strong><small>A PIRATE’S LIFE · UNOFFICIAL BROWSER REMAKE</small></span></a><nav><button data-action="help" class="text-button">Captain’s guide</button><button data-action="settings" class="text-button">⚙ Settings</button><button data-action="save" class="save-button">↓ Save voyage</button></nav></header>
+<header class="masthead"><a class="brand" href="#" aria-label="Pixel Privateer home"><span class="brand-mark">☠</span><span><strong>PIXEL PRIVATEER<span class="beta">06</span></strong><small>A PIRATE’S LIFE · UNOFFICIAL BROWSER REMAKE</small></span></a><nav><button data-action="help" class="text-button">Captain’s guide</button><button data-action="settings" class="text-button">⚙ Settings</button><button data-action="save" class="save-button">↓ Save voyage</button></nav></header>
 <main>
  <section class="supplies" aria-label="Ship supplies"><div class="location"><span class="live-dot"></span><span id="location">Saltwater Harbour</span><small id="phase">IN PORT</small></div><div class="resources"><span><i class="coin">●</i><b id="gold">420</b> <small>GOLD</small></span><span><i>▣</i><b id="food">18</b> <small>FOOD</small></span><span><i>●</i><b id="ammo">12</b> <small>AMMO</small></span><span><i>✚</i><b id="medicine">5</b> <small>MEDICINE</small></span><span><i>▰</i><b id="parts">12</b> <small>TIMBER</small></span></div></section>
  <section class="voyage" aria-label="Side-view pirate game"><div class="scene-top"><div><span class="eyebrow">THE WAYWARD GULL</span><h1 id="scene-title">A small ship. A grand adventure.</h1><p id="objective">Stock the hold, gather your crew, and see what lies beyond the harbour.</p></div><button data-action="pause" id="pause" class="pause-button">Ⅱ Pause <kbd>SPACE</kbd></button></div><div id="game"></div><div id="scene-banner" class="scene-banner" hidden></div><div id="build-tools" class="build-tools" hidden><span>SHIPWRIGHT <small>Click grid to place / remove</small></span><button data-action="hull" class="active">Hull</button><button data-action="ladder">Ladder</button><button data-action="station-food">Move galley</button><button data-action="station-cannon">Move cannon</button><button data-action="station-medical">Move clinic</button><button data-action="apply-build" class="primary">Apply refit</button><button data-action="cancel-build">Cancel</button></div><div class="sea-compass" aria-hidden="true">N<br>✧</div><div class="scene-bottom"><span id="hint">Click a pirate to select · Click a deck to move · Space to pause</span><span id="ship-readout"></span><span id="save-state">Preparing logbook…</span></div></section>
@@ -816,7 +817,10 @@ class Application implements ViewHost {
     const titles = {
       port: "A small ship. A grand adventure.",
       travel: "Following the horizon.",
-      encounter: "Give them a taste of the pirate life.",
+      encounter:
+        s.ships[1]?.kind === "island"
+          ? "A shore full of possibility."
+          : "Give them a taste of the pirate life.",
       aftermath: "Victory is only half the story.",
       victory: "Another tale for the tavern.",
       gameover: "A captain’s luck runs out.",
@@ -867,7 +871,7 @@ class Application implements ViewHost {
       el("crew").innerHTML = crew
         .map(
           (p) =>
-            `<button class="crew-card ${this.selection.includes(p.id) ? "selected" : ""}" data-action="select" data-id="${p.id}" aria-pressed="${this.selection.includes(p.id)}"><span class="portrait ${p.role}"><i></i></span><span class="crew-info"><strong>${escape(p.name)} <small>LV.${p.level}</small></strong><span>${p.role.toUpperCase()} · ${DUTY_NAMES[p.duty]}</span><span class="health"><i style="width:${(100 * p.hp) / p.maxHp}%"></i></span><small>${Math.ceil(p.hp)} / ${p.maxHp} HP · ${escape(p.status)}</small><small>FOOD ${p.hunger}% · MORALE ${p.morale}%</small></span></button>`,
+            `<button class="crew-card ${this.selection.includes(p.id) ? "selected" : ""}" data-action="select" data-id="${p.id}" aria-pressed="${this.selection.includes(p.id)}"><span class="portrait ${p.role}" style="--portrait-y:${-58 * pirateVariant(p)}px"><i></i></span><span class="crew-info"><strong>${escape(p.name)} <small>LV.${p.level}</small></strong><span>${p.role.toUpperCase()} · ${DUTY_NAMES[p.duty]}</span><span class="health"><i style="width:${(100 * p.hp) / p.maxHp}%"></i></span><small>${Math.ceil(p.hp)} / ${p.maxHp} HP · ${escape(p.status)}</small><small>FOOD ${p.hunger}% · MORALE ${p.morale}%</small></span></button>`,
         )
         .join("");
     }

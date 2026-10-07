@@ -1,6 +1,6 @@
 # First playable implementation
 
-Version: 0.5.0. Date: 2026-10-07. Previous baseline: 0.4.0.
+Version: 0.6.0. Date: 2026-10-07. Previous baseline: 0.5.0.
 
 ## Delivered
 
@@ -14,7 +14,7 @@ TypeScript 5.9.3, Phaser 3.90.0, Vite 7.3.6; a single-thread renderer-independen
 - Command capacity 64, orders eight/actor, twelve allies/enemies, notices 64. Work claims are keyed by ship/duty; at most one worker per slot and one task per actor. Orders, death, refits, capture, teardown, and disposal release claims/searches. Direct commands interrupt work.
 - Encounter teardown removes enemy entities, graphs, searches, paths, commands, and sprite bindings. Scene shutdown removes both paired shutdown/destroy handlers and external subscriptions.
 - No universal object pool, worker, ECS, spatial index, or per-frame world clone. Typed buffers serve bounded BFS scratch and timing samples only.
-- Four shared 64 × 40 sprite atlases provide idle/walk frames and are created once; one shared backdrop texture supplies harbour and cropped open-sea frames; static ship/background graphics redraw on layout/phase changes. No per-frame generated textures or post-processing.
+- Four shared 64 × 120 sprite atlases provide idle/walk frames and are created once; one shared backdrop texture supplies harbour and cropped open-sea frames; static ship/background graphics redraw on layout/phase changes. No per-frame generated textures or post-processing.
 - Saves serialize through one writer with backpressure and transaction-complete acknowledgement. Mutation freezes during required writes. Port purchase failures restore pre-purchase state; departure writes precede combat.
 - Web Locks guards the browser save writer. Startup falls back to a previous valid checkpoint; invalid imports preserve current state.
 - Hidden-tab events pause and clear catch-up time. Context loss pauses, context restoration requires explicit resume. Generation/closed checks prevent stale application callbacks from reviving disposed simulation.
@@ -53,9 +53,9 @@ A real baseline laptop/GPU; Chrome/Firefox/Safari browser matrix; full 30-minute
 
 ## Measured Chromium run
 
-See [machine-readable report](validation-results.json). Version 0.5 development build, headless Chromium with SwiftShader software rendering, 1440 × 1080 viewport. Latest scoped sample: frame p95 43.33 ms, tick p95 0.1 ms; zero stalls. Retained JS heap after diagnostic GC: 8,551,748 → 8,762,380 bytes across 50 rendered encounter cycles; listeners 75 → 75, textures 8 → 8, fall/task/claim/search counters zero after cleanup. There were no page errors. Visible fishing/galley, traits, purchase/combat/plunder/island/capture/reload flow passed, as did destroyed-deck/jump/fall/restoration/unsafe-port-repair fixtures, audio mute/voice caps and final AudioContext closure.
+See [machine-readable report](validation-results.json). Version 0.6 development build, Chromium SwiftShader software rendering, 1440 × 1080 viewport. Scoped sample: frame p95 33.33 ms, tick p95 0.1 ms, zero stalls. Diagnostic-GC retained JS heap: 8,846,344 → 9,601,536 bytes across 50 rendered encounter cycles; listeners 75 → 75 and textures 8 → 8. Fall/task/claim/search counters return to zero. All visible expedition, management, destruction, persistence, context and audio scenarios passed, with no page errors.
 
-This supports bounded cleanup for this fixture; it does not establish the 60 FPS hardware target, GPU memory recovery, or a 30-minute unforced-GC soak. The software-rendered frame p95 is slower than the earlier v0.4 sample (31.67 ms); the scenic art adds raster work and these separately run headless measurements are not a controlled hardware comparison. No 60 FPS claim is made. DOM nodes varied 320 → 369 while listeners remained stable; this is not proof that every detached object has been excluded. Production root/project-path hosting checks pass with the diagnostic hook absent. A 700-pixel viewport capture has body width 700 and canvas width 674 with no horizontal overflow.
+This fixture supports bounded cleanup but does not establish the 60 FPS hardware target or a 30-minute ordinary-GC soak. DOM nodes vary 342 → 369 while listeners stay stable; heap snapshots and hardware testing are still required. The final frame-name lookup change followed the full run and passed ten additional renderer restarts/disposal; see [visual review and final check](design/visual-refinement.md). Compact 700/390-pixel captures have no horizontal overflow. Production root and repository-path hosting checks pass with diagnostics absent.
 
 ## Published CI evidence
 
@@ -92,3 +92,7 @@ The recorded full integration run precedes the final compact-layout CSS adjustme
 ## Version 0.5 published CI evidence
 
 [Source commit 4f7ad10](https://github.com/karmiphuc/pirate-crew-web/commit/4f7ad10381efd9058793202f23723f008a9c2094) contains the original art overhaul. [GitHub Actions run 37577096341](https://github.com/karmiphuc/pirate-crew-web/actions/runs/37577096341) passed its build job: locked installation, formatting, 92 tests, production build, Chromium root/project-path hosting checks and static artifact upload. Deployment failed at `configure-pages` with `Get Pages site failed` / `Not Found` because the repository Pages site is not enabled. The owner must select Settings → Pages → GitHub Actions; no live site is claimed.
+
+## Version 0.6 visual refinement
+
+[Visual review](design/visual-refinement.md) records fresh captures, improvements and remaining limits. Three ID-derived non-captain appearance variants reuse four shared atlases; decoded atlas pixels increase by about 80 KiB, with no texture-count growth or schema change. Static sandy/rocky shore edges, sparse vegetation, foam, hull contact shadows, barrel hoops and medical-case straps replace remaining placeholder details. Island headline and desktop roster height are corrected. Final frame selection uses preallocated names and skips redundant frame changes. No simulation, navigation or save-format behavior changed.

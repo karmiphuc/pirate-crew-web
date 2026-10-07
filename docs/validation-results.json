@@ -23,20 +23,20 @@
   "quotaRollback": "passed",
   "memory": {
     "heapBefore": {
-      "usedSize": 8551748,
-      "totalSize": 9428992,
-      "embedderHeapUsedSize": 1482416,
-      "backingStorageSize": 11281692
+      "usedSize": 8846344,
+      "totalSize": 12836864,
+      "embedderHeapUsedSize": 2137416,
+      "backingStorageSize": 11388628
     },
     "heapAfter": {
-      "usedSize": 8762380,
-      "totalSize": 9953280,
-      "embedderHeapUsedSize": 1560000,
-      "backingStorageSize": 11281744
+      "usedSize": 9601536,
+      "totalSize": 12836864,
+      "embedderHeapUsedSize": 1937624,
+      "backingStorageSize": 11388501
     },
     "domBefore": {
       "documents": 1,
-      "nodes": 320,
+      "nodes": 342,
       "jsEventListeners": 75
     },
     "domAfter": {
@@ -47,16 +47,16 @@
   },
   "diagnostics": {
     "frameMs": {
-      "count": 525,
-      "p50": 23.339999999999964,
-      "p95": 43.33000000000029,
-      "p99": 51.659999999999854
+      "count": 586,
+      "p50": 25,
+      "p95": 33.32999999999993,
+      "p99": 36.659999999999854
     },
     "tickMs": {
-      "count": 141,
+      "count": 132,
       "p50": 0,
-      "p95": 0.10000000009313226,
-      "p99": 0.10000000009313226
+      "p95": 0.10000000055879354,
+      "p99": 0.20000000018626451
     },
     "stalls": 0,
     "views": {
@@ -77,7 +77,7 @@
     "listeners": 5,
     "saveWrites": 0,
     "lock": "owned",
-    "tick": 13023,
+    "tick": 13043,
     "phase": "port"
   },
   "errors": []

@@ -1,12 +1,32 @@
 /** Original compact character art. Four shared atlases; no per-actor canvases. */
+export const PIRATE_FRAMES = {
+  idle: ["idle-0", "idle-1", "idle-2"],
+  walk: ["walk-0", "walk-1", "walk-2"],
+} as const;
+export const PIRATE_VARIANTS = PIRATE_FRAMES.idle.length;
+export function pirateVariant(pirate: { id: number; role: string }): number {
+  return pirate.role === "captain" ? 0 : (pirate.id + 1) % PIRATE_VARIANTS;
+}
 export function paintPirate(
   ctx: CanvasRenderingContext2D,
   role: number,
   walking: boolean,
+  variant = 0,
 ) {
   const ink = "#20272d",
-    skin = role === 2 ? "#c58f69" : "#efbc8e";
-  const coat = ["#293f4b", "#974a43", "#557c87", "#d9d0a8"][role];
+    skin =
+      variant === 2
+        ? "#a97552"
+        : variant === 1
+          ? "#d5a274"
+          : role === 2
+            ? "#c58f69"
+            : "#efbc8e";
+  const coat = [
+    ["#293f4b", "#974a43", "#557c87", "#d9d0a8"],
+    ["#293f4b", "#86483c", "#647a74", "#64765b"],
+    ["#293f4b", "#70404a", "#4c697a", "#c9b890"],
+  ][variant][role];
   const shape = (color: string, points: number[][], outline = true) => {
     ctx.beginPath();
     ctx.moveTo(points[0][0], points[0][1]);
@@ -41,7 +61,7 @@ export function paintPirate(
   };
   ctx.save();
   // Back arm, ponytail and scarf give each role a distinct silhouette.
-  if (role === 3) {
+  if (role === 3 && variant === 0) {
     ellipse("#784638", 9, 15, 4, 7);
     shape("#995143", [
       [8, 15],
@@ -149,7 +169,7 @@ export function paintPirate(
   }
   ellipse(skin, 15, 13, 6, 7);
   shape(
-    "#b47959",
+    variant === 2 ? "#855637" : "#b47959",
     [
       [18, 12],
       [21, 13],
@@ -267,6 +287,66 @@ export function paintPirate(
       false,
     );
     rect("#513b31", 12, 19, 6, 2);
+  } else if (variant === 1) {
+    // Short curls and a tied olive scarf make the second deckhand a distinct silhouette.
+    for (const [x, y] of [
+      [10, 8],
+      [14, 6],
+      [18, 7],
+      [21, 10],
+    ])
+      ellipse("#40322c", x, y, 3, 3);
+    shape(
+      "#839277",
+      [
+        [8, 10],
+        [21, 10],
+        [21, 12],
+        [9, 12],
+      ],
+      false,
+    );
+    shape(
+      "#839277",
+      [
+        [9, 11],
+        [5, 13],
+        [6, 18],
+        [10, 14],
+      ],
+      false,
+    );
+    rect("#594234", 13, 19, 5, 2);
+  } else if (variant === 2) {
+    for (const [x, y] of [
+      [9, 9],
+      [12, 6],
+      [16, 5],
+      [20, 7],
+      [22, 10],
+    ])
+      ellipse("#302c2b", x, y, 3, 3);
+    shape(
+      "#547887",
+      [
+        [9, 9],
+        [20, 8],
+        [22, 11],
+        [10, 12],
+      ],
+      false,
+    );
+    shape(
+      "#547887",
+      [
+        [21, 10],
+        [26, 12],
+        [24, 17],
+        [21, 14],
+      ],
+      false,
+    );
+    ellipse("#d4af66", 9, 16, 1, 2);
   } else {
     shape(
       "#864838",

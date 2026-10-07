@@ -1,5 +1,10 @@
 import Phaser from "phaser";
-import { paintPirate } from "./pirate-art";
+import {
+  paintPirate,
+  pirateVariant,
+  PIRATE_VARIANTS,
+  PIRATE_FRAMES,
+} from "./pirate-art";
 import {
   Campaign,
   nodeX,
@@ -36,14 +41,30 @@ function createTextures(scene: Phaser.Scene) {
   for (let i = 0; i < 4; i++) {
     const key = `pirate-${i}`;
     if (!scene.textures.exists(key)) {
-      const texture = scene.textures.createCanvas(key, 64, 40)!;
-      paintPirate(texture.context, i, false);
-      texture.context.save();
-      texture.context.translate(32, 0);
-      paintPirate(texture.context, i, true);
-      texture.context.restore();
-      texture.add("idle", 0, 0, 0, 32, 40);
-      texture.add("walk", 0, 32, 0, 32, 40);
+      const texture = scene.textures.createCanvas(
+        key,
+        64,
+        40 * PIRATE_VARIANTS,
+      )!;
+      for (let variant = 0; variant < PIRATE_VARIANTS; variant++) {
+        for (const [frame, walking, x] of [
+          ["idle", false, 0],
+          ["walk", true, 32],
+        ] as const) {
+          texture.context.save();
+          texture.context.translate(x, variant * 40);
+          paintPirate(texture.context, i, walking, variant);
+          texture.context.restore();
+          texture.add(
+            PIRATE_FRAMES[frame][variant],
+            0,
+            x,
+            variant * 40,
+            32,
+            40,
+          );
+        }
+      }
       texture.refresh();
     }
     const canvas = scene.textures
@@ -310,6 +331,104 @@ export class SeaScene extends Phaser.Scene {
     g.fillCircle(crownX - 3, crownY + 3, 3 * scale);
     g.fillCircle(crownX + 3, crownY + 5, 3 * scale);
   }
+  private drawIslandTerrain(
+    g: Phaser.GameObjects.Graphics,
+    tiles: Tile[],
+    ox: number,
+  ) {
+    if (!tiles.length) return;
+    const occupied = new Set(tiles.map((t) => `${t.x}:${t.y}`));
+    const minX = Math.min(...tiles.map((t) => t.x)),
+      maxX = Math.max(...tiles.map((t) => t.x)),
+      bottomY = Math.max(...tiles.map((t) => t.y));
+    const center = ox + ((minX + maxX + 1) * TILE) / 2;
+    // Static contact shadow and broken foam ground the island in the same water as the ship.
+    g.fillStyle(0x143e45, 0.35);
+    g.fillEllipse(
+      center,
+      SHIP_Y + (bottomY + 1) * TILE,
+      (maxX - minX + 1) * TILE + 24,
+      18,
+    );
+    for (const t of tiles) {
+      const x = ox + t.x * TILE,
+        y = SHIP_Y + t.y * TILE;
+      const top = !occupied.has(`${t.x}:${t.y - 1}`),
+        bottom = !occupied.has(`${t.x}:${t.y + 1}`),
+        left = !occupied.has(`${t.x - 1}:${t.y}`),
+        right = !occupied.has(`${t.x + 1}:${t.y}`);
+      // The silhouette stays inside actual support cells: decorative sand never bridges a gap.
+      g.fillStyle(top ? 0xbfa77a : t.y % 2 ? 0x777762 : 0x58655b);
+      g.fillPoints(
+        [
+          { x: x + (top && left ? 6 : 0), y },
+          { x: x + TILE - (top && right ? 6 : 0), y },
+          { x: x + TILE, y: y + (top && right ? 8 : 0) },
+          { x: x + TILE, y: y + TILE - (bottom && right ? 8 : 0) },
+          { x: x + TILE - (bottom && right ? 8 : 0), y: y + TILE },
+          { x: x + (bottom && left ? 8 : 0), y: y + TILE },
+          { x, y: y + TILE - (bottom && left ? 8 : 0) },
+          { x, y: y + (top && left ? 8 : 0) },
+        ],
+        true,
+      );
+      if (top) {
+        // Low dune ridges, sparse grass and warm sand replace the repeated green tile cap.
+        const inset = left || right ? 6 : 0;
+        g.fillStyle(0xe0c996);
+        g.fillPoints(
+          [
+            { x: x + inset, y },
+            { x: x + 8, y: y - (t.x % 4 === 1 ? 2 : 0) },
+            { x: x + TILE - inset, y },
+            { x: x + TILE - inset, y: y + 5 },
+            { x: x + 6, y: y + 6 + (t.x % 3) },
+            { x: x + inset, y: y + 5 },
+          ],
+          true,
+        );
+        if (t.x % 3 === 1) {
+          g.lineStyle(1, 0x6e8156);
+          for (const dx of [-3, 0, 4])
+            g.lineBetween(x + 9, y + 2, x + 9 + dx, y - 4 - Math.abs(dx));
+        }
+        g.lineStyle(1, 0x927e59, 0.5);
+        if (t.x % 2) g.lineBetween(x + 5, y + 12, x + 15, y + 10);
+      } else if ((t.x * 3 + t.y) % 4 === 1) {
+        const n = (t.x * 7 + t.y * 3) % 8;
+        g.fillStyle(t.y % 2 ? 0x92917a : 0x718071, 0.6);
+        g.fillPoints(
+          [
+            { x: x + n, y: y + 3 },
+            { x: x + 15, y: y + 2 },
+            { x: x + 17, y: y + 8 },
+            { x: x + 11, y: y + 11 },
+            { x: x + n + 1, y: y + 8 },
+          ],
+          true,
+        );
+        g.lineStyle(1, 0x3c514d, 0.5);
+        g.lineBetween(x + 2, y + 14, x + 12, y + 12);
+      }
+      if (bottom) {
+        g.lineStyle(2, 0xb4d6c1, 0.55);
+        g.lineBetween(x + 3, y + TILE + 1, x + TILE - 2, y + TILE - 1);
+      }
+    }
+    // Sparse foliage sits behind crew without changing walkable terrain.
+    const ground = SHIP_Y + 4 * TILE;
+    for (const tx of [4, 10, 18]) {
+      if (!occupied.has(`${tx}:4`)) continue;
+      const x = ox + tx * TILE;
+      g.fillStyle(0x365e4d);
+      g.fillEllipse(x, ground - 3, 34, 10);
+      g.fillEllipse(x - 7, ground - 8, 13, 15);
+      g.fillEllipse(x + 8, ground - 7, 18, 14);
+      g.lineStyle(1, 0x849867, 0.7);
+      g.lineBetween(x - 8, ground - 12, x - 2, ground - 5);
+      g.lineBetween(x + 6, ground - 11, x + 11, ground - 5);
+    }
+  }
   private drawShip(
     g: Phaser.GameObjects.Graphics,
     ship: Ship,
@@ -318,13 +437,7 @@ export class SeaScene extends Phaser.Scene {
   ) {
     const tiles = (draft ?? ship.tiles).filter((t) => draft || intact(t));
     if (ship.kind === "island") {
-      for (const t of tiles) {
-        const x = ox + t.x * TILE,
-          y = SHIP_Y + t.y * TILE;
-        this.rect(g, x, y, TILE, TILE, t.y === 4 ? 0x748347 : 0x9a8159);
-        if (t.y === 4) this.rect(g, x, y, TILE, 5, 0x9dae63);
-        else this.rect(g, x + 3, y + 7, 6, 3, 0x756e50);
-      }
+      this.drawIslandTerrain(g, tiles, ox);
       for (const tx of [3, 9, 18])
         this.drawPalm(g, ox + tx * TILE, SHIP_Y + 4 * TILE, tx === 9 ? 0.8 : 1);
       const x = ox + 14 * TILE,
@@ -349,8 +462,37 @@ export class SeaScene extends Phaser.Scene {
       this.rect(g, x + 10, y - 11, 1, 3, 0x453831);
       return;
     }
+    const occupied = new Set(
+      tiles.filter((t) => t.kind === "hull").map((t) => `${t.x}:${t.y}`),
+    );
     const mast = ox + 9 * TILE + 8,
       friendly = ship.id === 1;
+    if (tiles.length) {
+      const hull = tiles.filter((t) => t.kind === "hull");
+      if (hull.length) {
+        const low = Math.max(...hull.map((t) => t.y)) + 1,
+          minX = Math.min(...hull.map((t) => t.x)),
+          maxX = Math.max(...hull.map((t) => t.x)),
+          center = ox + ((minX + maxX + 1) * TILE) / 2;
+        g.fillStyle(0x0e333c, 0.3);
+        g.fillEllipse(
+          center,
+          SHIP_Y + low * TILE + 3,
+          (maxX - minX + 1) * TILE * 0.9,
+          15,
+        );
+        for (const t of hull) {
+          if (occupied.has(`${t.x}:${t.y + 1}`)) continue;
+          g.lineStyle(1, 0xb9d6bd, 0.4);
+          g.lineBetween(
+            ox + t.x * TILE + 3,
+            SHIP_Y + (t.y + 1) * TILE + 1,
+            ox + (t.x + 1) * TILE - 2,
+            SHIP_Y + (t.y + 1) * TILE + 2,
+          );
+        }
+      }
+    }
     // Bent cloth contours, seams, rigging and contrasting mast light create depth.
     this.rect(g, mast - 4, 108, 9, 264, 0x342f29);
     this.rect(g, mast - 2, 109, 3, 263, 0xa28254);
@@ -436,9 +578,6 @@ export class SeaScene extends Phaser.Scene {
       ],
       true,
     );
-    const occupied = new Set(
-      tiles.filter((t) => t.kind === "hull").map((t) => `${t.x}:${t.y}`),
-    );
     for (const t of tiles) {
       const x = ox + t.x * TILE,
         y = SHIP_Y + t.y * TILE;
@@ -520,12 +659,28 @@ export class SeaScene extends Phaser.Scene {
         }
       }
       if (station.kind === "food") {
-        this.rect(g, x, y - 18, 16, 18, 0x82613d);
-        this.rect(g, x - 1, y - 14, 18, 3, 0x36463e);
-        this.rect(g, x - 1, y - 5, 18, 3, 0x36463e);
+        g.fillStyle(0x3a342b);
+        g.fillEllipse(x + 8, y - 1, 20, 4);
+        g.fillStyle(0x846344);
+        g.fillRoundedRect(x, y - 20, 17, 20, 5);
+        g.fillStyle(0xb49665);
+        g.fillEllipse(x + 8.5, y - 18, 16, 5);
+        g.lineStyle(1, 0x514332);
+        g.strokeEllipse(x + 8.5, y - 18, 16, 5);
+        g.lineBetween(x + 5, y - 15, x + 5, y - 3);
+        g.lineBetween(x + 11, y - 15, x + 11, y - 3);
+        this.rect(g, x, y - 13, 17, 2, 0x3b4b47);
+        this.rect(g, x, y - 5, 17, 2, 0x3b4b47);
+        this.rect(g, x + 1, y - 13, 15, 1, 0x899486);
       }
       if (station.kind === "medical") {
-        this.rect(g, x, y - 16, 20, 16, 0xd1c49c);
+        g.fillStyle(0x524237);
+        g.fillRoundedRect(x + 5, y - 21, 10, 7, 2);
+        g.fillStyle(0xd1c49c);
+        g.fillRoundedRect(x - 1, y - 17, 22, 17, 3);
+        this.rect(g, x, y - 4, 20, 3, 0xa08b66);
+        this.rect(g, x + 2, y - 15, 2, 14, 0x917451);
+        this.rect(g, x + 16, y - 15, 2, 14, 0x917451);
         this.rect(g, x + 8, y - 14, 4, 11, 0xad5244);
         this.rect(g, x + 4, y - 10, 12, 4, 0xad5244);
       }
@@ -618,7 +773,7 @@ export class SeaScene extends Phaser.Scene {
             0,
             0,
             `pirate-${p.side === "enemy" ? 1 : p.role === "captain" ? 0 : p.role === "gunner" ? 2 : 3}`,
-            "idle",
+            PIRATE_FRAMES.idle[pirateVariant(p)],
           )
           .setScale(1.35)
           .setOrigin(0.5, 1);
@@ -644,11 +799,12 @@ export class SeaScene extends Phaser.Scene {
       actor.setPosition(Math.round(x), Math.round(y));
       const moving =
         Math.abs(p.x - p.previousX) + Math.abs(p.y - p.previousY) > 0.001;
-      actor.setFrame(
-        moving && !this.host.reducedMotion() && Math.floor(s.tick / 5) % 2
-          ? "walk"
-          : "idle",
-      );
+      const walking =
+        moving && !this.host.reducedMotion() && Math.floor(s.tick / 5) % 2;
+      const frame = (walking ? PIRATE_FRAMES.walk : PIRATE_FRAMES.idle)[
+        pirateVariant(p)
+      ];
+      if (actor.frame.name !== frame) actor.setFrame(frame);
       actor.setFlipX(
         moving
           ? p.x < p.previousX

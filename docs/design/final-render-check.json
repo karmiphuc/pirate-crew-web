@@ -1,0 +1,64 @@
+{
+  "finalFrameLookupCheck": "passed",
+  "sceneRestarts": 10,
+  "viewsBefore": {
+    "actors": 6,
+    "subscriptions": 4,
+    "clouds": 3,
+    "textures": 8,
+    "shutdownHandlers": 13,
+    "destroyHandlers": 13
+  },
+  "viewsAfter": {
+    "actors": 6,
+    "subscriptions": 4,
+    "clouds": 3,
+    "textures": 8,
+    "shutdownHandlers": 13,
+    "destroyHandlers": 13
+  },
+  "frames": [
+    {
+      "key": "pirate-0",
+      "frame": "idle-0",
+      "width": 32,
+      "height": 40
+    },
+    {
+      "key": "pirate-3",
+      "frame": "idle-2",
+      "width": 32,
+      "height": 40
+    },
+    {
+      "key": "pirate-2",
+      "frame": "idle-0",
+      "width": 32,
+      "height": 40
+    },
+    {
+      "key": "pirate-3",
+      "frame": "idle-1",
+      "width": 32,
+      "height": 40
+    },
+    {
+      "key": "pirate-3",
+      "frame": "idle-2",
+      "width": 32,
+      "height": 40
+    },
+    {
+      "key": "pirate-3",
+      "frame": "idle-0",
+      "width": 32,
+      "height": 40
+    }
+  ],
+  "compactWidths": [
+    700,
+    390
+  ],
+  "errors": [],
+  "disposal": "passed"
+}

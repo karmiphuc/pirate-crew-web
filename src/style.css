@@ -362,7 +362,7 @@ main {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 9px;
-  max-height: 228px;
+  max-height: 270px;
   overflow: auto;
 }
 .crew-card {
@@ -395,8 +395,8 @@ main {
   width: 46px;
   height: 58px;
   background-image: var(--pirate-0);
-  background-size: 92px 58px;
-  background-position: left center;
+  background-size: 92px 174px;
+  background-position: left var(--portrait-y, 0px);
   background-repeat: no-repeat;
 }
 .portrait.boarder i {
