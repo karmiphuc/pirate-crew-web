@@ -43,17 +43,18 @@ function createTextures(scene: Phaser.Scene) {
     if (!scene.textures.exists(key)) {
       const texture = scene.textures.createCanvas(
         key,
-        64,
+        96,
         40 * PIRATE_VARIANTS,
       )!;
       for (let variant = 0; variant < PIRATE_VARIANTS; variant++) {
         for (const [frame, walking, x] of [
           ["idle", false, 0],
           ["walk", true, 32],
+          ["blink", false, 64],
         ] as const) {
           texture.context.save();
           texture.context.translate(x, variant * 40);
-          paintPirate(texture.context, i, walking, variant);
+          paintPirate(texture.context, i, walking, variant, frame === "blink");
           texture.context.restore();
           texture.add(
             PIRATE_FRAMES[frame][variant],
@@ -799,11 +800,16 @@ export class SeaScene extends Phaser.Scene {
       actor.setPosition(Math.round(x), Math.round(y));
       const moving =
         Math.abs(p.x - p.previousX) + Math.abs(p.y - p.previousY) > 0.001;
-      const walking =
-        moving && !this.host.reducedMotion() && Math.floor(s.tick / 5) % 2;
-      const frame = (walking ? PIRATE_FRAMES.walk : PIRATE_FRAMES.idle)[
-        pirateVariant(p)
-      ];
+      const reducedMotion = this.host.reducedMotion();
+      const walking = moving && !reducedMotion && Math.floor(s.tick / 5) % 2;
+      const blinking =
+        !moving && !reducedMotion && (s.tick + p.id * 11) % 110 < 3;
+      const frames = walking
+        ? PIRATE_FRAMES.walk
+        : blinking
+          ? PIRATE_FRAMES.blink
+          : PIRATE_FRAMES.idle;
+      const frame = frames[pirateVariant(p)];
       if (actor.frame.name !== frame) actor.setFrame(frame);
       actor.setFlipX(
         moving

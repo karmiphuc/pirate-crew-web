@@ -2,6 +2,7 @@
 export const PIRATE_FRAMES = {
   idle: ["idle-0", "idle-1", "idle-2"],
   walk: ["walk-0", "walk-1", "walk-2"],
+  blink: ["blink-0", "blink-1", "blink-2"],
 } as const;
 export const PIRATE_VARIANTS = PIRATE_FRAMES.idle.length;
 export function pirateVariant(pirate: { id: number; role: string }): number {
@@ -12,149 +13,162 @@ export function paintPirate(
   role: number,
   walking: boolean,
   variant = 0,
+  blinking = false,
 ) {
-  const ink = "#172c36",
-    gold = "#d6ae64",
-    ivory = "#eee2b3";
-  const skin = ["#dfa674", "#c58c61", "#a66c4b"][variant];
-  const shade = ["#b97952", "#9c6748", "#80513c"][variant];
+  const ink = "#293b43",
+    gold = "#e2bc73",
+    ivory = "#f5e7bd";
+  const skin = ["#efbd91", "#dca57a", "#b9815c"][variant];
+  const shade = ["#cf946e", "#bc815d", "#956244"][variant];
+  const blush = variant === 2 ? "#ca8b72" : "#e49b89";
   const coat = [
-    "#36515e",
-    "#a45245",
-    "#597b84",
-    ["#ddd1a3", "#738068", "#bd9669"][variant],
+    "#547889",
+    "#c97868",
+    "#7da4a3",
+    ["#efdfa9", "#9eae83", "#d5b18a"][variant],
   ][role];
-  const clothShade = ["#263e4b", "#743d38", "#3d596b", "#826f51"][role];
-  const hair = variant === 0 ? "#874d38" : "#493a32";
+  const clothShade = ["#3b596a", "#98564e", "#567c80", "#a58b63"][role];
+  const hair = variant === 0 ? "#a56443" : "#65503f";
   const pixel = (color: string, x: number, y: number, w = 1, h = 1) => {
     ctx.fillStyle = color;
     ctx.fillRect(x, y, w, h);
   };
-  // A compact silhouette, with the weight carried by boots rather than splayed toy legs.
-  const step = walking ? 2 : 0;
-  pixel(ink, 10 - step, 29, 5, 8);
-  pixel(ink, 16 + step, 29, 5, 8);
-  pixel("#46545b", 11 - step, 30, 3, 4);
-  pixel("#344650", 17 + step, 30, 3, 4);
-  pixel(ink, 9 - step, 36, 6, 2);
-  pixel(ink, 16 + step, 36, 7, 2);
-  pixel("#66503d", 10 - step, 35, 4, 2);
-  pixel("#66503d", 17 + step, 35, 4, 2);
-  pixel(gold, 11 - step, 34, 2);
-  pixel(gold, 18 + step, 34, 2);
-  // Shoulder, elbows and hems are stepped deliberately on the source grid.
-  pixel(ink, 10, 21, 11, 10);
-  pixel(ink, 8, 23, 3, 6);
-  pixel(ink, 20, 22, 3, 7);
-  pixel(ink, 22, 25, 3, 5);
-  pixel(coat, 11, 22, 9, 7);
-  pixel(coat, 9, 24, 2, 3);
-  pixel(coat, 20, 23, 2, 4);
-  pixel(clothShade, 10, 28, 11, 2);
-  pixel(clothShade, 19, 23, 1, 5);
-  pixel(skin, 8, 27, 3, 3);
-  pixel(shade, 8, 29, 3);
-  pixel(skin, 22, 27, 3, 3);
-  pixel(shade, 24, 27, 1, 3);
+  ctx.save();
+  ctx.translate(0, walking ? 1 : 0);
+  // Short, planted feet and a soft coat silhouette balance a large expressive head.
+  const step = walking ? 1 : 0;
+  pixel(ink, 11 - step, 32, 5, 6);
+  pixel(ink, 18 + step, 32, 5, 6);
+  pixel("#617079", 12 - step, 33, 3, 2);
+  pixel("#617079", 19 + step, 33, 3, 2);
+  pixel("#806346", 10 - step, 36, 6, 2);
+  pixel("#806346", 18 + step, 36, 6, 2);
+  pixel(gold, 12 - step, 35, 2);
+  pixel(gold, 20 + step, 35, 2);
+  pixel(ink, 12, 24, 10, 9);
+  pixel(ink, 10, 26, 14, 6);
+  pixel(coat, 12, 25, 10, 6);
+  pixel(coat, 11, 27, 12, 4);
+  pixel(clothShade, 12, 31, 10);
+  pixel(ink, 8, 27, 3, 5);
+  pixel(coat, 9, 27, 3, 3);
+  pixel(skin, 9, 30, 3, 2);
+  pixel(ink, 23, 27, 3, 5);
+  pixel(coat, 22, 27, 3, 3);
+  pixel(skin, 23, 30, 3, 2);
+  pixel(ivory, 16, 25, 3, 5);
   if (role === 0) {
-    pixel(gold, 11, 22, 1, 7);
-    pixel(gold, 19, 22, 1, 7);
-    pixel(ivory, 14, 22, 3, 4);
-    pixel(gold, 18, 24);
-    pixel(gold, 18, 27);
-  } else {
-    pixel(ivory, 14, 22, 3, 5);
-    if (role === 2 || (role === 3 && variant === 1)) {
-      pixel(clothShade, 11, 22, 2, 5);
-      pixel(clothShade, 18, 22, 2, 5);
-    }
+    pixel(gold, 13, 25, 1, 6);
+    pixel(gold, 21, 25, 1, 6);
+    pixel(gold, 20, 27);
+    pixel(gold, 20, 29);
+  } else if (role === 2 || (role === 3 && variant === 1)) {
+    pixel(clothShade, 13, 25, 2, 5);
+    pixel(clothShade, 20, 25, 2, 5);
   }
-  pixel(role === 1 ? "#7b3f38" : "#456b69", 10, 28, 11, 2);
-  pixel(gold, 15, 28, 3, 2);
-  // Three-quarter face. One-pixel features leave quiet areas instead of rounded outlines.
-  pixel(ink, 10, 11, 11, 9);
-  pixel(ink, 12, 20, 7, 2);
-  pixel(skin, 11, 12, 9, 7);
-  pixel(skin, 13, 19, 5, 2);
-  pixel(shade, 11, 15, 2, 4);
-  pixel(shade, 13, 19, 5);
-  pixel(skin, 20, 15, 2, 2);
-  pixel(ivory, 17, 13, 2);
-  pixel(ink, 15, 14, 1, 2);
-  pixel(ink, 19, 14, 1, 2);
-  pixel(shade, 18, 16);
-  pixel(ink, 17, 18, 2);
-  pixel(gold, 10, 17, 1, 2);
-  if (role === 0) {
-    // Broad tricorn brim, brass trim, tiny feather and a short beard.
-    pixel(ink, 9, 5, 4, 3);
-    pixel(ink, 15, 4, 5, 4);
-    pixel(ink, 20, 6, 3, 3);
-    pixel(ink, 7, 8, 17, 3);
-    pixel(coat, 10, 6, 3, 2);
-    pixel(coat, 16, 5, 3, 3);
-    pixel(coat, 20, 7, 2);
-    pixel(gold, 8, 9, 15);
-    pixel(ink, 9, 10, 13, 2);
-    pixel(ivory, 16, 6, 2);
-    pixel(ivory, 17, 7);
-    pixel("#a45245", 23, 5, 2, 3);
-    pixel("#a45245", 24, 4, 2, 2);
-    pixel(hair, 12, 18, 3, 3);
-    pixel(hair, 14, 20, 5, 2);
-    pixel(hair, 18, 19, 2, 2);
-  } else if (role === 1) {
-    pixel(ink, 10, 7, 9, 4);
-    pixel(coat, 10, 8, 9, 3);
-    pixel(coat, 8, 10, 14, 2);
-    pixel(coat, 7, 11, 3, 4);
-    pixel(coat, 6, 14, 2, 3);
-    pixel(gold, 11, 9, 7);
-    pixel(ink, 18, 14, 3, 2);
-    pixel(hair, 13, 19, 7, 2);
-    pixel(hair, 15, 21, 4);
-  } else if (role === 2) {
-    pixel(ink, 11, 7, 9, 4);
-    pixel(coat, 11, 8, 8, 3);
-    pixel(clothShade, 9, 10, 13, 2);
-    pixel(ivory, 10, 10, 11);
-    pixel(coat, 21, 11, 3, 3);
-    pixel(coat, 23, 13, 2, 3);
-    pixel(hair, 14, 19, 4);
-  } else if (variant === 0) {
-    pixel(ink, 11, 7, 8, 5);
-    pixel(hair, 11, 8, 8, 4);
-    pixel(hair, 10, 11, 3, 7);
-    pixel(hair, 9, 17, 3, 5);
-    pixel(hair, 8, 21, 3, 3);
-    pixel(gold, 11, 10, 9);
-    pixel(skin, 14, 11, 6, 2);
+  pixel(role === 1 ? "#ac6258" : "#6a938c", 11, 30, 12, 2);
+  pixel(gold, 16, 30, 3, 2);
+  // Stepped cheeks and jaw: round in silhouette, still strictly whole raster pixels.
+  pixel(ink, 11, 9, 10, 1);
+  pixel(ink, 9, 10, 14, 2);
+  pixel(ink, 8, 13, 16, 8);
+  pixel(ink, 9, 12, 14, 10);
+  pixel(ink, 11, 22, 10, 2);
+  pixel(ink, 13, 24, 6, 1);
+  pixel(skin, 11, 10, 10, 2);
+  pixel(skin, 10, 12, 12, 9);
+  pixel(skin, 9, 14, 14, 6);
+  pixel(skin, 12, 21, 8, 2);
+  pixel(skin, 14, 23, 4, 2);
+  pixel(shade, 9, 17, 1, 4);
+  pixel(shade, 12, 22, 8);
+  pixel(skin, 7, 16, 2, 4);
+  pixel(shade, 7, 18, 1, 2);
+  // Open eyes, tiny glints, rosy cheeks and a small smile replace the stiff side profile.
+  if (blinking) {
+    pixel(ink, 12, 17, 3);
+    pixel(ink, 19, 17, 3);
   } else {
-    pixel(ink, 11, 7, 8, 5);
-    pixel(hair, 11, 8, 8, 3);
-    pixel(hair, 9, 10, 3, 3);
-    pixel(hair, 19, 9, 3, 3);
-    const scarf = variant === 1 ? "#7b8f72" : "#537884";
-    pixel(scarf, 10, 11, 12, 2);
-    pixel(scarf, 8, 12, 3, 3);
-    pixel(scarf, 7, 14, 2, 3);
+    pixel(ink, 12, 15, 3, 3);
+    pixel(ink, 19, 15, 3, 3);
+    pixel(ink, 13, 18, 2);
+    pixel(ink, 19, 18, 2);
+    pixel(ivory, 13, 15);
+    pixel(ivory, 20, 15);
+  }
+  pixel(blush, 10, 19, 3);
+  pixel(blush, 20, 19, 2);
+  pixel(shade, 16, 18);
+  pixel(shade, 15, 20);
+  pixel(shade, 18, 20);
+  pixel(ink, 16, 21, 2);
+  pixel(gold, 7, 19, 1, 2);
+  if (role === 0) {
+    // A broad little tricorn and tiny feather keep the captain recognisable without a stern face.
+    pixel(ink, 8, 5, 5, 4);
+    pixel(ink, 14, 3, 6, 6);
+    pixel(ink, 21, 5, 5, 4);
+    pixel(ink, 5, 9, 23, 3);
+    pixel(coat, 9, 6, 4, 3);
+    pixel(coat, 15, 4, 4, 5);
+    pixel(coat, 21, 6, 4, 3);
+    pixel(gold, 6, 10, 21);
+    pixel(ivory, 16, 6, 2, 2);
+    pixel(ink, 17, 7);
+    pixel("#d68b76", 26, 5, 2, 4);
+    pixel("#d68b76", 27, 3, 2, 3);
+    pixel(hair, 12, 22, 3);
+    pixel(hair, 18, 22, 3);
+    pixel(hair, 14, 23, 5);
+  } else if (role === 1) {
+    pixel(ink, 11, 7, 10, 4);
+    pixel(coat, 11, 8, 10, 3);
+    pixel(coat, 8, 10, 16, 3);
+    pixel(gold, 10, 10, 12);
+    pixel(coat, 6, 11, 3, 4);
+    pixel(coat, 5, 14, 2, 3);
+    pixel(ink, 18, 15, 4, 4);
+    pixel(ink, 21, 14, 2);
+    pixel(hair, 13, 23, 7);
+  } else if (role === 2) {
+    pixel(ink, 11, 7, 10, 4);
+    pixel(coat, 11, 8, 10, 3);
+    pixel(clothShade, 8, 10, 16, 3);
+    pixel(ivory, 9, 10, 14);
+    pixel(coat, 23, 11, 3, 3);
+    pixel(coat, 25, 13, 2, 3);
+  } else if (variant === 0) {
+    pixel(ink, 11, 7, 10, 3);
+    pixel(hair, 11, 8, 10, 3);
+    pixel(hair, 9, 10, 4, 4);
+    pixel(hair, 8, 13, 2, 6);
+    pixel(hair, 8, 20, 3, 4);
+    pixel(hair, 7, 23, 3, 3);
+    pixel(gold, 11, 10, 11);
+    pixel(skin, 14, 11, 7, 2);
+  } else {
+    pixel(ink, 11, 7, 10, 4);
+    pixel(hair, 11, 8, 10, 3);
+    pixel(hair, 9, 9, 3, 3);
+    pixel(hair, 20, 9, 3, 3);
+    const scarf = variant === 1 ? "#a8b68a" : "#83a6b2";
+    pixel(scarf, 9, 11, 15, 2);
+    pixel(scarf, 7, 12, 3, 3);
+    pixel(scarf, 6, 14, 2, 3);
   }
   if (role === 2) {
-    pixel(ink, 24, 24, 7, 3);
-    pixel("#9cb1ac", 25, 24, 5);
-    pixel("#66503d", 25, 27, 2, 3);
-    pixel(ink, 30, 24, 2, 2);
+    pixel(ink, 25, 28, 6, 3);
+    pixel("#b8c9bc", 26, 28, 4);
+    pixel("#806346", 25, 31, 2, 2);
   } else {
-    // Cutlass follows a pixel staircase, with a bright edge and a dark back.
-    pixel(ink, 25, 23, 2, 6);
-    pixel(ink, 26, 20, 2, 4);
-    pixel(ink, 27, 17, 2, 4);
-    pixel(ink, 28, 15, 2, 3);
-    pixel("#9cb1ac", 26, 24, 1, 3);
-    pixel("#9cb1ac", 27, 21, 1, 3);
-    pixel(ivory, 28, 18, 1, 3);
-    pixel(ivory, 29, 15, 1, 3);
-    pixel(gold, 23, 28, 6);
-    pixel("#66503d", 25, 29, 2, 2);
+    pixel(ink, 26, 27, 2, 4);
+    pixel(ink, 27, 24, 2, 4);
+    pixel(ink, 28, 22, 2, 3);
+    pixel("#b8c9bc", 27, 28, 1, 3);
+    pixel(ivory, 28, 25, 1, 3);
+    pixel(ivory, 29, 22, 1, 3);
+    pixel(gold, 24, 31, 6);
+    pixel("#806346", 26, 32, 2, 2);
   }
+  ctx.restore();
 }

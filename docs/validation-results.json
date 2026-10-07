@@ -6,6 +6,7 @@
   "renderer": "Chromium SwiftShader (headless software rendering)",
   "fullLoop": "passed",
   "opaquePixelArt": "passed",
+  "idleBlinkAndReducedMotion": "passed",
   "skillAndEquipmentPurchases": "passed",
   "fishingAndGalley": "passed",
   "traitsAndSchema4": "passed",
@@ -24,16 +25,16 @@
   "quotaRollback": "passed",
   "memory": {
     "heapBefore": {
-      "usedSize": 9014148,
-      "totalSize": 13099008,
-      "embedderHeapUsedSize": 2074392,
-      "backingStorageSize": 11378354
+      "usedSize": 10709444,
+      "totalSize": 12574720,
+      "embedderHeapUsedSize": 1897296,
+      "backingStorageSize": 11441783
     },
     "heapAfter": {
-      "usedSize": 8821452,
-      "totalSize": 9953280,
-      "embedderHeapUsedSize": 1579344,
-      "backingStorageSize": 11378227
+      "usedSize": 8832744,
+      "totalSize": 10215424,
+      "embedderHeapUsedSize": 1637984,
+      "backingStorageSize": 11441835
     },
     "domBefore": {
       "documents": 1,
@@ -48,16 +49,16 @@
   },
   "diagnostics": {
     "frameMs": {
-      "count": 586,
-      "p50": 23.340000000000146,
-      "p95": 31.660000000000217,
-      "p99": 33.32999999999993
+      "count": 590,
+      "p50": 23.329999999999927,
+      "p95": 41.65,
+      "p99": 46.67000000000007
     },
     "tickMs": {
-      "count": 131,
+      "count": 130,
       "p50": 0,
       "p95": 0.10000000149011612,
-      "p99": 0.19999999925494194
+      "p99": 0.2000000011175871
     },
     "stalls": 0,
     "views": {
@@ -78,7 +79,7 @@
     "listeners": 5,
     "saveWrites": 0,
     "lock": "owned",
-    "tick": 13049,
+    "tick": 13038,
     "phase": "port"
   },
   "errors": []

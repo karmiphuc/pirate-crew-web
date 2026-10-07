@@ -1,6 +1,6 @@
 # First playable implementation
 
-Version: 0.6.1. Date: 2026-10-07. Previous baseline: 0.5.0.
+Version: 0.6.2. Date: 2026-10-07. Previous baseline: 0.6.1.
 
 ## Delivered
 
@@ -14,7 +14,7 @@ TypeScript 5.9.3, Phaser 3.90.0, Vite 7.3.6; a single-thread renderer-independen
 - Command capacity 64, orders eight/actor, twelve allies/enemies, notices 64. Work claims are keyed by ship/duty; at most one worker per slot and one task per actor. Orders, death, refits, capture, teardown, and disposal release claims/searches. Direct commands interrupt work.
 - Encounter teardown removes enemy entities, graphs, searches, paths, commands, and sprite bindings. Scene shutdown removes both paired shutdown/destroy handlers and external subscriptions.
 - No universal object pool, worker, ECS, spatial index, or per-frame world clone. Typed buffers serve bounded BFS scratch and timing samples only.
-- Four shared 64 × 120 sprite atlases provide idle/walk frames and are created once; one shared backdrop texture supplies harbour and cropped open-sea frames; static ship/background graphics redraw on layout/phase changes. No per-frame generated textures or post-processing.
+- Four shared 96 × 120 sprite atlases provide idle/walk/blink frames and are created once; one shared backdrop texture supplies harbour and cropped open-sea frames; static ship/background graphics redraw on layout/phase changes. No per-frame generated textures or post-processing.
 - Saves serialize through one writer with backpressure and transaction-complete acknowledgement. Mutation freezes during required writes. Port purchase failures restore pre-purchase state; departure writes precede combat.
 - Web Locks guards the browser save writer. Startup falls back to a previous valid checkpoint; invalid imports preserve current state.
 - Hidden-tab events pause and clear catch-up time. Context loss pauses, context restoration requires explicit resume. Generation/closed checks prevent stale application callbacks from reviving disposed simulation.
@@ -53,9 +53,9 @@ A real baseline laptop/GPU; Chrome/Firefox/Safari browser matrix; full 30-minute
 
 ## Measured Chromium run
 
-See [machine-readable report](validation-results.json). Version 0.6.1 development build, Chromium SwiftShader software rendering, 1440 × 1080 viewport. Scoped sample: frame p95 31.66 ms, tick p95 0.1 ms, zero stalls. Diagnostic-GC retained JS heap: 9,014,148 → 8,821,452 bytes across 50 rendered encounters; listeners 75 → 75, textures 8 → 8. All expedition, management, destruction, persistence, context and audio scenarios pass with no page errors. Atlas validation confirms all character alpha values are 0 or 255 and six frames per atlas.
+See [machine-readable report](validation-results.json). Version 0.6.2 development build, Chromium SwiftShader software rendering, 1440 × 1080 viewport. Scoped sample: frame p95 41.65 ms, tick p95 0.1 ms, zero stalls. Diagnostic-GC retained JS heap: 10,709,444 → 8,832,744 bytes across 50 rendered encounters; listeners 75 → 75, textures 8 → 8. All expedition, management, destruction, persistence, context and audio scenarios pass with no page errors. Atlas validation confirms all character alpha values are 0 or 255 and nine frames per 96 × 120 atlas. Idle blink and reduced-motion suppression pass.
 
-This fixture supports bounded cleanup but does not establish 60 FPS on hardware or a 30-minute ordinary-GC soak. Heap snapshots and browser/hardware coverage remain outstanding. Production root and repository-path checks pass with diagnostics absent.
+This fixture supports bounded cleanup but does not establish 60 FPS on hardware or a 30-minute ordinary-GC soak. The software-rendered frame p95 is slower than the prior scoped sample; these are not controlled hardware comparisons. Heap snapshots and browser/hardware coverage remain outstanding. Production root and repository-path checks pass with diagnostics absent.
 
 ## Published CI evidence
 
@@ -104,3 +104,7 @@ The recorded full integration run precedes the final compact-layout CSS adjustme
 ## Version 0.6.1 raster character correction
 
 [Pixel crew review](design/pixel-crew.md) records the user's rejected soft outlined style and its replacement with integer-pixel original sprite art. Native actor scale, nearest-neighbour portraits, adjusted health bars/selection rings/click height and unchanged bounded atlases align the foreground with pixel art. The accepted background and simulation are unchanged.
+
+## Version 0.6.2 cute crew iteration
+
+[Art iteration notes](design/cute-crew.md) record the larger faces, rounded stepped cheeks/jaws, eye glints, tiny smiles, shorter bodies/boots, softened palette and one-pixel walk bounce. Shared idle-blink frames follow the existing tick clock and respect reduced motion. Four atlases grow by 60 KiB decoded RGBA, with unchanged eight-texture/four-subscription targets. The accepted background, native actor scale, input targeting, navigation, simulation and save format remain unchanged.

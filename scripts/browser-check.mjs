@@ -81,11 +81,35 @@ try {
     });
   });
   for (const atlas of rasterArt) {
-    assert.equal(atlas.width, 64);
+    assert.equal(atlas.width, 96);
     assert.equal(atlas.height, 120);
-    assert.equal(atlas.frames, 6);
+    assert.equal(atlas.frames, 9);
     assert.equal(atlas.softEdges, 0);
   }
+  // Renderer fixture: idle blink follows the simulation clock and reduced motion disables it.
+  await page.evaluate(() => {
+    const app = window.__privateer,
+      scene = app.game.scene.getScene("sea"),
+      s = app.sim.state;
+    const captain = s.pirates.find((p) => p.role === "captain");
+    const tick = s.tick,
+      paused = app.paused,
+      motion = app.lowMotion;
+    app.paused = true;
+    app.lowMotion = false;
+    s.tick = (110 - ((captain.id * 11) % 110)) % 110;
+    scene.update(0, 0);
+    if (scene.actors.get(captain.id).frame.name !== "blink-0")
+      throw new Error("Idle blink must render");
+    app.lowMotion = true;
+    scene.update(0, 0);
+    if (scene.actors.get(captain.id).frame.name !== "idle-0")
+      throw new Error("Reduced motion must disable blink");
+    s.tick = tick;
+    app.paused = paused;
+    app.lowMotion = motion;
+    scene.update(0, 0);
+  });
   await page.screenshot({ path: "artifacts/harbour.png", fullPage: true });
   await page.click('[data-action="recruit"]');
   await page.waitForFunction(
@@ -556,6 +580,7 @@ try {
     renderer: "Chromium SwiftShader (headless software rendering)",
     fullLoop: "passed",
     opaquePixelArt: "passed",
+    idleBlinkAndReducedMotion: "passed",
     skillAndEquipmentPurchases: "passed",
     fishingAndGalley: "passed",
     traitsAndSchema4: "passed",
