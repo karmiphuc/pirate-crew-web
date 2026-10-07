@@ -63,3 +63,11 @@ Schema 2 validates meals, ship dirt/cannon cooldown, learned skills, assigned du
 ## Version 0.3 compatibility
 
 Schema 3 adds bounded unique trait arrays and per-tile wear. Schema 1 first takes the existing schema-2 migration; schema 2 then copies crew into schema 3 with neutral traits, preserving the map, RNG, inventory, hull health, and loadouts. Migration never mutates the caller. Missing legacy wear normalizes to zero; supplied wear must be an integer in 0..100 and ladders cannot carry wear. Unknown, duplicate, excess, or opposing food traits reject the import before replacement. Supported safe phases, database name, two-slot backup, and writer ownership remain unchanged. Runtime job targets/claims/progress are cleared when making checkpoints.
+
+## Version 0.4 compatibility
+
+Schema 4 changes damage 100 from cosmetic maximum wear to a destroyed support. Schema 3 imports migrate 100 to 99 so old checkpoints keep their valid floors. The existing v1→v2→v3 steps still run first. Validation checks the complete design blueprint, then the surviving navigation graph and actual supported crew positions. Disabled stations can persist, but unsupported or disconnected crew cannot replace a safe save. Falling and intermediate gap crossing are not safe checkpoint positions.
+
+Port repair is a recovery transaction: its pre-repair rollback snapshot may be temporarily unsafe, but is never written as a checkpoint. Failed storage restores both the prior state and transient fall origins; successful repair must pass normal supported-position validation before commit. Other purchases continue to require a safe prior checkpoint.
+
+Legacy diagonal ladder-corner samples snap to the already-validated rounded standing cell during v3 migration. Normal supported deck/ladder fractions are retained. New movement paths reach the current grid waypoint before changing axes, and new checkpoints reject unsupported corner samples.

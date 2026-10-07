@@ -282,7 +282,7 @@ try {
   assert.equal((await state()).gold, checkpointGold);
   assert.match((await state()).ships[0].name, /captured/);
   // Verify traits and fishing through the management UI, then exercise the galley loop.
-  assert.equal((await state()).schemaVersion, 3);
+  assert.equal((await state()).schemaVersion, 4);
   assert.deepEqual((await state()).pirates[3].traits, ["swift"]);
   await page.click('[data-action="select"][data-id="6"]');
   await page.click('[data-action="crew-settings"]');
@@ -318,6 +318,54 @@ try {
       window.__privateer.diagnostics().saveWrites === 0,
   );
   await page.click('[data-action="close"]');
+  // Authoritative destruction fixtures also exercise real scenery redraw and ownership cleanup.
+  await page.evaluate(() => {
+    const sim = window.__privateer.sim,
+      s = sim.state,
+      captain = s.pirates[0];
+    s.ships[0].tiles.find((t) => t.x === 10 && t.y === 4).damage = 100;
+    sim.refreshStructure(1);
+    captain.x = captain.previousX = 9;
+    captain.y = captain.previousY = 3;
+    sim.queue([captain.id], { action: "move", shipId: 1, node: 3 * 64 + 14 });
+    for (let i = 0; i < 80; i++) sim.tick();
+    if (captain.x !== 14 || captain.y !== 3 || captain.hp <= 0)
+      throw new Error("Safe gap crossing failed");
+  });
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: "artifacts/damaged-deck.png", fullPage: true });
+  await page.evaluate(() => {
+    const sim = window.__privateer.sim,
+      s = sim.state,
+      captain = s.pirates[0];
+    captain.x = captain.previousX = 3;
+    captain.y = captain.previousY = 3;
+    sim.assignDuty(captain.id, "repair");
+    s.ships[0].tiles.find((t) => t.x === 3 && t.y === 4).damage = 100;
+    sim.refreshStructure(1);
+    for (let i = 0; i < 100; i++) sim.tick();
+    if (captain.hp <= 0 || captain.y !== 3 || sim.fallingCount !== 0)
+      throw new Error("Fall and restoration recovery failed");
+    sim.rest();
+    sim.assignDuty(captain.id, "guard");
+  });
+  assert.equal((await diagnostics()).falls, 0);
+  // Port repairs must recover an unsafe supported-but-isolated crew position before saving.
+  await page.evaluate(() => {
+    const sim = window.__privateer.sim,
+      p = sim.state.pirates[0];
+    p.x = p.previousX = 3;
+    p.y = p.previousY = 3;
+    sim.state.ships[0].tiles.find((t) => t.x === 3 && t.y === 4).damage = 100;
+    sim.refreshStructure(1);
+    for (let i = 0; i < 5; i++) sim.tick();
+  });
+  await page.click('[data-action="rest"]');
+  await page.waitForFunction(
+    () =>
+      window.__privateer.state().pirates[0].y === 3 &&
+      window.__privateer.diagnostics().saveWrites === 0,
+  );
   // A second tab must not gain save ownership or advance a competing campaign.
   const other = await context.newPage();
   await other.goto(base);
@@ -426,6 +474,7 @@ try {
     assert.equal(d.searches, 0);
     assert.equal(d.tasks, 0);
     assert.equal(d.claims, 0);
+    assert.equal(d.falls, 0);
     assert.ok(d.audioVoices <= 8);
     assert.equal(d.views.actors, 4);
     assert.equal(d.views.textures, 7);
@@ -482,7 +531,9 @@ try {
     fullLoop: "passed",
     skillAndEquipmentPurchases: "passed",
     fishingAndGalley: "passed",
-    traitsAndSchema3: "passed",
+    traitsAndSchema4: "passed",
+    destroyedDeckAndRepair: "passed",
+    unsafePortRepairRecovery: "passed",
     islandExplorationAndReturn: "passed",
     explicitPlunder: "passed",
     captureAndReload: "passed",

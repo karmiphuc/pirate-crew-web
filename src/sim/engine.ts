@@ -19,7 +19,7 @@ import {
   nodeX,
   nodeY,
 } from "./model";
-import { Navigation, Search, validateLayout } from "./navigation";
+import { Navigation, Search, validateLayout, intact } from "./navigation";
 export class Simulation {
   private commands: InputCommand[] = [];
   private graphs = new Map<number, Navigation>();
@@ -29,6 +29,7 @@ export class Simulation {
     { duty: Duty; goal: number; progress: number; plank?: number }
   >();
   private claims = new Map<string, number>();
+  private falls = new Map<number, number>();
   disposed = false;
   expansions = 0;
   constructor(readonly state: Campaign) {
@@ -40,6 +41,87 @@ export class Simulation {
     this.searches.clear();
     for (const ship of this.state.ships)
       this.graphs.set(ship.id, new Navigation(ship));
+  }
+  /** Called once when a plank crosses the destroyed/intact boundary. */
+  refreshStructure(shipId: number) {
+    if (this.disposed) return;
+    const ship = this.state.ships.find((s) => s.id === shipId);
+    if (!ship) return;
+    ship.revision++;
+    this.graphs.set(shipId, new Navigation(ship));
+    for (const p of this.state.pirates)
+      if (p.shipId === shipId) this.clearOrder(p);
+  }
+  snapshotFalls(): [number, number][] {
+    return [...this.falls];
+  }
+  restoreFalls(entries: readonly [number, number][]) {
+    if (this.disposed) return;
+    this.falls.clear();
+    for (const [id, origin] of entries.slice(
+      0,
+      LIMITS.allies + LIMITS.enemies,
+    )) {
+      if (
+        Number.isFinite(origin) &&
+        origin >= 0 &&
+        origin < LIMITS.height &&
+        this.state.pirates.some((p) => p.id === id && p.hp > 0)
+      )
+        this.falls.set(id, origin);
+    }
+  }
+  get fallingCount() {
+    return this.falls.size;
+  }
+  private unsupported(p: Pirate) {
+    const graph = this.graph(p.shipId);
+    if (graph.jumping(p.x, p.y, p.path[0])) return false;
+    if (!this.falls.has(p.id) && graph.positionSupported(p.x, p.y))
+      return false;
+    if (!this.falls.has(p.id)) {
+      this.falls.set(p.id, p.y);
+      this.clearOrder(p);
+    }
+    const x = Math.round(p.x);
+    let landing = Infinity;
+    for (const n of graph.nodes.keys())
+      if (nodeX(n) === x && nodeY(n) >= p.y - 0.01)
+        landing = Math.min(landing, nodeY(n));
+    if (!Number.isFinite(landing)) {
+      p.hp = 0;
+      p.orders.length = 0;
+      this.falls.delete(p.id);
+      p.status = "Lost overboard";
+      notify(this.state, `${p.name} fell overboard.`, "bad");
+      return true;
+    }
+    p.x = x;
+    p.y = Math.min(landing, p.y + 0.3);
+    p.status = "Falling to the lower deck";
+    if (p.y === landing) {
+      const drop = landing - this.falls.get(p.id)!;
+      this.falls.delete(p.id);
+      p.hp = Math.max(0, p.hp - Math.max(0, Math.ceil(drop - 1)) * 8);
+      p.status = "Landed on lower deck";
+    }
+    return true;
+  }
+  private safeHome() {
+    const graph = this.graph(1),
+      base = graph.nearest(3, 3);
+    return (
+      base !== -1 &&
+      this.state.pirates
+        .filter((p) => p.side === "ally" && p.hp > 0)
+        .every(
+          (p) =>
+            p.shipId === 1 &&
+            !this.falls.has(p.id) &&
+            graph.positionSupported(p.x, p.y) &&
+            graph.connected(base, tileNode(Math.round(p.x), Math.round(p.y))),
+        )
+    );
   }
   get graphCount() {
     return this.graphs.size;
@@ -174,7 +256,11 @@ export class Simulation {
   }
   private transfer(p: Pirate, shipId: number) {
     const graph = this.graph(shipId);
-    const node = graph.nearest(shipId === 1 ? 17 : 0, 3);
+    const node = graph.nearestReachable(
+      shipId === 1 ? 17 : 0,
+      3,
+      graph.nearest(3, 3),
+    );
     if (node === -1) {
       this.state.phase = "gameover";
       notify(
@@ -193,12 +279,14 @@ export class Simulation {
   }
   private updatePirate(p: Pirate) {
     if (p.hp <= 0) {
+      this.falls.delete(p.id);
       this.clearOrder(p);
       p.orders.length = 0;
       return;
     }
     p.previousX = p.x;
     p.previousY = p.y;
+    if (this.unsupported(p)) return;
     if (p.cooldown > 0) p.cooldown--;
     const order = p.orders[0];
     if (order?.action === "cannon") {
@@ -383,6 +471,12 @@ export class Simulation {
         this.searches.delete(p.id);
         if (search.path) {
           p.path = search.path;
+          if (
+            Math.abs(p.x - nodeX(search.start)) +
+              Math.abs(p.y - nodeY(search.start)) >
+            0.001
+          )
+            p.path.unshift(search.start);
           p.pathRevision = search.graph.ship.revision;
         } else this.finish(p, "No reachable route");
       }
@@ -402,6 +496,7 @@ export class Simulation {
           this.commands.length = 0;
           this.tasks.clear();
           this.claims.clear();
+          this.falls.clear();
           this.searches.clear();
           notify(
             s,
@@ -487,6 +582,14 @@ export class Simulation {
       notify(
         s,
         "Buy provisions and set aside crew wages before sailing.",
+        "bad",
+      );
+      return false;
+    }
+    if (!this.safeHome()) {
+      notify(
+        s,
+        "Repair the deck and return crew to reachable positions before sailing.",
         "bad",
       );
       return false;
@@ -616,6 +719,7 @@ export class Simulation {
     this.searches.clear();
     this.tasks.clear();
     this.claims.clear();
+    this.falls.clear();
     for (const p of this.state.pirates)
       if (p.side === "ally" && p.hp > 0) {
         if (p.shipId !== 1) this.transfer(p, 1);
@@ -632,6 +736,14 @@ export class Simulation {
   escape() {
     if (this.disposed || !["encounter", "aftermath"].includes(this.state.phase))
       return false;
+    if (!this.safeHome()) {
+      notify(
+        this.state,
+        "Return crew and repair unreachable deck before escaping.",
+        "bad",
+      );
+      return false;
+    }
     if (
       this.state.pirates.some(
         (p) => p.side === "ally" && p.hp > 0 && p.shipId !== 1,
@@ -700,6 +812,26 @@ export class Simulation {
       home = s.ships[0];
     if (p.side !== "ally" || p.shipId !== 1 || !p.skills.includes(duty))
       return false;
+    const stationKind =
+      duty === "cook"
+        ? "food"
+        : duty === "medic"
+          ? "medical"
+          : duty === "gunner"
+            ? "cannon"
+            : null;
+    if (stationKind) {
+      const station = home.stations.find((t) => t.kind === stationKind),
+        graph = this.graph(1);
+      if (
+        !station ||
+        !graph.connected(
+          graph.nearest(p.x, p.y),
+          tileNode(station.x, station.y),
+        )
+      )
+        return false;
+    }
     if (duty === "cook")
       return (
         s.food > 0 &&
@@ -749,7 +881,19 @@ export class Simulation {
       this.releaseWork(p);
       if (ordered && (s.ammo === 0 || !p.skills.includes("gunner")))
         this.finish(p, "No cannonballs or gunnery skill available");
-      else if (ordered) p.status = "Waiting for cannon reload";
+      else if (ordered) {
+        const station = home.stations.find((t) => t.kind === "cannon"),
+          graph = this.graph(1);
+        if (
+          !station ||
+          !graph.connected(
+            graph.nearest(p.x, p.y),
+            tileNode(station.x, station.y),
+          )
+        )
+          this.finish(p, "No reachable cannon station");
+        else p.status = "Waiting for cannon reload";
+      }
       return ordered;
     }
     const key = `${p.shipId}:${duty}`;
@@ -777,17 +921,42 @@ export class Simulation {
         if (ordered) this.finish(p, "No working cannon station");
         return false;
       }
-      let damaged: Tile | undefined;
-      if (duty === "repair")
-        for (const tile of home.tiles) {
-          if ((tile.damage ?? 0) > (damaged?.damage ?? 0)) damaged = tile;
-        }
       const graph = this.graph(1),
         start = graph.nearest(p.x, p.y);
+      let damaged: Tile | undefined,
+        repairGoal = -1;
+      if (duty === "repair")
+        for (const tile of home.tiles) {
+          if ((tile.damage ?? 0) <= (damaged?.damage ?? 0)) continue;
+          // Fixed local candidates avoid scanning the entire graph for each plank.
+          const candidates = [
+            [tile.x, tile.y - 1],
+            [tile.x - 1, tile.y - 1],
+            [tile.x + 1, tile.y - 1],
+            [tile.x, tile.y],
+            [tile.x, tile.y + 1],
+          ];
+          const candidate = candidates.find(
+            ([x, y]) =>
+              x >= 0 &&
+              x < LIMITS.width &&
+              y >= 0 &&
+              y < LIMITS.height &&
+              graph.connected(start, tileNode(x, y)),
+          );
+          if (candidate) {
+            damaged = tile;
+            repairGoal = tileNode(candidate[0], candidate[1]);
+          }
+        }
+      if (duty === "repair" && !damaged && home.hp === home.maxHp) {
+        p.status = "No reachable damaged plank";
+        return true;
+      }
       const goal = station
         ? tileNode(station.x, station.y)
         : damaged
-          ? graph.nearestReachable(damaged.x, damaged.y - 1, start)
+          ? repairGoal
           : graph.nearestReachable(
               duty === "fish" ? 0 : duty === "clean" ? 10 : 3,
               3,
@@ -853,7 +1022,29 @@ export class Simulation {
       s.parts--;
       home.hp = Math.min(home.maxHp, home.hp + 12);
       const plank = home.tiles.find((t) => tileNode(t.x, t.y) === task.plank);
-      if (plank) plank.damage = Math.max(0, (plank.damage ?? 0) - 60);
+      if (plank) {
+        const destroyed = !intact(plank);
+        plank.damage = Math.max(0, (plank.damage ?? 0) - 60);
+        if (destroyed) {
+          this.refreshStructure(1);
+          const above = tileNode(plank.x, plank.y - 1);
+          if (this.graph(1).nodes.has(above))
+            for (const actor of s.pirates) {
+              if (
+                actor.shipId === 1 &&
+                actor.hp > 0 &&
+                Math.round(actor.x) === plank.x &&
+                actor.y >= plank.y - 1 &&
+                actor.y <= plank.y
+              ) {
+                actor.x = actor.previousX = plank.x;
+                actor.y = actor.previousY = plank.y - 1;
+                this.falls.delete(actor.id);
+                actor.status = "Standing on repaired deck";
+              }
+            }
+        }
+      }
     }
     if (duty === "medic") {
       const injured = s.pirates.find(
@@ -890,6 +1081,7 @@ export class Simulation {
         100,
         (plank.damage ?? 0) + (shipId === 1 ? 60 : 40),
       );
+    if (plank && !intact(plank)) this.refreshStructure(target.id);
     const victims = s.pirates.filter(
       (p) =>
         p.hp > 0 &&
@@ -919,12 +1111,19 @@ export class Simulation {
     const ship = this.state.ships[1];
     if (ship?.kind !== "ship" || ship.hp <= 0 || ship.cannonCooldown > 0)
       return;
+    const station = ship.stations.find((t) => t.kind === "cannon");
+    if (!station || !this.graph(2).nodes.has(tileNode(station.x, station.y)))
+      return;
     const gunner = this.state.pirates.find(
       (p) =>
         p.side === "enemy" &&
         p.hp > 0 &&
         p.shipId === 2 &&
-        !this.nearestEnemy(p),
+        !this.nearestEnemy(p) &&
+        this.graph(2).connected(
+          this.graph(2).nearest(p.x, p.y),
+          tileNode(station.x, station.y),
+        ),
     );
     if (gunner) {
       gunner.status = "Firing ship cannon";
@@ -1029,9 +1228,22 @@ export class Simulation {
       return false;
     }
     const prize = s.ships[1];
+    if (!this.safeHome()) {
+      notify(
+        s,
+        "Repair the home deck so every survivor is reachable before claiming spoils.",
+        "bad",
+      );
+      return false;
+    }
     if (capture) {
       if (!prize || prize.kind !== "ship" || prize.hp <= 0) {
         notify(s, "A disabled wreck or island cannot be captured.", "bad");
+        return false;
+      }
+      const error = validateLayout(prize, prize.tiles);
+      if (error) {
+        notify(s, `Cannot capture damaged access: ${error}`, "bad");
         return false;
       }
       const captured = {
@@ -1048,7 +1260,11 @@ export class Simulation {
       this.rebuild();
       for (const p of s.pirates)
         if (p.side === "ally") {
-          const node = this.graph(1).nearest(3 + (p.id % 6), 3);
+          const node = this.graph(1).nearestReachable(
+            3 + (p.id % 6),
+            3,
+            this.graph(1).nearest(3, 3),
+          );
           p.x = p.previousX = nodeX(node);
           p.y = p.previousY = nodeY(node);
         }
@@ -1093,7 +1309,11 @@ export class Simulation {
       return false;
     }
     const p = makePirate(s.nextId++, s.pirates.length);
-    const spawn = this.graph(1).nearest(p.x, p.y);
+    const spawn = this.graph(1).nearestReachable(
+      p.x,
+      p.y,
+      this.graph(1).nearest(3, 3),
+    );
     p.x = nodeX(spawn);
     p.y = nodeY(spawn);
     p.previousX = p.x;
@@ -1134,13 +1354,18 @@ export class Simulation {
     s.ships[0].hp = s.ships[0].maxHp;
     s.ships[0].dirt = 0;
     for (const tile of s.ships[0].tiles) tile.damage = 0;
+    this.refreshStructure(1);
     this.tasks.clear();
     this.claims.clear();
+    this.falls.clear();
     this.searches.clear();
     for (const p of s.pirates) {
       p.hp = p.maxHp;
       p.hunger = 100;
       p.morale = 100;
+      const node = this.graph(1).nearest(p.x, p.y);
+      p.x = p.previousX = nodeX(node);
+      p.y = p.previousY = nodeY(node);
       p.status = "Rested";
       p.orders.length = 0;
       p.path.length = 0;
@@ -1217,6 +1442,7 @@ export class Simulation {
     ship.stations = stations.map((t) => ({ ...t }));
     this.tasks.clear();
     this.claims.clear();
+    this.falls.clear();
     ship.revision++;
     this.rebuild();
     for (const p of s.pirates) {
@@ -1235,5 +1461,6 @@ export class Simulation {
     this.graphs.clear();
     this.tasks.clear();
     this.claims.clear();
+    this.falls.clear();
   }
 }

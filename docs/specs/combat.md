@@ -48,3 +48,7 @@ Cannoneers path to the station and complete 40 work ticks before consuming ammun
 Each broadside wears one seeded hull plank by 40 (enemy fire) or 60 (player fire), capped at 100. Wear draws a crack on that actual tile, without generating textures or rebuilding navigation. Ship health remains the existing aggregate sinking reserve, independent of plank wear. A Shipwright chooses the most worn plank when starting work, paths to a reachable adjacent deck position, and retains that plank as the job target even if another is hit. One timber restores 12 ship health and up to 60 wear on the selected plank. Repairs may continue at full ship health to remove remaining wear. Tavern repairs clear all wear. Refit copies preserve existing wear; supplying fresh tile objects cannot reset it.
 
 Destroyed geometry, falling, swimming, and unsafe gaps remain deferred as a coupled navigation/persistence change. No claim of destructible combat topology is made by this milestone.
+
+## Version 0.4 structural effects
+
+At damage 100 the actual plank disappears from rendering/navigation. A cannon strike crossing that threshold replaces the affected graph and cancels stale paths/work; the next movement step resolves support or a fall. Repair crossing back below 100 restores support and safely raises occupants. Aggregate hull health still controls sinking. Capture additionally requires intact station access; safe spoils/escape transitions require reachable home survivors. Original projectile physics, general fragment simulation and swimming remain deferred.

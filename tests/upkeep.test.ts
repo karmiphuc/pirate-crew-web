@@ -159,7 +159,7 @@ describe("schema 3 checkpoint safety", () => {
     for (const p of old.pirates) delete p.traits;
     const before = JSON.stringify(old);
     const migrated = validateSave(old);
-    expect(migrated.schemaVersion).toBe(3);
+    expect(migrated.schemaVersion).toBe(4);
     expect(migrated.pirates.every((p) => p.traits.length === 0)).toBe(true);
     expect(JSON.stringify(old)).toBe(before);
   });

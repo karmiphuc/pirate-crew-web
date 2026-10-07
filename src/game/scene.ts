@@ -8,6 +8,7 @@ import {
   Station,
   Tile,
 } from "../sim/model";
+import { intact } from "../sim/navigation";
 import { Lifetime } from "../app/lifetime";
 export const TILE = 18;
 export const HOME_X = 230;
@@ -87,6 +88,7 @@ export class SeaScene extends Phaser.Scene {
   private waves!: Phaser.GameObjects.Graphics;
   private overlay!: Phaser.GameObjects.Graphics;
   private actors = new Map<number, Phaser.GameObjects.Sprite>();
+  private seenEnemyRevision = -1;
   private seenRevision = -1;
   private seenPhase = "";
   private seenLocation = -1;
@@ -308,7 +310,7 @@ export class SeaScene extends Phaser.Scene {
     ox: number,
     draft: Tile[] | null,
   ) {
-    const tiles = draft ?? ship.tiles;
+    const tiles = (draft ?? ship.tiles).filter((t) => draft || intact(t));
     if (ship.kind === "island") {
       for (const t of tiles) {
         const x = ox + t.x * TILE,
@@ -459,6 +461,7 @@ export class SeaScene extends Phaser.Scene {
       draft = this.host.draft();
     if (
       this.seenRevision !== s.ships[0].revision ||
+      this.seenEnemyRevision !== (s.ships[1]?.revision ?? -1) ||
       this.seenPhase !== s.phase ||
       this.seenLocation !== s.location ||
       this.draftRef !== draft ||
@@ -466,6 +469,7 @@ export class SeaScene extends Phaser.Scene {
     ) {
       this.drawScenery();
       this.seenRevision = s.ships[0].revision;
+      this.seenEnemyRevision = s.ships[1]?.revision ?? -1;
       this.seenPhase = s.phase;
       this.seenLocation = s.location;
       this.draftRef = draft;
@@ -495,7 +499,7 @@ export class SeaScene extends Phaser.Scene {
           ship.hp < ship.maxHp * 0.35 ? 0xd88066 : 0xa7bd84,
         );
         for (const t of ship.tiles) {
-          if (!(t.damage ?? 0)) continue;
+          if (!(t.damage ?? 0) || !intact(t)) continue;
           const x = ox + t.x * TILE,
             y = SHIP_Y + t.y * TILE;
           g.lineStyle(2, (t.damage ?? 0) >= 80 ? 0xc36c48 : 0x332f29);
@@ -548,7 +552,19 @@ export class SeaScene extends Phaser.Scene {
         (p.shipId === 1 ? HOME_X : ENEMY_X) +
         (p.previousX + (p.x - p.previousX) * alpha) * TILE +
         9;
-      const y = SHIP_Y + (p.previousY + (p.y - p.previousY) * alpha + 1) * TILE;
+      let y = SHIP_Y + (p.previousY + (p.y - p.previousY) * alpha + 1) * TILE;
+      const next = p.path[0];
+      if (next !== undefined && Math.abs(p.y - nodeY(next)) < 0.01) {
+        const gx = nodeX(next),
+          gapX = gx + (p.x < gx ? -1 : 1),
+          ship = s.ships.find((t) => t.id === p.shipId);
+        if (
+          Math.abs(p.x - gx) <= 2 &&
+          ship?.tiles.some((t) => t.x === gapX && t.y === p.y + 1 && !intact(t))
+        ) {
+          y -= Math.sin((Math.PI * Math.abs(p.x - gx)) / 2) * 12;
+        }
+      }
       actor.setPosition(Math.round(x), Math.round(y));
       const moving =
         Math.abs(p.x - p.previousX) + Math.abs(p.y - p.previousY) > 0.001;

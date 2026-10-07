@@ -55,9 +55,47 @@ export function validateSave(value: unknown): Campaign {
       pirates: value.pirates.map((p) => (record(p) ? { ...p, traits: [] } : p)),
     };
   }
+  if (record(value) && value.schemaVersion === 3) {
+    if (
+      !Array.isArray(value.ships) ||
+      value.ships.length !== 1 ||
+      !Array.isArray(value.pirates) ||
+      value.pirates.length > LIMITS.allies
+    )
+      throw new Error("Invalid legacy hull or crew.");
+    value = {
+      ...value,
+      schemaVersion: 4,
+      // Earlier navigation could cut a ladder corner between two fractional coordinates.
+      // Old validation already required that the rounded standing cell be reachable.
+      pirates: value.pirates.map((p) => {
+        if (
+          !record(p) ||
+          !bounded(p.x, 0, 63) ||
+          !bounded(p.y, 0, 23) ||
+          Number.isInteger(p.x) ||
+          Number.isInteger(p.y)
+        )
+          return p;
+        const x = Math.round(p.x),
+          y = Math.round(p.y);
+        return { ...p, x, y, previousX: x, previousY: y };
+      }),
+      ships: value.ships.map((s) => {
+        if (!record(s) || !Array.isArray(s.tiles) || s.tiles.length > 1536)
+          throw new Error("Invalid legacy parts.");
+        return {
+          ...s,
+          tiles: s.tiles.map((t) =>
+            record(t) && t.damage === 100 ? { ...t, damage: 99 } : t,
+          ),
+        };
+      }),
+    };
+  }
   if (
     !record(value) ||
-    value.schemaVersion !== 3 ||
+    value.schemaVersion !== 4 ||
     !text(value.campaignId) ||
     !["port", "travel", "victory", "won"].includes(String(value.phase))
   )
@@ -166,7 +204,11 @@ export function validateSave(value: unknown): Campaign {
     stationNodes.add(tileNode(t.x as number, t.y as number));
   }
   const state = value as unknown as Campaign;
-  const layoutError = validateLayout(state.ships[0], state.ships[0].tiles);
+  const layoutError = validateLayout(
+    state.ships[0],
+    state.ships[0].tiles,
+    true,
+  );
   if (layoutError) throw new Error(layoutError);
   const graph = new Navigation(state.ships[0]);
   const base = graph.nearest(3, 3);
@@ -211,6 +253,8 @@ export function validateSave(value: unknown): Campaign {
       if (!bounded(p[key], 0, 63)) throw new Error("Invalid crew position.");
     for (const key of ["y", "previousY"])
       if (!bounded(p[key], 0, 23)) throw new Error("Invalid crew position.");
+    if (!graph.positionSupported(p.x as number, p.y as number))
+      throw new Error("Crew must be on supported reachable deck or ladder.");
     const standing = tileNode(
       Math.round(p.x as number),
       Math.round(p.y as number),
@@ -248,7 +292,7 @@ export function validateSave(value: unknown): Campaign {
       throw new Error("Invalid journal.");
   // Only explicit fields enter the application. Unknown properties are discarded.
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     campaignId: state.campaignId,
     revision: state.revision,
     tick: state.tick,

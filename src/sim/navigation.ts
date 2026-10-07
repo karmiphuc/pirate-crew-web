@@ -1,4 +1,7 @@
 import { LIMITS, Ship, Tile, tileNode, nodeX, nodeY } from "./model";
+export function intact(t: Tile) {
+  return t.kind === "ladder" || (t.damage ?? 0) < 100;
+}
 export class Navigation {
   readonly nodes = new Map<number, number[]>();
   private readonly components = new Map<number, number>();
@@ -6,8 +9,10 @@ export class Navigation {
     const solid = new Set<number>();
     const ladders = new Set<number>();
     for (const t of ship.tiles)
-      (t.kind === "hull" ? solid : ladders).add(tileNode(t.x, t.y));
+      if (intact(t))
+        (t.kind === "hull" ? solid : ladders).add(tileNode(t.x, t.y));
     for (const t of ship.tiles) {
+      if (!intact(t)) continue;
       if (t.kind === "hull" && t.y > 0 && !solid.has(tileNode(t.x, t.y - 1)))
         this.nodes.set(tileNode(t.x, t.y - 1), []);
       if (t.kind === "ladder" && !solid.has(tileNode(t.x, t.y))) {
@@ -21,6 +26,22 @@ export class Navigation {
         y = nodeY(n);
       if (x > 0 && this.nodes.has(n - 1)) edges.push(n - 1);
       if (x < LIMITS.width - 1 && this.nodes.has(n + 1)) edges.push(n + 1);
+      // A single missing deck cell can be jumped only with clear headroom.
+      for (const dx of [-2, 2]) {
+        const goal = n + dx,
+          gap = n + dx / 2;
+        if (x + dx < 0 || x + dx >= LIMITS.width) continue;
+        if (
+          this.nodes.has(goal) &&
+          !this.nodes.has(gap) &&
+          !solid.has(gap) &&
+          y > 0 &&
+          !solid.has(n - LIMITS.width) &&
+          !solid.has(gap - LIMITS.width) &&
+          !solid.has(goal - LIMITS.width)
+        )
+          edges.push(goal);
+      }
       if (
         y > 0 &&
         this.nodes.has(n - LIMITS.width) &&
@@ -50,6 +71,46 @@ export class Navigation {
         }
       }
     }
+  }
+  positionSupported(x: number, y: number) {
+    const left = Math.floor(x),
+      right = Math.ceil(x),
+      top = Math.floor(y),
+      bottom = Math.ceil(y);
+    if (top === bottom)
+      return (
+        this.nodes.has(tileNode(left, top)) &&
+        this.nodes.has(tileNode(right, top))
+      );
+    if (left !== right) return false;
+    return (this.nodes.get(tileNode(left, top)) ?? []).includes(
+      tileNode(left, bottom),
+    );
+  }
+  connected(start: number, goal: number) {
+    return (
+      this.components.has(start) &&
+      this.components.get(start) === this.components.get(goal)
+    );
+  }
+  jumping(x: number, y: number, goal: number | undefined) {
+    if (
+      goal === undefined ||
+      !this.nodes.has(goal) ||
+      Math.abs(y - nodeY(goal)) > 0.01
+    )
+      return false;
+    for (const dx of [-2, 2]) {
+      const start: number = goal + dx;
+      if (
+        (this.nodes.get(start) ?? []).includes(goal) &&
+        !this.nodes.has(goal + dx / 2) &&
+        x >= Math.min(nodeX(start), nodeX(goal)) &&
+        x <= Math.max(nodeX(start), nodeX(goal))
+      )
+        return true;
+    }
+    return false;
   }
   nearestReachable(x: number, y: number, start: number) {
     const component = this.components.get(start);
@@ -121,7 +182,11 @@ export class Search {
     return used;
   }
 }
-export function validateLayout(ship: Ship, tiles: Tile[]): string | null {
+export function validateLayout(
+  ship: Ship,
+  tiles: Tile[],
+  blueprint = false,
+): string | null {
   if (tiles.length === 0 || tiles.length > LIMITS.width * LIMITS.height)
     return "A ship needs a connected hull.";
   const occupied = new Set<number>();
@@ -158,7 +223,10 @@ export function validateLayout(ship: Ship, tiles: Tile[]): string | null {
       }
   }
   if (visited.size !== occupied.size) return "Connect every part to the hull.";
-  const graph = new Navigation({ ...ship, tiles });
+  const graph = new Navigation({
+    ...ship,
+    tiles: blueprint ? tiles.map((t) => ({ ...t, damage: 0 })) : tiles,
+  });
   const base = graph.nearest(3, 3);
   for (const station of ship.stations) {
     const target = tileNode(station.x, station.y);

@@ -22,7 +22,7 @@ export interface Tile {
   x: number;
   y: number;
   kind: TileKind;
-  /** Local plank wear, 0..100. Worn planks retain structural support. */
+  /** Local plank damage, 0..100. At 100 the blueprint slot is a destroyed plank. */
   damage?: number;
 }
 export interface Station {
@@ -150,7 +150,7 @@ export interface Notice {
   tone: "info" | "good" | "bad";
 }
 export interface Campaign {
-  schemaVersion: 3;
+  schemaVersion: 4;
   campaignId: string;
   revision: number;
   tick: number;
@@ -399,7 +399,7 @@ export function createCampaign(
     },
   ];
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     campaignId,
     revision: 0,
     tick: 0,

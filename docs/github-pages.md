@@ -25,7 +25,7 @@ No service worker or offline install has been introduced. Normal HTTP cache beha
 
 ## Verification status
 
-Production build and all 69 simulation/storage/lifetime tests pass. Live Pages behavior and repository environment rules remain unverified while Pages is disabled. GitHub Actions execution is tracked below. The hosting smoke test is a local production check, not a claim that Pages has deployed.
+Production build and all 92 simulation/storage/lifetime tests pass. Live Pages behavior and repository environment rules remain unverified while Pages is disabled. GitHub Actions execution is tracked below. The hosting smoke test is a local production check, not a claim that Pages has deployed.
 
 The production browser smoke passes at both `/` and `/pirate-crew-web/`, with no browser errors. During each run the server exposes only the tested mount, so absolute root asset references fail the repository-path check.
 
