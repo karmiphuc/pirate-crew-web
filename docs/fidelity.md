@@ -1,6 +1,6 @@
 # Fidelity tracker
 
-Updated 2026-10-07 for version 0.6.0. This is a working comparison, not a claim of a verified 1:1 recreation. No Steam installation, original source, or extracted asset bundle is present in the workspace. Original build/version and exact formulas have not been measured. All sprites, scenery, names, sound effects, and balance shipped here are newly authored.
+Updated 2026-10-07 for version 0.6.1. This is a working comparison, not a claim of a verified 1:1 recreation. No Steam installation, original source, or extracted asset bundle is present in the workspace. Original build/version and exact formulas have not been measured. All sprites, scenery, names, sound effects, and balance shipped here are newly authored.
 
 | Reference behavior | Delivered browser behavior | Remaining fidelity gap |
 | --- | --- | --- |

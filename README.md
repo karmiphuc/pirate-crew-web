@@ -54,7 +54,7 @@ Only one browser tab can own writable save state. Backgrounding pauses the voyag
 
 ## Current scope
 
-Version 0.6.0: one harbour, ten map locations, three pirate ship encounters, two explorable islands, four pirate lords, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/fishing/repairs/healing, destructible planks, one-gap jumps, lower-deck falls and targeted restoration, hull combat, recruit traits and previews, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1, version-2 and version-3 checkpoints migrate without losing their original campaign map.
+Version 0.6.1: one harbour, ten map locations, three pirate ship encounters, two explorable islands, four pirate lords, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/fishing/repairs/healing, destructible planks, one-gap jumps, lower-deck falls and targeted restoration, hull combat, recruit traits and previews, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1, version-2 and version-3 checkpoints migrate without losing their original campaign map.
 
 This is a growing remake, not a verified 1:1 recreation. Art, names, interfaces, terrain, and balance are original. Full equipment/drop inventories, swimming, rum/toys, the complete trait catalogue, procedural world topology, music/voice lines, pets, and full original content remain. Boarding uses a drawn rope with abstract transfers; navigation uses a deck/ladder graph. The [fidelity tracker](docs/fidelity.md) distinguishes reference behavior, delivered systems, and gaps.
 
@@ -73,3 +73,7 @@ Version 0.4: [damaged deck screenshot](docs/images/damaged-deck.png).
 Version 0.6 refines crew identity with matching persistent portraits, adds sandy island edges, rock contours, vegetation and water-contact details, improves supply/medical props, and shows two complete desktop roster rows. [Current visual review](docs/design/visual-refinement.md); [earlier art direction](docs/design/visual-review.md).
 
 ![Version 0.6 harbour](docs/images/refined-harbour.png)
+
+Version 0.6.1 replaces the soft outlined crew with original raster pixel sprites: integer-pixel drawing, opaque edges, compact profiles and stepped hat/weapon silhouettes. Actors now render at native scale; portraits use nearest-neighbour scaling. The coastal backdrop is unchanged. [Pixel sprite correction](docs/design/pixel-crew.md).
+
+![Actual shared character atlases, enlarged without smoothing](docs/images/pixel-crew-atlases.png)

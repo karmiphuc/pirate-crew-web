@@ -60,6 +60,32 @@ try {
   );
   await page.waitForTimeout(600);
   assert.equal((await state()).phase, "port");
+  // Pixel-art source must have hard opaque edges, not antialiased vector contours.
+  const rasterArt = await page.evaluate(() => {
+    const textures = window.__privateer.game.textures;
+    return Array.from({ length: 4 }, (_, role) => {
+      const texture = textures.get(`pirate-${role}`);
+      const source = texture.getSourceImage();
+      const pixels = source
+        .getContext("2d")
+        .getImageData(0, 0, source.width, source.height).data;
+      let softEdges = 0;
+      for (let i = 3; i < pixels.length; i += 4)
+        if (pixels[i] !== 0 && pixels[i] !== 255) softEdges++;
+      return {
+        width: source.width,
+        height: source.height,
+        frames: texture.getFrameNames().length,
+        softEdges,
+      };
+    });
+  });
+  for (const atlas of rasterArt) {
+    assert.equal(atlas.width, 64);
+    assert.equal(atlas.height, 120);
+    assert.equal(atlas.frames, 6);
+    assert.equal(atlas.softEdges, 0);
+  }
   await page.screenshot({ path: "artifacts/harbour.png", fullPage: true });
   await page.click('[data-action="recruit"]');
   await page.waitForFunction(
@@ -529,6 +555,7 @@ try {
     viewport: { width: 1440, height: 1080 },
     renderer: "Chromium SwiftShader (headless software rendering)",
     fullLoop: "passed",
+    opaquePixelArt: "passed",
     skillAndEquipmentPurchases: "passed",
     fishingAndGalley: "passed",
     traitsAndSchema4: "passed",

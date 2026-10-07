@@ -1,6 +1,6 @@
 # First playable implementation
 
-Version: 0.6.0. Date: 2026-10-07. Previous baseline: 0.5.0.
+Version: 0.6.1. Date: 2026-10-07. Previous baseline: 0.5.0.
 
 ## Delivered
 
@@ -53,9 +53,9 @@ A real baseline laptop/GPU; Chrome/Firefox/Safari browser matrix; full 30-minute
 
 ## Measured Chromium run
 
-See [machine-readable report](validation-results.json). Version 0.6 development build, Chromium SwiftShader software rendering, 1440 × 1080 viewport. Scoped sample: frame p95 33.33 ms, tick p95 0.1 ms, zero stalls. Diagnostic-GC retained JS heap: 8,846,344 → 9,601,536 bytes across 50 rendered encounter cycles; listeners 75 → 75 and textures 8 → 8. Fall/task/claim/search counters return to zero. All visible expedition, management, destruction, persistence, context and audio scenarios passed, with no page errors.
+See [machine-readable report](validation-results.json). Version 0.6.1 development build, Chromium SwiftShader software rendering, 1440 × 1080 viewport. Scoped sample: frame p95 31.66 ms, tick p95 0.1 ms, zero stalls. Diagnostic-GC retained JS heap: 9,014,148 → 8,821,452 bytes across 50 rendered encounters; listeners 75 → 75, textures 8 → 8. All expedition, management, destruction, persistence, context and audio scenarios pass with no page errors. Atlas validation confirms all character alpha values are 0 or 255 and six frames per atlas.
 
-This fixture supports bounded cleanup but does not establish the 60 FPS hardware target or a 30-minute ordinary-GC soak. DOM nodes vary 342 → 369 while listeners stay stable; heap snapshots and hardware testing are still required. The final frame-name lookup change followed the full run and passed ten additional renderer restarts/disposal; see [visual review and final check](design/visual-refinement.md). Compact 700/390-pixel captures have no horizontal overflow. Production root and repository-path hosting checks pass with diagnostics absent.
+This fixture supports bounded cleanup but does not establish 60 FPS on hardware or a 30-minute ordinary-GC soak. Heap snapshots and browser/hardware coverage remain outstanding. Production root and repository-path checks pass with diagnostics absent.
 
 ## Published CI evidence
 
@@ -100,3 +100,7 @@ The recorded full integration run precedes the final compact-layout CSS adjustme
 ## Version 0.6 published CI evidence
 
 [Source commit 8c02ebf](https://github.com/karmiphuc/pirate-crew-web/commit/8c02ebf4d7044bb7eb73f3f22dd6d4fd2338c487) contains the visual refinement. [GitHub Actions run 37584996112](https://github.com/karmiphuc/pirate-crew-web/actions/runs/37584996112) passed the build job: locked installation, formatting, 92 tests, production build, root/project-path Chromium hosting checks and static artifact upload. Deployment still fails at Pages configuration because the repository Pages site is not enabled; no live deployment is claimed.
+
+## Version 0.6.1 raster character correction
+
+[Pixel crew review](design/pixel-crew.md) records the user's rejected soft outlined style and its replacement with integer-pixel original sprite art. Native actor scale, nearest-neighbour portraits, adjusted health bars/selection rings/click height and unchanged bounded atlases align the foreground with pixel art. The accepted background and simulation are unchanged.

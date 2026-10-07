@@ -156,7 +156,7 @@ export class SeaScene extends Phaser.Scene {
         const px =
             (actor.shipId === 1 ? HOME_X : ENEMY_X) + actor.x * TILE + TILE / 2,
           py = SHIP_Y + actor.y * TILE + TILE;
-        if (Math.abs(p.x - px) < 22 && p.y > py - 55 && p.y < py + 8) {
+        if (Math.abs(p.x - px) < 22 && p.y > py - 44 && p.y < py + 8) {
           id = actor.id;
           shipId = actor.shipId;
           break;
@@ -775,7 +775,7 @@ export class SeaScene extends Phaser.Scene {
             `pirate-${p.side === "enemy" ? 1 : p.role === "captain" ? 0 : p.role === "gunner" ? 2 : 3}`,
             PIRATE_FRAMES.idle[pirateVariant(p)],
           )
-          .setScale(1.35)
+          .setScale(1)
           .setOrigin(0.5, 1);
         this.actors.set(p.id, actor);
       }
@@ -813,13 +813,13 @@ export class SeaScene extends Phaser.Scene {
       );
       if (this.host.selected().includes(p.id)) {
         g.lineStyle(2, 0xe8d394);
-        g.strokeEllipse(x, y + 3, 29, 8);
+        g.strokeEllipse(x, y + 1, 25, 6);
       }
-      this.rect(g, x - 13, y - 57, 26, 3, 0x203b40);
+      this.rect(g, x - 13, y - 42, 26, 3, 0x203b40);
       this.rect(
         g,
         x - 13,
-        y - 57,
+        y - 42,
         (26 * p.hp) / p.maxHp,
         3,
         p.side === "enemy" ? 0xc77865 : 0x9fc288,
