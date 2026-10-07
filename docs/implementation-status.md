@@ -1,10 +1,10 @@
 # First playable implementation
 
-Version: 0.4.0. Date: 2026-10-07. Previous baseline: 0.3.0.
+Version: 0.5.0. Date: 2026-10-07. Previous baseline: 0.4.0.
 
 ## Delivered
 
-TypeScript 5.9.3, Phaser 3.90.0, Vite 7.3.6; a single-thread renderer-independent simulation; new procedural pixel sprites and ship scenery; DOM management panels; authored ten-node chart with four pirate lords; real-time cannon/melee/pistol battles with pause; recruitment, supplies, upgrades, morale/hunger, wages, experience; ship/station editing and deck/ladder navigation; functional worker claims for cooking/cleaning/repair/medicine/gunnery; skill books, owned weapon lockers, armor; hull combat, destroyed planks, short-gap crossing, lower-deck falls and targeted structural restoration; fishing that supplies the galley; four recruit traits with visible previews; explicit plunder/capture; island landing, guard combat and chest collection; escape; campaign victory; two-frame walking sprites and original synthesized effects; versioned IndexedDB checkpoints and JSON backups.
+TypeScript 5.9.3, Phaser 3.90.0, Vite 7.3.6; a single-thread renderer-independent simulation; original expressive pirate sprites, weathered ship scenery and an illustrated coastal backdrop; DOM management panels; authored ten-node chart with four pirate lords; real-time cannon/melee/pistol battles with pause; recruitment, supplies, upgrades, morale/hunger, wages, experience; ship/station editing and deck/ladder navigation; functional worker claims for cooking/cleaning/repair/medicine/gunnery; skill books, owned weapon lockers, armor; hull combat, destroyed planks, short-gap crossing, lower-deck falls and targeted structural restoration; fishing that supplies the galley; four recruit traits with visible previews; explicit plunder/capture; island landing, guard combat and chest collection; escape; campaign victory; two-frame walking sprites and original synthesized effects; versioned IndexedDB checkpoints and JSON backups.
 
 ## Architecture evidence
 
@@ -14,7 +14,7 @@ TypeScript 5.9.3, Phaser 3.90.0, Vite 7.3.6; a single-thread renderer-independen
 - Command capacity 64, orders eight/actor, twelve allies/enemies, notices 64. Work claims are keyed by ship/duty; at most one worker per slot and one task per actor. Orders, death, refits, capture, teardown, and disposal release claims/searches. Direct commands interrupt work.
 - Encounter teardown removes enemy entities, graphs, searches, paths, commands, and sprite bindings. Scene shutdown removes both paired shutdown/destroy handlers and external subscriptions.
 - No universal object pool, worker, ECS, spatial index, or per-frame world clone. Typed buffers serve bounded BFS scratch and timing samples only.
-- Four shared sprite atlases provide idle/walk frames and are created once; static ship/background graphics redraw on layout/phase changes. No per-frame generated textures or post-processing.
+- Four shared 64 × 40 sprite atlases provide idle/walk frames and are created once; one shared backdrop texture supplies harbour and cropped open-sea frames; static ship/background graphics redraw on layout/phase changes. No per-frame generated textures or post-processing.
 - Saves serialize through one writer with backpressure and transaction-complete acknowledgement. Mutation freezes during required writes. Port purchase failures restore pre-purchase state; departure writes precede combat.
 - Web Locks guards the browser save writer. Startup falls back to a previous valid checkpoint; invalid imports preserve current state.
 - Hidden-tab events pause and clear catch-up time. Context loss pauses, context restoration requires explicit resume. Generation/closed checks prevent stale application callbacks from reviving disposed simulation.
@@ -53,9 +53,9 @@ A real baseline laptop/GPU; Chrome/Firefox/Safari browser matrix; full 30-minute
 
 ## Measured Chromium run
 
-See [machine-readable report](validation-results.json). Version 0.4 development build, headless Chromium with SwiftShader software rendering, 1440 × 1080 viewport. Latest scoped sample: frame p95 31.67 ms, tick p95 0.1 ms. Retained JS heap after diagnostic GC: 8,480,884 → 8,536,776 bytes across 50 rendered encounter cycles; listeners 72 → 72, textures 7 → 7, fall/task/claim/search counters zero after cleanup. There were no page errors. Full UI fishing/galley, traits, purchase/combat/plunder/island/capture/reload flow passed, along with authoritative destroyed-deck, jump, fall, restoration and unsafe-port-repair fixtures, along with mute/voice cap and final AudioContext closure.
+See [machine-readable report](validation-results.json). Version 0.5 development build, headless Chromium with SwiftShader software rendering, 1440 × 1080 viewport. Latest scoped sample: frame p95 43.33 ms, tick p95 0.1 ms; zero stalls. Retained JS heap after diagnostic GC: 8,551,748 → 8,762,380 bytes across 50 rendered encounter cycles; listeners 75 → 75, textures 8 → 8, fall/task/claim/search counters zero after cleanup. There were no page errors. Visible fishing/galley, traits, purchase/combat/plunder/island/capture/reload flow passed, as did destroyed-deck/jump/fall/restoration/unsafe-port-repair fixtures, audio mute/voice caps and final AudioContext closure.
 
-This supports bounded cleanup for this fixture; it does not establish the 60 FPS hardware target, GPU memory recovery, or a 30-minute unforced-GC soak. DOM node samples varied 318 → 367 while listeners remained stable; these counts are recorded, not presented as proof that every detached object has been excluded. Production root/project-path hosting checks pass with the diagnostic hook absent, recruitment/save reload, ten-node chart, third-party notices, and no page errors.
+This supports bounded cleanup for this fixture; it does not establish the 60 FPS hardware target, GPU memory recovery, or a 30-minute unforced-GC soak. The software-rendered frame p95 is slower than the earlier v0.4 sample (31.67 ms); the scenic art adds raster work and these separately run headless measurements are not a controlled hardware comparison. No 60 FPS claim is made. DOM nodes varied 320 → 369 while listeners remained stable; this is not proof that every detached object has been excluded. Production root/project-path hosting checks pass with the diagnostic hook absent. A 700-pixel viewport capture has body width 700 and canvas width 674 with no horizontal overflow.
 
 ## Published CI evidence
 
@@ -78,3 +78,13 @@ The final scoped Chromium run precedes the additional legacy diagonal-corner mig
 ## Version 0.4 published CI evidence
 
 [Source commit c374ac7](https://github.com/karmiphuc/pirate-crew-web/commit/c374ac7a32c16f93917c1ba499f7ccfa91702b76) contains the version 0.4 implementation. [GitHub Actions run 37575251396](https://github.com/karmiphuc/pirate-crew-web/actions/runs/37575251396) passed the build job: locked installation, formatting, 92 tests, TypeScript/Vite build, root/project-path Chromium hosting checks, and static artifact upload. Deployment configuration failed with `Get Pages site failed` / HTTP 404 because Pages is not enabled. Build/artifact delivery is complete; no live deployment is claimed.
+
+## Version 0.5 visual direction and resource ownership
+
+Shaped tricorns, headwraps, bandanas, faces, coats, boots and visible weapons replace identical rectangular bodies. DOM portraits use the same four atlases as the scene. Plank grain, staggered seams, cloth folds, rigging, brass cannon details and curved palms replace flat placeholder scenery. The simulation, hit-supported deck geometry and save schema remain unchanged.
+
+The 1931 × 813 backdrop is 390,592 bytes as WebP (about 382 KiB), with roughly 6 MiB of decoded RGBA pixels before driver overhead. Its harbour/open-sea crop shares one global application texture; it is not recreated per actor, encounter or frame. Eight total Phaser textures are expected across restarts. Scene-owned portrait CSS variables are removed on shutdown and restored on activation. No particles, shaders, texture-per-actor caches or new animation timers were introduced. Static scenery still redraws on relevant revisions rather than on every tick.
+
+See [visual review and provenance](design/visual-review.md). This is a substantial original art pass, not a reproduction of the Steam game's assets or a completed 1:1 remake. Island shore outlines and some station props remain simple; richer character animation is still deferred.
+
+The recorded full integration run precedes the final compact-layout CSS adjustment that hides the long hint at 750 pixels and below. This adjustment was checked with a fresh 700-pixel capture, TypeScript/build and production hosting checks; simulation and renderer code are unchanged from the recorded stress run.

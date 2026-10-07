@@ -380,52 +380,30 @@ main {
   background: #293f42;
 }
 .portrait {
-  width: 37px;
-  height: 52px;
+  width: 46px;
+  height: 58px;
   position: relative;
   display: inline-block;
   flex-shrink: 0;
-  background: #334b4e;
-  image-rendering: pixelated;
+  background: radial-gradient(ellipse at 50% 90%, #be986d26, transparent 70%);
+  overflow: hidden;
 }
 .portrait i {
+  display: block;
   position: absolute;
-  left: 12px;
-  top: 9px;
-  width: 14px;
-  height: 14px;
-  background: #e0ad83;
-  box-shadow:
-    0 -4px #1b2e34,
-    -4px 0 #1b2e34,
-    4px 0 #1b2e34,
-    0 15px #d2b275,
-    -5px 15px #d2b275,
-    5px 15px #d2b275,
-    -4px 28px #182e34,
-    4px 28px #182e34;
+  inset: 0;
+  width: 46px;
+  height: 58px;
+  background-image: var(--pirate-0);
+  background-size: 92px 58px;
+  background-position: left center;
+  background-repeat: no-repeat;
 }
 .portrait.boarder i {
-  box-shadow:
-    0 -4px #703f34,
-    -4px 0 #703f34,
-    4px 0 #703f34,
-    0 15px #83a594,
-    -5px 15px #83a594,
-    5px 15px #83a594,
-    -4px 28px #182e34,
-    4px 28px #182e34;
+  background-image: var(--pirate-3);
 }
 .portrait.gunner i {
-  box-shadow:
-    0 -4px #344747,
-    -4px 0 #344747,
-    4px 0 #344747,
-    0 15px #97b0b1,
-    -5px 15px #97b0b1,
-    5px 15px #97b0b1,
-    -4px 28px #182e34,
-    4px 28px #182e34;
+  background-image: var(--pirate-2);
 }
 .crew-info {
   flex: 1;
@@ -1063,5 +1041,75 @@ footer button {
   }
   #ship-readout {
     display: none;
+  }
+}
+
+/* Warm maritime lighting: readable chrome over the painted game world. */
+.scene-top {
+  color: #f5e4c3;
+  text-shadow: 0 1px 10px #142a36;
+}
+.scene-top .eyebrow,
+.scene-top p {
+  color: #e8d9bb;
+}
+.voyage::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 150px;
+  background: linear-gradient(#10273396, transparent);
+  z-index: 1;
+  pointer-events: none;
+}
+.pause-button {
+  color: #f0dec0;
+  background: #142c35cc;
+  border-color: #bda27366;
+}
+.pause-button kbd {
+  color: #bbaa90;
+}
+.voyage {
+  border-color: #a38a6059;
+  box-shadow: 0 16px 45px #05161c55;
+}
+.crew-card {
+  background: #1b343c;
+  border-color: #52625b;
+}
+.crew-card.selected {
+  background: #293d40;
+  border-color: #c7a96e;
+}
+
+.crew-info > small {
+  font-size: 11px;
+  line-height: 1.5;
+}
+.crew-info > span {
+  font-size: 10px;
+}
+.scene-bottom {
+  font-size: 10px;
+}
+.actionbar {
+  font-size: 12px;
+}
+@media (max-width: 750px) {
+  .scene-bottom {
+    align-items: center;
+    gap: 8px;
+  }
+  .scene-bottom #hint {
+    display: none;
+  }
+  #ship-readout {
+    white-space: nowrap;
+  }
+  #save-state {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }

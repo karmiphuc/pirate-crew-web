@@ -12,7 +12,8 @@ Pixel Piracy is the reference game. Historical development is credited to Quadro
 | --- | --- | --- | --- | --- | --- |
 | Pixel Piracy game reference | Linked Steam page and research sources | Reference for design research; no game assets/code imported | Proposed robustness changes | Reference-game credit | Reference only |
 | Project documentation | Authored for this project | Distribution license undecided | See local commit history | To be decided | Yes |
-| Procedural pixel art and scenery | Drawn in `src/game/scene.ts` and `src/style.css` for this project | Project distribution license undecided | New sprites, hulls, sails, port, chart | Project credit | Yes |
+| Procedural pixel art and scenery | Drawn in `src/game/pirate-art.ts` and `src/game/scene.ts` for this project | Project distribution license undecided | Original character atlases, hulls, sails, palms, chart | Project credit | Yes |
+| Coastal backdrop | Generated for this project using OpenAI Image Gen, 2026-10-07 | Project distribution license undecided; no reference-game image supplied | Unaltered generated image encoded as WebP; open-sea frame cropped at runtime | Project credit; [generation brief](design/visual-review.md) | Yes: `src/game/assets/harbour.webp` |
 | Phaser 3.90.0 | Phaser Studio / npm `phaser` | MIT; preserve package license when distributing | No vendor modifications | [Bundled license notices](../public/THIRD_PARTY_NOTICES.txt) | Yes |
 | Synthesized sound effects | Generated in `src/app/sound.ts` for this project | Project distribution license undecided | Original oscillator envelopes, no sampled recordings | Project credit | Yes |
 | Future audio/fonts/materials | Record individual origin | Record compatible license/permission before inclusion | Record modifications | Copy exact required credit | No external audio/font assets |

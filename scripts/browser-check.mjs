@@ -395,7 +395,7 @@ try {
   const restart = await diagnostics();
   assert.equal(restart.views.subscriptions, 4);
   assert.equal(restart.views.clouds, 3);
-  assert.equal(restart.views.textures, 7);
+  assert.equal(restart.views.textures, 8);
   assert.equal(restart.views.actors, (await state()).pirates.length);
   assert.equal(restart.views.destroyHandlers, before.views.destroyHandlers);
   assert.equal(restart.views.shutdownHandlers, before.views.shutdownHandlers);
@@ -477,7 +477,7 @@ try {
     assert.equal(d.falls, 0);
     assert.ok(d.audioVoices <= 8);
     assert.equal(d.views.actors, 4);
-    assert.equal(d.views.textures, 7);
+    assert.equal(d.views.textures, 8);
   }
   // Muting immediately releases every owned voice; scene restarts retain one app audio owner.
   await page.click('[data-action="settings"]');

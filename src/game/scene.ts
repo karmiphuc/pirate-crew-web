@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { paintPirate } from "./pirate-art";
 import {
   Campaign,
   nodeX,
@@ -31,59 +32,32 @@ export interface ViewHost {
   contextLost(): void;
   contextRestored(): void;
 }
-const COLORS = ["#dfbc77", "#ca5c4e", "#91a8aa", "#79a18c"];
 function createTextures(scene: Phaser.Scene) {
-  const pattern = [
-    "      HHHHH     ",
-    "    HHHHHHHHH   ",
-    "    HHHHHHHHH   ",
-    "     SSSSSSS    ",
-    "     SXSSXSS    ",
-    "     SSSSSSS    ",
-    "      SSSSS     ",
-    "     CCCCCCC    ",
-    "   CCCCCCCCCCC  ",
-    "   SCCCGCCCSS   ",
-    "   SCCCCCCCSS   ",
-    "    CCCCCCC W   ",
-    "    BBBBBBB WW  ",
-    "     BB BB  W   ",
-    "     BB BB      ",
-    "    DDD DDD     ",
-  ];
   for (let i = 0; i < 4; i++) {
     const key = `pirate-${i}`;
-    if (scene.textures.exists(key)) continue;
-    const texture = scene.textures.createCanvas(key, 32, 20)!;
-    const ctx = texture.context;
-    const palette: Record<string, string> = {
-      H: i === 0 ? "#192e35" : "#6a453a",
-      S: "#efbb8f",
-      X: "#152d34",
-      C: COLORS[i],
-      G: "#efd488",
-      B: "#253b45",
-      D: "#13272f",
-      W: "#dae7db",
-    };
-    for (let frame = 0; frame < 2; frame++)
-      for (let y = 0; y < pattern.length; y++)
-        for (let x = 0; x < 16; x++) {
-          let c = pattern[y][x];
-          if (frame === 1 && y >= 13)
-            c = (y === 15 ? "   DDD   DDD    " : "    BB   BB     ")[x];
-          if (palette[c]) {
-            ctx.fillStyle = palette[c];
-            ctx.fillRect(x + frame * 16, y + 4, 1, 1);
-          }
-        }
-    texture.add("idle", 0, 0, 0, 16, 20);
-    texture.add("walk", 0, 16, 0, 16, 20);
-    texture.refresh();
+    if (!scene.textures.exists(key)) {
+      const texture = scene.textures.createCanvas(key, 64, 40)!;
+      paintPirate(texture.context, i, false);
+      texture.context.save();
+      texture.context.translate(32, 0);
+      paintPirate(texture.context, i, true);
+      texture.context.restore();
+      texture.add("idle", 0, 0, 0, 32, 40);
+      texture.add("walk", 0, 32, 0, 32, 40);
+      texture.refresh();
+    }
+    const canvas = scene.textures
+      .get(key)
+      .getSourceImage() as HTMLCanvasElement;
+    document.documentElement.style.setProperty(
+      `--pirate-${i}`,
+      `url("${canvas.toDataURL()}")`,
+    );
   }
 }
 export class SeaScene extends Phaser.Scene {
   private scope = new Lifetime();
+  private background!: Phaser.GameObjects.Image;
   private scenery!: Phaser.GameObjects.Graphics;
   private waves!: Phaser.GameObjects.Graphics;
   private overlay!: Phaser.GameObjects.Graphics;
@@ -101,16 +75,31 @@ export class SeaScene extends Phaser.Scene {
   constructor(private host: ViewHost) {
     super("sea");
   }
+  preload() {
+    if (!this.textures.exists("sea-backdrop"))
+      this.load.image(
+        "sea-backdrop",
+        new URL("./assets/harbour.webp", import.meta.url).href,
+      );
+  }
   create() {
     this.scope = new Lifetime();
     createTextures(this);
+    const backdrop = this.textures.get("sea-backdrop");
+    if (!backdrop.has("open-sea"))
+      backdrop.add("open-sea", 0, 450, 0, 1481, 625);
+    this.background = this.add
+      .image(0, 0, "sea-backdrop")
+      .setOrigin(0)
+      .setDisplaySize(1280, 540);
     this.scenery = this.add.graphics();
     this.waves = this.add.graphics();
     for (let i = 0; i < 3; i++) {
       const cloud = this.add.graphics();
-      cloud.fillStyle(0xf6e9c8, 0.4);
-      cloud.fillRect(0, 10, 90, 14);
-      cloud.fillRect(20, 0, 50, 14);
+      cloud.fillStyle(0xf6e9c8, 0.06);
+      cloud.fillEllipse(40, 15, 90, 15);
+      cloud.fillEllipse(27, 9, 39, 19);
+      cloud.fillEllipse(52, 7, 47, 20);
       cloud.setPosition(80 + i * 420, 45 + (i % 2) * 30);
       this.clouds.push(cloud);
     }
@@ -132,7 +121,7 @@ export class SeaScene extends Phaser.Scene {
       .text(640, 28, "", {
         fontFamily: "monospace",
         fontSize: "12px",
-        color: "#426563",
+        color: "#f0dec1",
       })
       .setOrigin(0.5);
     this.overlay = this.add.graphics();
@@ -146,7 +135,7 @@ export class SeaScene extends Phaser.Scene {
         const px =
             (actor.shipId === 1 ? HOME_X : ENEMY_X) + actor.x * TILE + TILE / 2,
           py = SHIP_Y + actor.y * TILE + TILE;
-        if (Math.abs(p.x - px) < 15 && p.y > py - 42 && p.y < py + 8) {
+        if (Math.abs(p.x - px) < 22 && p.y > py - 55 && p.y < py + 8) {
           id = actor.id;
           shipId = actor.shipId;
           break;
@@ -187,6 +176,8 @@ export class SeaScene extends Phaser.Scene {
   }
   private release() {
     this.scope.dispose();
+    for (let i = 0; i < 4; i++)
+      document.documentElement.style.removeProperty(`--pirate-${i}`);
     for (const actor of this.actors.values()) actor.destroy();
     this.actors.clear();
     this.clouds.length = 0;
@@ -220,20 +211,10 @@ export class SeaScene extends Phaser.Scene {
     const g = this.scenery,
       s = this.host.state();
     g.clear();
-    this.rect(g, 0, 0, 1280, 325, 0xa8cbbd);
-    this.rect(g, 0, 170, 1280, 155, 0x8db8aa);
-    this.rect(g, 0, 282, 1280, 65, 0x75a69c);
-    // Distant island silhouettes, drawn once per scene revision.
-    g.fillStyle(0x729f91);
-    g.fillTriangle(740, 315, 835, 205, 950, 315);
-    g.fillTriangle(830, 315, 965, 230, 1100, 315);
-    g.fillStyle(0x86b1a0);
-    g.fillTriangle(750, 315, 835, 236, 885, 315);
-    this.rect(g, 0, 342, 1280, 198, 0x315f66);
-    this.rect(g, 0, 342, 1280, 14, 0x568d85);
-    this.rect(g, 0, 356, 1280, 24, 0x427b79);
-    this.rect(g, 0, 430, 1280, 110, 0x28545e);
-    if (s.phase === "port") this.drawPort(g);
+    this.background
+      .setFrame(s.phase === "port" ? "__BASE" : "open-sea")
+      .setDisplaySize(1280, 540);
+    // The shared environment asset owns the landscape; foreground remains interactive geometry.
     this.drawShip(g, s.ships[0], HOME_X, this.host.draft());
     if (s.ships.length > 1) this.drawShip(g, s.ships[1], ENEMY_X, null);
     const draft = this.host.draft();
@@ -272,37 +253,62 @@ export class SeaScene extends Phaser.Scene {
               : "THE SEA IS YOURS TO EXPLORE",
     );
   }
-  private drawPort(g: Phaser.GameObjects.Graphics) {
-    this.rect(g, 0, 312, 160, 34, 0x72965d);
-    this.rect(g, 0, 340, 150, 60, 0x6b7760);
-    this.rect(g, 0, 393, 130, 16, 0x465f50);
-    // Tavern and shipwright.
-    this.rect(g, 19, 247, 88, 66, 0xb69c73);
-    this.rect(g, 14, 241, 99, 10, 0x633f38);
-    this.rect(g, 24, 225, 77, 16, 0x784a3e);
-    this.rect(g, 35, 213, 55, 12, 0x83523f);
-    this.rect(g, 49, 278, 25, 35, 0x493b33);
-    this.rect(g, 29, 260, 14, 18, 0xe5c880);
-    this.rect(g, 80, 260, 14, 18, 0xe5c880);
-    this.rect(g, 25, 294, 13, 3, 0x735644);
-    this.rect(g, 116, 276, 53, 37, 0x8d8061);
-    this.rect(g, 110, 265, 64, 12, 0x62473a);
-    this.rect(g, 135, 285, 13, 27, 0x453e34);
-    this.rect(g, 102, 325, 139, 8, 0x806346);
-    for (let x = 115; x < 240; x += 31) {
-      this.rect(g, x, 333, 7, 52, 0x584935);
-      this.rect(g, x, 331, 7, 3, 0xa58255);
+  private drawPalm(
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    ground: number,
+    scale: number,
+  ) {
+    const crownX = x - 17 * scale,
+      crownY = ground - 125 * scale;
+    g.fillStyle(0x6a5540);
+    g.fillPoints(
+      [
+        { x: x - 5 * scale, y: ground },
+        { x: x + 4 * scale, y: ground },
+        { x: crownX + 3 * scale, y: crownY },
+        { x: crownX - 3 * scale, y: crownY },
+      ],
+      true,
+    );
+    g.lineStyle(2, 0xb09161, 0.7);
+    for (let i = 1; i < 9; i++) {
+      const t = i / 9;
+      g.lineBetween(
+        x - 4 - 17 * t * scale,
+        ground - 125 * t * scale,
+        x + 2 - 17 * t * scale,
+        ground - 125 * t * scale - 2,
+      );
     }
-    this.rect(g, 180, 305, 22, 20, 0x8d6545);
-    this.rect(g, 178, 310, 26, 3, 0x3d453d);
-    this.rect(g, 178, 320, 26, 3, 0x3d453d);
-    // Palm, pixel leaves and trunk.
-    for (let y = 0; y < 8; y++)
-      this.rect(g, 155 + y * 2, 209 + y * 12, 6, 14, 0x786e45);
-    this.rect(g, 126, 198, 70, 9, 0x3f7154);
-    this.rect(g, 115, 207, 91, 7, 0x497e56);
-    this.rect(g, 133, 186, 15, 19, 0x4d805a);
-    this.rect(g, 174, 187, 14, 23, 0x4d805a);
+    for (let i = 0; i < 8; i++) {
+      const angle = -Math.PI + (i * Math.PI) / 7,
+        length = (43 + (i % 3) * 8) * scale;
+      const tipX = crownX + Math.cos(angle) * length,
+        tipY = crownY + Math.sin(angle) * 24 * scale + 12 * scale;
+      const points: Phaser.Types.Math.Vector2Like[] = [];
+      for (let j = 0; j <= 8; j++) {
+        const t = j / 8;
+        points.push({
+          x: crownX + (tipX - crownX) * t,
+          y: crownY + (tipY - crownY) * t - 17 * Math.sin(Math.PI * t) * scale,
+        });
+      }
+      for (let j = 8; j >= 0; j--) {
+        const t = j / 8;
+        points.push({
+          x: crownX + (tipX - crownX) * t,
+          y: crownY + (tipY - crownY) * t - 7 * Math.sin(Math.PI * t) * scale,
+        });
+      }
+      g.fillStyle(i % 2 ? 0x447b58 : 0x2b5949);
+      g.fillPoints(points, true);
+      g.lineStyle(1, 0x91a76a, 0.7);
+      g.lineBetween(crownX, crownY, tipX, tipY - 3);
+    }
+    g.fillStyle(0x684b35);
+    g.fillCircle(crownX - 3, crownY + 3, 3 * scale);
+    g.fillCircle(crownX + 3, crownY + 5, 3 * scale);
   }
   private drawShip(
     g: Phaser.GameObjects.Graphics,
@@ -319,96 +325,119 @@ export class SeaScene extends Phaser.Scene {
         if (t.y === 4) this.rect(g, x, y, TILE, 5, 0x9dae63);
         else this.rect(g, x + 3, y + 7, 6, 3, 0x756e50);
       }
-      for (const tx of [3, 9, 18]) {
-        const x = ox + tx * TILE;
-        for (let y = 0; y < 7; y++)
-          this.rect(g, x + y * 2, 293 - y * 12, 7, 13, 0x87734a);
-        this.rect(g, x - 17, 216, 75, 8, 0x467657);
-        this.rect(g, x - 29, 226, 90, 7, 0x527f52);
-        this.rect(g, x + 6, 203, 15, 18, 0x52845b);
-      }
+      for (const tx of [3, 9, 18])
+        this.drawPalm(g, ox + tx * TILE, SHIP_Y + 4 * TILE, tx === 9 ? 0.8 : 1);
       const x = ox + 14 * TILE,
         y = SHIP_Y + 4 * TILE;
-      this.rect(g, x - 4, y - 16, 27, 16, 0x79553a);
-      this.rect(
-        g,
+      g.fillStyle(0x302c28);
+      g.fillRoundedRect(x - 6, y - 20, 30, 21, 3);
+      g.fillStyle(0x805237);
+      g.fillRoundedRect(x - 4, y - 18, 26, 17, 2);
+      g.fillStyle(0xb58a50);
+      g.fillRoundedRect(
         x - 5,
-        y - (this.host.state().phase === "aftermath" ? 25 : 20),
-        29,
-        6,
-        0xa67b49,
+        y - (this.host.state().phase === "aftermath" ? 29 : 23),
+        28,
+        9,
+        4,
       );
-      this.rect(g, x, y - 19, 3, 19, 0xdec075);
-      this.rect(g, x + 15, y - 19, 3, 19, 0xdec075);
+      for (const band of [x, x + 15]) {
+        this.rect(g, band, y - 23, 3, 23, 0xd6b575);
+        this.rect(g, band, y - 23, 1, 23, 0xf3d8a0);
+      }
+      this.rect(g, x + 8, y - 13, 5, 6, 0xd6b575);
+      this.rect(g, x + 10, y - 11, 1, 3, 0x453831);
       return;
     }
-    // Mast and sail. Shared geometry, no per-frame generated textures.
-    this.rect(g, ox + 9 * TILE + 4, 117, 6, SHIP_Y + 4 * TILE - 117, 0x675440);
-    this.rect(g, ox + 6 * TILE, 143, 146, 5, 0x584734);
-    g.fillStyle(ship.id === 1 ? 0xe9dfb6 : 0x343e42);
-    g.fillTriangle(
-      ox + 9 * TILE + 5,
-      151,
-      ox + 9 * TILE + 5,
-      288,
-      ox + 4 * TILE,
-      288,
+    const mast = ox + 9 * TILE + 8,
+      friendly = ship.id === 1;
+    // Bent cloth contours, seams, rigging and contrasting mast light create depth.
+    this.rect(g, mast - 4, 108, 9, 264, 0x342f29);
+    this.rect(g, mast - 2, 109, 3, 263, 0xa28254);
+    this.rect(g, ox + 5 * TILE, 154, 181, 5, 0x403329);
+    this.rect(g, ox + 5 * TILE, 154, 181, 1, 0xb79a68);
+    const cloth: Phaser.Types.Math.Vector2Like[] = [];
+    const left = ox + 5 * TILE,
+      right = ox + 15 * TILE;
+    cloth.push({ x: left, y: 160 }, { x: right, y: 160 });
+    for (let i = 0; i <= 12; i++) {
+      const t = i / 12;
+      cloth.push({ x: right - 12 * Math.sin(Math.PI * t), y: 160 + 137 * t });
+    }
+    for (let i = 0; i <= 16; i++) {
+      const t = i / 16;
+      cloth.push({
+        x: right + (left - right) * t,
+        y: 297 - 12 * Math.sin(Math.PI * t),
+      });
+    }
+    for (let i = 0; i <= 12; i++) {
+      const t = i / 12;
+      cloth.push({ x: left + 10 * Math.sin(Math.PI * t), y: 297 - 137 * t });
+    }
+    g.fillStyle(friendly ? 0xe7d7ac : 0x34484c);
+    g.fillPoints(cloth, true);
+    g.lineStyle(2, friendly ? 0xb4a078 : 0x172b32);
+    g.strokePoints(cloth, true);
+    g.fillStyle(friendly ? 0x9e805a : 0x132730, 0.16);
+    g.fillPoints(
+      [
+        { x: right - 20, y: 162 },
+        { x: right - 5, y: 162 },
+        { x: right - 16, y: 280 },
+        { x: right - 3, y: 297 },
+        { x: right - 31, y: 293 },
+      ],
+      true,
     );
-    g.fillTriangle(
-      ox + 9 * TILE + 11,
-      151,
-      ox + 9 * TILE + 11,
-      288,
-      ox + 16 * TILE,
-      288,
+    g.fillStyle(0xffedc5, friendly ? 0.24 : 0.04);
+    g.fillPoints(
+      [
+        { x: left + 13, y: 162 },
+        { x: left + 48, y: 162 },
+        { x: left + 55, y: 280 },
+        { x: left + 18, y: 290 },
+      ],
+      true,
     );
-    this.rect(
-      g,
-      ox + 7 * TILE,
-      233,
-      36,
-      26,
-      ship.id === 1 ? 0x4e665f : 0xe2d7b4,
+    // Narrow fabric panels and sunlit hem, avoiding a flat triangular sail.
+    for (let i = 1; i < 5; i++) {
+      const x = left + ((right - left) * i) / 5;
+      g.lineStyle(1, friendly ? 0xcbb991 : 0x4d6465, 0.65);
+      g.lineBetween(x, 162, x + 3 * Math.sin(i), 287);
+    }
+    g.lineStyle(2, 0xf1dfb7, 0.7);
+    g.lineBetween(left + 3, 162, right - 3, 162);
+    g.lineStyle(1, 0xb2a381, 0.8);
+    g.lineBetween(mast, 111, ox + TILE, SHIP_Y + 4 * TILE);
+    g.lineBetween(mast, 111, ox + 17 * TILE, SHIP_Y + 4 * TILE);
+    g.lineBetween(left, 155, ox + 3 * TILE, SHIP_Y + 4 * TILE);
+    g.lineBetween(right, 155, ox + 16 * TILE, SHIP_Y + 4 * TILE);
+    // A small skull emblem uses rounded eye sockets and bones.
+    g.fillStyle(friendly ? 0x687366 : 0xd6ccad);
+    g.fillEllipse(mast, 219, 32, 27);
+    this.rect(g, mast - 11, 225, 22, 9, friendly ? 0x687366 : 0xd6ccad);
+    g.fillStyle(friendly ? 0xe7d7ac : 0x34484c);
+    g.fillCircle(mast - 7, 218, 4);
+    g.fillCircle(mast + 7, 218, 4);
+    for (let x = -6; x <= 6; x += 6)
+      this.rect(g, mast + x - 1, 229, 2, 5, friendly ? 0xe7d7ac : 0x34484c);
+    g.lineStyle(3, friendly ? 0x687366 : 0xd6ccad);
+    g.lineBetween(mast - 18, 244, mast + 18, 254);
+    g.lineBetween(mast - 18, 254, mast + 18, 244);
+    g.fillStyle(friendly ? 0xa85746 : 0x27343c);
+    g.fillPoints(
+      [
+        { x: mast + 4, y: 111 },
+        { x: mast + 49, y: 113 },
+        { x: mast + 38, y: 122 },
+        { x: mast + 49, y: 130 },
+        { x: mast + 4, y: 127 },
+      ],
+      true,
     );
-    this.rect(
-      g,
-      ox + 7 * TILE + 5,
-      238,
-      7,
-      6,
-      ship.id === 1 ? 0xe9dfb6 : 0x343e42,
-    );
-    this.rect(
-      g,
-      ox + 7 * TILE + 24,
-      238,
-      7,
-      6,
-      ship.id === 1 ? 0xe9dfb6 : 0x343e42,
-    );
-    this.rect(
-      g,
-      ox + 7 * TILE + 11,
-      257,
-      14,
-      5,
-      ship.id === 1 ? 0x4e665f : 0xe2d7b4,
-    );
-    this.rect(
-      g,
-      ox + 9 * TILE + 7,
-      113,
-      51,
-      16,
-      ship.id === 1 ? 0xbf6050 : 0x323d42,
-    );
-    this.rect(
-      g,
-      ox + 9 * TILE + 7,
-      129,
-      31,
-      7,
-      ship.id === 1 ? 0xbf6050 : 0x323d42,
+    const occupied = new Set(
+      tiles.filter((t) => t.kind === "hull").map((t) => `${t.x}:${t.y}`),
     );
     for (const t of tiles) {
       const x = ox + t.x * TILE,
@@ -419,29 +448,76 @@ export class SeaScene extends Phaser.Scene {
         this.rect(g, x + 4, y + 4, 10, 2, 0x7b6349);
         this.rect(g, x + 4, y + 12, 10, 2, 0x7b6349);
       } else {
-        this.rect(g, x, y, TILE, TILE, ship.id === 1 ? 0x72543d : 0x5d4540);
-        this.rect(
-          g,
-          x + 1,
-          y + 1,
-          TILE - 2,
-          4,
-          ship.id === 1 ? 0xa78355 : 0x8b6550,
+        const exposed = !occupied.has(`${t.x}:${t.y - 1}`),
+          bottom = !occupied.has(`${t.x}:${t.y + 1}`);
+        const leftEdge = !occupied.has(`${t.x - 1}:${t.y}`),
+          rightEdge = !occupied.has(`${t.x + 1}:${t.y}`);
+        const tone = friendly
+          ? t.y % 2
+            ? 0x70513c
+            : 0x856044
+          : t.y % 2
+            ? 0x453d35
+            : 0x655045;
+        g.fillStyle(tone);
+        g.fillPoints(
+          [
+            { x, y },
+            { x: x + TILE, y },
+            { x: x + TILE, y: y + TILE - (bottom && rightEdge ? 6 : 0) },
+            { x: x + TILE - (bottom && rightEdge ? 5 : 0), y: y + TILE },
+            { x: x + (bottom && leftEdge ? 5 : 0), y: y + TILE },
+            { x, y: y + TILE - (bottom && leftEdge ? 6 : 0) },
+          ],
+          true,
         );
-        this.rect(g, x + 2, y + 7, TILE - 4, 1, 0x4b4033);
-        this.rect(g, x + 4, y + 12, 3, 2, 0x453e33);
+        if (exposed) {
+          this.rect(g, x, y, TILE, 3, 0xc1a073);
+          this.rect(g, x, y + 3, TILE, 2, 0x382e28);
+        }
+        this.rect(g, x, y + 9, TILE, 1, 0x49392e);
+        if ((t.x + t.y) % 3 === 0) this.rect(g, x + 8, y + 2, 1, 6, 0x49392e);
+        if ((t.x + t.y) % 3 === 1) this.rect(g, x + 3, y + 10, 1, 7, 0x3d302b);
+        for (let i = 0; i < 2; i++) {
+          const grain = (t.x * 13 + t.y * 7 + i * 5) % 12;
+          this.rect(g, x + grain, y + 5 + i * 8, 4, 1, 0xb48b5e, 0.3);
+        }
+        if (bottom) {
+          this.rect(g, x + 3, y + TILE - 2, TILE - 6, 2, 0x312e2b);
+        }
       }
     }
+    for (const tx of [7, 10, 13])
+      if (occupied.has(`${tx}:5`)) {
+        const x = ox + tx * TILE + 9,
+          y = SHIP_Y + 5 * TILE + 8;
+        g.fillStyle(0x332f28);
+        g.fillCircle(x, y, 4);
+        g.lineStyle(1, 0xb3925d);
+        g.strokeCircle(x, y, 4);
+        g.fillStyle(0x416768);
+        g.fillCircle(x, y, 2);
+      }
     for (const station of ship.id === 1
       ? (this.host.draftStations() ?? ship.stations)
       : ship.stations) {
       const x = ox + station.x * TILE,
         y = SHIP_Y + (station.y + 1) * TILE;
       if (station.kind === "cannon") {
-        this.rect(g, x - 5, y - 13, 35, 8, 0x283d41);
-        this.rect(g, x - 3, y - 8, 25, 5, 0x596264);
-        this.rect(g, x, y - 5, 7, 5, 0x293539);
-        this.rect(g, x + 19, y - 5, 7, 5, 0x293539);
+        g.fillStyle(0x1e2d33);
+        g.fillRoundedRect(x - 4, y - 17, 34, 11, 4);
+        this.rect(g, x - 1, y - 16, 29, 2, 0x859794);
+        this.rect(g, x + 26, y - 17, 5, 11, 0x13232b);
+        this.rect(g, x, y - 8, 24, 5, 0x76523a);
+        this.rect(g, x + 2, y - 7, 20, 1, 0xc39a62);
+        for (const wheel of [x + 3, x + 21]) {
+          g.fillStyle(0x282b2a);
+          g.fillCircle(wheel, y - 3, 5);
+          g.lineStyle(1, 0xa08059);
+          g.strokeCircle(wheel, y - 3, 3);
+          g.fillStyle(0xd2b47b);
+          g.fillCircle(wheel, y - 3, 1);
+        }
       }
       if (station.kind === "food") {
         this.rect(g, x, y - 18, 16, 18, 0x82613d);
@@ -544,7 +620,7 @@ export class SeaScene extends Phaser.Scene {
             `pirate-${p.side === "enemy" ? 1 : p.role === "captain" ? 0 : p.role === "gunner" ? 2 : 3}`,
             "idle",
           )
-          .setScale(2)
+          .setScale(1.35)
           .setOrigin(0.5, 1);
         this.actors.set(p.id, actor);
       }
@@ -583,11 +659,11 @@ export class SeaScene extends Phaser.Scene {
         g.lineStyle(2, 0xe8d394);
         g.strokeEllipse(x, y + 3, 29, 8);
       }
-      this.rect(g, x - 13, y - 44, 26, 3, 0x203b40);
+      this.rect(g, x - 13, y - 57, 26, 3, 0x203b40);
       this.rect(
         g,
         x - 13,
-        y - 44,
+        y - 57,
         (26 * p.hp) / p.maxHp,
         3,
         p.side === "enemy" ? 0xc77865 : 0x9fc288,
@@ -610,7 +686,7 @@ export class SeaScene extends Phaser.Scene {
         14 + (i % 4) * 7,
         2,
         0xa4c6b0,
-        i % 3 === 0 ? 0.3 : 0.13,
+        i % 3 === 0 ? 0.12 : 0.05,
       );
     }
     if (!this.host.reducedMotion())

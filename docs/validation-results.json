@@ -23,47 +23,47 @@
   "quotaRollback": "passed",
   "memory": {
     "heapBefore": {
-      "usedSize": 8480884,
+      "usedSize": 8551748,
       "totalSize": 9428992,
-      "embedderHeapUsedSize": 1883056,
-      "backingStorageSize": 11210199
+      "embedderHeapUsedSize": 1482416,
+      "backingStorageSize": 11281692
     },
     "heapAfter": {
-      "usedSize": 8536776,
-      "totalSize": 9166848,
-      "embedderHeapUsedSize": 1426880,
-      "backingStorageSize": 11210251
+      "usedSize": 8762380,
+      "totalSize": 9953280,
+      "embedderHeapUsedSize": 1560000,
+      "backingStorageSize": 11281744
     },
     "domBefore": {
       "documents": 1,
-      "nodes": 318,
-      "jsEventListeners": 72
+      "nodes": 320,
+      "jsEventListeners": 75
     },
     "domAfter": {
       "documents": 1,
-      "nodes": 367,
-      "jsEventListeners": 72
+      "nodes": 369,
+      "jsEventListeners": 75
     }
   },
   "diagnostics": {
     "frameMs": {
-      "count": 519,
-      "p50": 26.659999999999854,
-      "p95": 31.670000000000073,
-      "p99": 35
+      "count": 525,
+      "p50": 23.339999999999964,
+      "p95": 43.33000000000029,
+      "p99": 51.659999999999854
     },
     "tickMs": {
-      "count": 126,
+      "count": 141,
       "p50": 0,
       "p95": 0.10000000009313226,
-      "p99": 0.19999999995343387
+      "p99": 0.10000000009313226
     },
     "stalls": 0,
     "views": {
       "actors": 4,
       "subscriptions": 4,
       "clouds": 3,
-      "textures": 7,
+      "textures": 8,
       "shutdownHandlers": 13,
       "destroyHandlers": 13
     },
@@ -77,7 +77,7 @@
     "listeners": 5,
     "saveWrites": 0,
     "lock": "owned",
-    "tick": 13035,
+    "tick": 13023,
     "phase": "port"
   },
   "errors": []
