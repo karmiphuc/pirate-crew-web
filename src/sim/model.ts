@@ -40,6 +40,8 @@ export const DUTIES = [
   "fish",
 ] as const;
 export type Duty = (typeof DUTIES)[number];
+export const SKILLS = [...DUTIES, "swim"] as const;
+export type Skill = (typeof SKILLS)[number];
 export const DUTY_NAMES: Record<Duty, string> = {
   guard: "Boarding party",
   cook: "Cook",
@@ -97,7 +99,8 @@ export type Action =
   | "board"
   | "retreat"
   | "collect"
-  | "cannon";
+  | "cannon"
+  | "rescue";
 export interface Order {
   action: Action;
   shipId?: number;
@@ -109,7 +112,7 @@ export interface Pirate {
   name: string;
   role: "captain" | "boarder" | "gunner" | "medic";
   duty: Duty;
-  skills: Duty[];
+  skills: Skill[];
   traits: Trait[];
   weapon: Weapon;
   ownedWeapons: Weapon[];
@@ -150,7 +153,7 @@ export interface Notice {
   tone: "info" | "good" | "bad";
 }
 export interface Campaign {
-  schemaVersion: 4;
+  schemaVersion: 5;
   campaignId: string;
   revision: number;
   tick: number;
@@ -399,7 +402,7 @@ export function createCampaign(
     },
   ];
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     campaignId,
     revision: 0,
     tick: 0,

@@ -1,6 +1,6 @@
 {
   "name": "pirate-crew-web",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,8 @@
     "test:browser": "node scripts/browser-check.mjs",
     "test:hosting": "node scripts/hosting-check.mjs",
     "format": "prettier --write src tests scripts vite.config.ts tsconfig.json package.json index.html",
-    "format:check": "prettier --check src tests scripts vite.config.ts tsconfig.json package.json index.html"
+    "format:check": "prettier --check src tests scripts vite.config.ts tsconfig.json package.json index.html",
+    "test:sea:browser": "node scripts/sea-browser-check.mjs"
   },
   "dependencies": {
     "phaser": "3.90.0"

@@ -54,3 +54,7 @@ A taught Fisher uses the reachable port-side rail, reserving one ship/duty slot.
 New recruits have one previewed trait: Swift (20% movement increase), Industrious (25% work increase), Hearty (one hunger point per needs interval), or Gourmand (three). Ordinary hunger costs two. Effects use simulation ticks; low morale still halves work speed. Existing crew and migrated saves have neutral traits. Trait arrays allow at most two unique known values; opposing food traits are rejected. This is an original small catalogue, not a verified original-game trait list.
 
 Work-site selection uses graph-owned connected-component labels, built once with navigation. Finding a reachable repair/rail site scans the bounded graph without allocating a new path search or keeping extra world caches.
+
+## Version 0.9 sea safety
+
+Swimming is a passive skill purchased in port; it does not occupy a duty slot. The learned-skill cap is eight, including the seven existing duties. Overboard pirates cannot accept ordinary orders or work/fight remotely. Rescue selects a living home crewmate and claims one overboard ally; path failure, a replacement order or death releases the line. During a crossing, new orders are rejected with feedback until landing. [Sea rules](../design/sea-traversal.md).

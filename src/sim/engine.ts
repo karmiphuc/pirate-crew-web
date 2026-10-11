@@ -1,7 +1,10 @@
+import { SeaTransit, seaX, WATER_Y, SEA_TIMEOUT, inWater } from "./sea";
 import {
   Campaign,
   Duty,
   DUTIES,
+  Skill,
+  SKILLS,
   DUTY_NAMES,
   Weapon,
   WEAPONS,
@@ -30,6 +33,8 @@ export class Simulation {
   >();
   private claims = new Map<string, number>();
   private falls = new Map<number, number>();
+  private sea = new Map<number, SeaTransit>();
+  private lastRopeStart = -6;
   disposed = false;
   expansions = 0;
   constructor(readonly state: Campaign) {
@@ -71,6 +76,331 @@ export class Simulation {
         this.falls.set(id, origin);
     }
   }
+  get seaCount() {
+    return this.sea.size;
+  }
+  get swimmerCount() {
+    let count = 0;
+    for (const transit of this.sea.values()) if (inWater(transit)) count++;
+    return count;
+  }
+  get crossingCount() {
+    let count = 0;
+    for (const transit of this.sea.values())
+      if (transit.mode === "rope") count++;
+    return count;
+  }
+  private ropeDirectionAvailable(shipId: number) {
+    for (const transit of this.sea.values())
+      if (transit.mode === "rope" && transit.originShip !== shipId)
+        return false;
+    return true;
+  }
+  seaPosition(id: number): Readonly<SeaTransit> | undefined {
+    return this.sea.get(id);
+  }
+  snapshotSea(): [number, SeaTransit][] {
+    return [...this.sea].map(([id, transit]) => [id, { ...transit }]);
+  }
+  restoreSea(entries: readonly [number, SeaTransit][]) {
+    if (this.disposed) return;
+    this.sea.clear();
+    for (const [id, transit] of entries.slice(
+      0,
+      LIMITS.allies + LIMITS.enemies,
+    )) {
+      if (
+        this.state.pirates.some((p) => p.id === id && p.hp > 0) &&
+        ["rope", "fall", "swim", "tread", "rescue", "climb"].includes(
+          transit.mode,
+        ) &&
+        [
+          transit.x,
+          transit.y,
+          transit.previousX,
+          transit.previousY,
+          transit.progress,
+          transit.ticks,
+        ].every(Number.isFinite)
+      )
+        this.sea.set(id, { ...transit });
+    }
+  }
+  private landing(shipId: number, worldX: number) {
+    const graph = this.graphs.get(shipId);
+    if (!graph) return -1;
+    return graph.nearestReachable(
+      worldX - seaX(shipId, 0),
+      3,
+      graph.nearest(3, 3),
+    );
+  }
+  private startSea(p: Pirate, mode: "rope" | "fall", targetShip: number) {
+    if (this.sea.size >= LIMITS.allies + LIMITS.enemies) {
+      this.state.phase = "gameover";
+      notify(
+        this.state,
+        "Sea traversal capacity exceeded. Restore the checkpoint.",
+        "bad",
+      );
+      return;
+    }
+    const targetNode =
+      mode === "rope"
+        ? this.landing(targetShip, seaX(targetShip, targetShip === 1 ? 17 : 0))
+        : -1;
+    if (mode === "rope" && targetNode === -1) {
+      this.finish(p, "No safe boarding landing");
+      return;
+    }
+    this.clearOrder(p);
+    if (mode === "fall") p.orders.length = 0;
+    const x = seaX(p.shipId, p.x),
+      y = Math.min(WATER_Y, p.y);
+    if (mode === "rope") this.lastRopeStart = this.state.tick;
+    this.sea.set(p.id, {
+      mode,
+      x,
+      y,
+      previousX: x,
+      previousY: y,
+      startX: x,
+      startY: y,
+      originShip: p.shipId,
+      originNode: tileNode(Math.round(p.x), Math.round(p.y)),
+      targetShip,
+      targetNode,
+      targetRevision:
+        mode === "fall"
+          ? -1
+          : (this.graphs.get(targetShip)?.ship.revision ?? -1),
+      ticks: 0,
+      progress: 0,
+      rescuerId: null,
+    });
+    p.status = mode === "rope" ? "Crossing boarding rope" : "Falling overboard";
+    if (mode === "fall")
+      notify(
+        this.state,
+        `${p.name} fell overboard. Trained swimmers return aboard; others need a rescue line.`,
+        "bad",
+      );
+  }
+  private landSea(p: Pirate, transit: SeaTransit) {
+    if (this.landingUsed) return;
+    this.landingUsed = true;
+    const node = transit.targetNode;
+    p.shipId = transit.targetShip;
+    p.x = p.previousX = nodeX(node);
+    p.y = p.previousY = nodeY(node);
+    this.sea.delete(p.id);
+    if (transit.mode === "rope")
+      this.finish(p, p.shipId === 1 ? "Back aboard" : "Engaging enemy");
+    else {
+      this.clearOrder(p);
+      p.orders.length = 0;
+      p.status = "Recovered aboard";
+      notify(this.state, `${p.name} is safely back aboard.`, "good");
+    }
+  }
+  private syncSea(p: Pirate, transit: SeaTransit) {
+    p.x = transit.x - seaX(p.shipId, 0);
+    p.y = transit.y;
+  }
+  private updateSea(p: Pirate, transit: SeaTransit) {
+    transit.previousX = transit.x;
+    transit.previousY = transit.y;
+    transit.ticks++;
+    const graph = this.graphs.get(transit.targetShip);
+    if (transit.mode === "rope") {
+      const origin = this.graphs.get(transit.originShip);
+      if (!origin?.nodes.has(transit.originNode)) {
+        transit.mode = "fall";
+        transit.ticks = 0;
+        transit.targetShip = p.side === "ally" ? 1 : p.shipId;
+        transit.targetRevision = -1;
+        p.orders.length = 0;
+        notify(
+          this.state,
+          `${p.name}: boarding rope lost its support. Send a rescue line.`,
+          "bad",
+        );
+      } else if (
+        !graph?.nodes.has(transit.targetNode) ||
+        !graph.connected(graph.nearest(3, 3), transit.targetNode)
+      ) {
+        p.x = p.previousX = nodeX(transit.originNode);
+        p.y = p.previousY = nodeY(transit.originNode);
+        this.sea.delete(p.id);
+        this.finish(p, "No safe boarding landing; returned to the origin rail");
+        return;
+      } else {
+        transit.progress = Math.min(1, transit.ticks / 40);
+        const goalX = seaX(transit.targetShip, nodeX(transit.targetNode)),
+          goalY = nodeY(transit.targetNode);
+        transit.x =
+          transit.startX + (goalX - transit.startX) * transit.progress;
+        transit.y =
+          transit.startY +
+          (goalY - transit.startY) * transit.progress +
+          Math.sin(Math.PI * transit.progress) * 0.6;
+        this.syncSea(p, transit);
+        p.status = "Crossing boarding rope";
+        if (transit.progress === 1) this.landSea(p, transit);
+        return;
+      }
+    }
+    if (transit.mode === "fall") {
+      transit.y = Math.min(WATER_Y, transit.y + 0.3);
+      this.syncSea(p, transit);
+      p.status = "Falling overboard";
+      if (transit.y >= WATER_Y) {
+        transit.mode = p.skills.includes("swim") ? "swim" : "tread";
+        transit.ticks = 0;
+      }
+      return;
+    }
+    if (transit.targetRevision !== (graph?.ship.revision ?? -1)) {
+      const previousLanding = transit.targetNode;
+      transit.targetNode = this.landing(transit.targetShip, transit.x);
+      transit.targetRevision = graph?.ship.revision ?? -1;
+      if (transit.mode === "climb" && transit.targetNode !== previousLanding) {
+        transit.mode = p.skills.includes("swim") ? "swim" : "tread";
+        transit.y = WATER_Y;
+        this.syncSea(p, transit);
+      }
+    }
+    if (transit.rescuerId !== null) {
+      const rescuer = this.state.pirates.find(
+        (actor) => actor.id === transit.rescuerId,
+      );
+      if (
+        !rescuer ||
+        rescuer.hp <= 0 ||
+        rescuer.shipId !== 1 ||
+        this.sea.has(rescuer.id) ||
+        rescuer.orders[0]?.action !== "rescue" ||
+        rescuer.orders[0].targetId !== p.id
+      ) {
+        transit.rescuerId = null;
+        transit.mode = p.skills.includes("swim") ? "swim" : "tread";
+        notify(this.state, `${p.name}'s rescue line was interrupted.`, "bad");
+      }
+    }
+    if (transit.ticks % 20 === 0 && transit.mode !== "climb")
+      p.hp = Math.max(
+        0,
+        p.hp - (p.skills.includes("swim") || transit.mode === "rescue" ? 1 : 8),
+      );
+    if (p.hp === 0 || transit.ticks >= SEA_TIMEOUT) {
+      p.hp = 0;
+      this.sea.delete(p.id);
+      this.clearOrder(p);
+      p.orders.length = 0;
+      p.status = "Lost at sea";
+      notify(this.state, `${p.name} was lost at sea.`, "bad");
+      return;
+    }
+    if (transit.mode === "climb") {
+      if (!graph?.nodes.has(transit.targetNode)) {
+        transit.mode = p.skills.includes("swim") ? "swim" : "tread";
+        transit.targetNode = -1;
+        transit.targetRevision = -1;
+        transit.y = WATER_Y;
+        this.syncSea(p, transit);
+        return;
+      }
+      transit.y = Math.max(nodeY(transit.targetNode), transit.y - 0.25);
+      this.syncSea(p, transit);
+      p.status = "Climbing back aboard";
+      if (transit.y === nodeY(transit.targetNode)) this.landSea(p, transit);
+      return;
+    }
+    p.status =
+      transit.mode === "rescue"
+        ? "Rescue line hauling"
+        : transit.mode === "swim"
+          ? "Swimming back aboard"
+          : "Treading water · needs rescue";
+    if (
+      transit.targetNode !== -1 &&
+      (transit.mode === "swim" || transit.mode === "rescue")
+    ) {
+      const goalX = seaX(transit.targetShip, nodeX(transit.targetNode)),
+        dx = goalX - transit.x;
+      const speed = transit.mode === "rescue" ? 0.4 : 0.2;
+      transit.x += Math.sign(dx) * Math.min(Math.abs(dx), speed);
+      this.syncSea(p, transit);
+      if (transit.x === goalX) {
+        transit.mode = "climb";
+        transit.rescuerId = null;
+      }
+    }
+  }
+  rescue(ids: readonly number[]) {
+    if (this.disposed) return false;
+    const target = this.state.pirates.find(
+      (p) => p.side === "ally" && p.hp > 0 && inWater(this.sea.get(p.id)),
+    );
+    const rescuer = this.state.pirates.find(
+      (p) =>
+        ids.includes(p.id) &&
+        p.side === "ally" &&
+        p.hp > 0 &&
+        p.shipId === 1 &&
+        !this.sea.has(p.id),
+    );
+    if (!target || !rescuer) {
+      notify(
+        this.state,
+        "Select a pirate aboard the home ship to rescue an overboard crewmate.",
+        "bad",
+      );
+      return false;
+    }
+    return this.queue([rescuer.id], { action: "rescue", targetId: target.id });
+  }
+  private updateRescuer(p: Pirate, targetId: number | undefined) {
+    const transit = targetId === undefined ? undefined : this.sea.get(targetId);
+    const target = this.state.pirates.find(
+      (actor) => actor.id === targetId && actor.side === "ally" && actor.hp > 0,
+    );
+    if (!transit || !target) {
+      this.finish(p, "Rescue complete");
+      return;
+    }
+    if (transit.mode === "climb") {
+      this.finish(p, "Crewmate is climbing aboard");
+      return;
+    }
+    if (p.shipId !== 1 || !inWater(transit)) {
+      this.finish(p, "No crewmate in reach of a rescue line");
+      return;
+    }
+    if (transit.rescuerId !== null && transit.rescuerId !== p.id) {
+      this.finish(p, "No free rescue line; another pirate is hauling");
+      return;
+    }
+    const goal = this.graph(1).nearestReachable(
+      transit.x,
+      3,
+      this.graph(1).nearest(p.x, p.y),
+    );
+    if (goal === -1) {
+      this.finish(p, "No reachable rail for rescue");
+      return;
+    }
+    if (Math.abs(p.x - nodeX(goal)) + Math.abs(p.y - nodeY(goal)) < 0.05) {
+      transit.rescuerId = p.id;
+      transit.mode = "rescue";
+      transit.targetShip = 1;
+      transit.targetNode = goal;
+      transit.targetRevision = this.graph(1).ship.revision;
+      p.targetId = target.id;
+      p.status = "Hauling rescue line";
+    } else if (!this.follow(p)) this.requestPath(p, goal);
+  }
+
   get fallingCount() {
     return this.falls.size;
   }
@@ -89,11 +419,8 @@ export class Simulation {
       if (nodeX(n) === x && nodeY(n) >= p.y - 0.01)
         landing = Math.min(landing, nodeY(n));
     if (!Number.isFinite(landing)) {
-      p.hp = 0;
-      p.orders.length = 0;
       this.falls.delete(p.id);
-      p.status = "Lost overboard";
-      notify(this.state, `${p.name} fell overboard.`, "bad");
+      this.startSea(p, "fall", p.side === "ally" ? 1 : p.shipId);
       return true;
     }
     p.x = x;
@@ -118,6 +445,7 @@ export class Simulation {
           (p) =>
             p.shipId === 1 &&
             !this.falls.has(p.id) &&
+            !this.sea.has(p.id) &&
             graph.positionSupported(p.x, p.y) &&
             graph.connected(base, tileNode(Math.round(p.x), Math.round(p.y))),
         )
@@ -178,6 +506,14 @@ export class Simulation {
           (p) => p.id === id && p.side === "ally" && p.hp > 0,
         );
         if (!p) continue;
+        if (this.sea.has(p.id)) {
+          notify(
+            this.state,
+            `${p.name}: finish the crossing or return aboard before taking new orders.`,
+            "bad",
+          );
+          continue;
+        }
         if (
           c.order.action === "board" &&
           !["encounter", "aftermath"].includes(this.state.phase)
@@ -245,7 +581,12 @@ export class Simulation {
     let target: Pirate | null = null,
       distance = Infinity;
     for (const e of this.state.pirates)
-      if (e.side !== p.side && e.hp > 0 && e.shipId === p.shipId) {
+      if (
+        e.side !== p.side &&
+        e.hp > 0 &&
+        e.shipId === p.shipId &&
+        !this.sea.has(e.id)
+      ) {
         const d = Math.abs(e.x - p.x) + Math.abs(e.y - p.y);
         if (d < distance) {
           distance = d;
@@ -280,15 +621,25 @@ export class Simulation {
   private updatePirate(p: Pirate) {
     if (p.hp <= 0) {
       this.falls.delete(p.id);
+      this.sea.delete(p.id);
       this.clearOrder(p);
       p.orders.length = 0;
       return;
     }
     p.previousX = p.x;
     p.previousY = p.y;
+    const transit = this.sea.get(p.id);
+    if (transit) {
+      this.updateSea(p, transit);
+      return;
+    }
     if (this.unsupported(p)) return;
     if (p.cooldown > 0) p.cooldown--;
     const order = p.orders[0];
+    if (order?.action === "rescue") {
+      this.updateRescuer(p, order.targetId);
+      return;
+    }
     if (order?.action === "cannon") {
       if (
         this.state.phase !== "encounter" ||
@@ -366,8 +717,12 @@ export class Simulation {
         // One transfer per tick reserves the landing for this traversal.
         if (!this.landingUsed) {
           this.landingUsed = true;
-          this.transfer(p, targetShip);
-          this.finish(p, targetShip === 2 ? "Engaging enemy" : "Back aboard");
+          if (
+            this.state.tick - this.lastRopeStart >= 6 &&
+            this.ropeDirectionAvailable(p.shipId)
+          )
+            this.startSea(p, "rope", targetShip);
+          else p.status = "Waiting for boarding rope";
         }
       } else {
         if (!this.follow(p)) this.requestPath(p, goal);
@@ -394,7 +749,11 @@ export class Simulation {
     let target =
       order?.targetId !== undefined
         ? (this.state.pirates.find(
-            (e) => e.id === order.targetId && e.hp > 0 && e.side !== p.side,
+            (e) =>
+              e.id === order.targetId &&
+              e.hp > 0 &&
+              e.side !== p.side &&
+              !this.sea.has(e.id),
           ) ?? null)
         : this.nearestEnemy(p);
     if (order?.action === "attack" && !target) {
@@ -497,6 +856,7 @@ export class Simulation {
           this.tasks.clear();
           this.claims.clear();
           this.falls.clear();
+          this.sea.clear();
           this.searches.clear();
           notify(
             s,
@@ -527,6 +887,25 @@ export class Simulation {
         }
       }
     }
+    if (
+      !["gameover", "victory", "won"].includes(s.phase) &&
+      s.pirates.some(
+        (p) => p.side === "ally" && p.role === "captain" && p.hp <= 0,
+      )
+    ) {
+      s.phase = "gameover";
+      this.commands.length = 0;
+      this.tasks.clear();
+      this.claims.clear();
+      this.falls.clear();
+      this.sea.clear();
+      this.searches.clear();
+      notify(
+        s,
+        "Your captain has fallen. Restore the last safe checkpoint.",
+        "bad",
+      );
+    }
     // Needs advance only on active voyages; food is prepared at the galley.
     if (["encounter", "travel"].includes(s.phase) && s.tick % 100 === 0) {
       const home = s.ships[0];
@@ -542,7 +921,12 @@ export class Simulation {
                   ? 3
                   : 2),
           );
-          if (p.hunger < 60 && s.meals > 0 && p.shipId === 1) {
+          if (
+            p.hunger < 60 &&
+            s.meals > 0 &&
+            p.shipId === 1 &&
+            !this.sea.has(p.id)
+          ) {
             s.meals--;
             p.hunger = Math.min(100, p.hunger + 35);
             p.status = "Eating cooked provisions";
@@ -722,11 +1106,12 @@ export class Simulation {
     this.falls.clear();
     for (const p of this.state.pirates)
       if (p.side === "ally" && p.hp > 0) {
-        if (p.shipId !== 1) this.transfer(p, 1);
+        if (p.shipId !== 1 || this.sea.has(p.id)) this.transfer(p, 1);
         p.orders.length = 0;
         this.clearOrder(p);
         p.status = "On deck";
       }
+    this.sea.clear();
     this.state.pirates = this.state.pirates.filter(
       (p) => p.side === "ally" && p.hp > 0,
     );
@@ -784,6 +1169,7 @@ export class Simulation {
         p.hp > 0 &&
         p.shipId === 1 &&
         p.skills.includes("gunner") &&
+        !this.sea.has(p.id) &&
         p.orders.length === 0,
     );
     if (!gunner) {
@@ -861,7 +1247,11 @@ export class Simulation {
         s.medicine > 0 &&
         s.pirates.some(
           (a) =>
-            a.side === "ally" && a.shipId === 1 && a.hp > 0 && a.hp < a.maxHp,
+            a.side === "ally" &&
+            a.shipId === 1 &&
+            a.hp > 0 &&
+            a.hp < a.maxHp &&
+            !this.sea.has(a.id),
         )
       );
     if (duty === "gunner")
@@ -1049,7 +1439,11 @@ export class Simulation {
     if (duty === "medic") {
       const injured = s.pirates.find(
         (a) =>
-          a.side === "ally" && a.shipId === 1 && a.hp > 0 && a.hp < a.maxHp,
+          a.side === "ally" &&
+          a.shipId === 1 &&
+          a.hp > 0 &&
+          a.hp < a.maxHp &&
+          !this.sea.has(a.id),
       );
       if (injured) {
         s.medicine--;
@@ -1086,6 +1480,7 @@ export class Simulation {
       (p) =>
         p.hp > 0 &&
         p.shipId === target.id &&
+        !this.sea.has(p.id) &&
         p.side === (shipId === 1 ? "enemy" : "ally"),
     );
     const victim = victims[Math.floor(random(s) * victims.length)];
@@ -1119,6 +1514,7 @@ export class Simulation {
         p.side === "enemy" &&
         p.hp > 0 &&
         p.shipId === 2 &&
+        !this.sea.has(p.id) &&
         !this.nearestEnemy(p) &&
         this.graph(2).connected(
           this.graph(2).nearest(p.x, p.y),
@@ -1147,8 +1543,8 @@ export class Simulation {
     this.touch();
     return true;
   }
-  teach(id: number, duty: Duty) {
-    if (this.disposed || !DUTIES.includes(duty)) return false;
+  teach(id: number, duty: Skill) {
+    if (this.disposed || !SKILLS.includes(duty)) return false;
     const s = this.state,
       p = s.pirates.find((p) => p.id === id && p.side === "ally");
     if (s.phase !== "port" || !p || p.skills.includes(duty) || s.gold < 60) {
@@ -1161,12 +1557,14 @@ export class Simulation {
     }
     s.gold -= 60;
     p.skills.push(duty);
-    p.duty = duty;
+    if (duty !== "swim") p.duty = duty;
     p.orders.length = 0;
     this.clearOrder(p);
     notify(
       s,
-      `${p.name} learned ${DUTY_NAMES[duty]} and took the duty.`,
+      duty === "swim"
+        ? `${p.name} learned Swimming; their assigned duty is unchanged.`
+        : `${p.name} learned ${DUTY_NAMES[duty]} and took the duty.`,
       "good",
     );
     this.touch();
@@ -1358,12 +1756,17 @@ export class Simulation {
     this.tasks.clear();
     this.claims.clear();
     this.falls.clear();
+    this.sea.clear();
     this.searches.clear();
     for (const p of s.pirates) {
       p.hp = p.maxHp;
       p.hunger = 100;
       p.morale = 100;
-      const node = this.graph(1).nearest(p.x, p.y);
+      const node = this.graph(1).nearestReachable(
+        p.x,
+        p.y,
+        this.graph(1).nearest(3, 3),
+      );
       p.x = p.previousX = nodeX(node);
       p.y = p.previousY = nodeY(node);
       p.status = "Rested";
@@ -1378,7 +1781,8 @@ export class Simulation {
     if (this.disposed) return false;
     const s = this.state;
     const injured = s.pirates.find(
-      (p) => p.side === "ally" && p.hp > 0 && p.hp < p.maxHp,
+      (p) =>
+        p.side === "ally" && p.hp > 0 && p.hp < p.maxHp && !this.sea.has(p.id),
     );
     if (!injured || !s.medicine) {
       notify(
@@ -1462,5 +1866,6 @@ export class Simulation {
     this.tasks.clear();
     this.claims.clear();
     this.falls.clear();
+    this.sea.clear();
   }
 }

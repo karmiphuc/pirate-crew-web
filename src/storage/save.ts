@@ -1,4 +1,11 @@
-import { Campaign, LIMITS, DUTIES, WEAPONS, TRAITS } from "../sim/model";
+import {
+  Campaign,
+  LIMITS,
+  DUTIES,
+  SKILLS,
+  WEAPONS,
+  TRAITS,
+} from "../sim/model";
 import { Navigation, Search, validateLayout } from "../sim/navigation";
 import { tileNode } from "../sim/model";
 const MAX = 1_000_000_000;
@@ -93,9 +100,11 @@ export function validateSave(value: unknown): Campaign {
       }),
     };
   }
+  if (record(value) && value.schemaVersion === 4)
+    value = { ...value, schemaVersion: 5 };
   if (
     !record(value) ||
-    value.schemaVersion !== 4 ||
+    value.schemaVersion !== 5 ||
     !text(value.campaignId) ||
     !["port", "travel", "victory", "won"].includes(String(value.phase))
   )
@@ -225,8 +234,8 @@ export function validateSave(value: unknown): Campaign {
       !DUTIES.includes(p.duty as any) ||
       !Array.isArray(p.skills) ||
       p.skills.length < 1 ||
-      p.skills.length > DUTIES.length ||
-      p.skills.some((skill) => !DUTIES.includes(skill)) ||
+      p.skills.length > SKILLS.length ||
+      p.skills.some((skill) => !SKILLS.includes(skill)) ||
       new Set(p.skills).size !== p.skills.length ||
       !p.skills.includes(p.duty) ||
       !Array.isArray(p.traits) ||
@@ -292,7 +301,7 @@ export function validateSave(value: unknown): Campaign {
       throw new Error("Invalid journal.");
   // Only explicit fields enter the application. Unknown properties are discarded.
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     campaignId: state.campaignId,
     revision: state.revision,
     tick: state.tick,

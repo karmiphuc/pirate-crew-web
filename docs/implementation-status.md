@@ -1,6 +1,6 @@
 # First playable implementation
 
-Version: 0.8.1. Date: 2026-10-11. Previous baseline: 0.8.0.
+Version: 0.9.0. Date: 2026-10-11. Previous baseline: 0.8.1.
 
 ## Delivered
 
@@ -24,8 +24,8 @@ TypeScript 5.9.3, Phaser 3.90.0, Vite 7.3.6; a single-thread renderer-independen
 | Planned system | Current behavior |
 | --- | --- |
 | Task board / station workers | Delivered duties with exclusive claims and skilled workers at reachable stations. Emergency priority and critical-injury retreat are still deferred |
-| Ship destruction / damaged boarding paths | Hull damage, plank destruction, sinking, targeted structural restoration, path invalidation, one-gap jumps and falls delivered. Swimming/rescue and general rigid-body destruction deferred |
-| Boarding edge reservations and rope animation | One transfer per tick, valid deck endpoints; abstract crossing with no physical rope simulation |
+| Ship destruction / damaged boarding paths | Hull damage, plank destruction, sinking, targeted structural restoration, path invalidation, one-gap jumps and falls delivered. Timed boarding and swimming/rescue delivered; general rigid-body destruction deferred |
+| Boarding edge reservations and rope animation | Timed rope crossing, six-tick group spacing, direction/landing reservations and endpoint checks; rope tension/physics deferred |
 | Equipment instances and roles | Three owned weapon choices per pirate, armor, skill books and direct training; full item/drop inventory and proficiency stats deferred |
 | Seeded procedural world templates | Authored ten-node topology with stored seeds; seeded combat RNG; procedural topology generator deferred |
 | Island exploration | Two walkable islands with an unguarded or guarded chest; explicit landing, collection, return, and rewards. Town inhabitants, wildlife and broader terrain deferred |
@@ -39,7 +39,7 @@ These limitations keep the implementation reviewable and playable without preten
 
 ## Validation
 
-`npm test`: 92 scenarios including connected upper decks, severed ladders, invalid edits, exact move completion, complete expedition, no duplicate island loot, deterministic battles, queue caps, failure feedback, captain death/checkpoint, escape safety, prepared boss victory, 50 simulation encounter cycles, idempotent disposal, malformed saves, ordered writes, injected quota failure, immutable snapshots, and subscription release. Expanded scenarios cover work-slot races, work interruption/death, resource-limited repairs/healing/cooking, skill books, owned loadouts, armor caps, hull sinking, explicit once-only prize handling, capture, guarded islands, fractional waypoint completion, station relocation, and bounded schema-1 migration. Version 0.3 adds fishing/galley supply and reserve limits, cancellation of unfinished catches, trait effects on movement/work/needs, fixed repair targets under incoming hits, refit wear preservation, reachable work components, and immutable v1/v2 migration with malformed trait/wear rejection.
+`npm test`: 111 scenarios including connected upper decks, severed ladders, invalid edits, exact move completion, complete expedition, no duplicate island loot, deterministic battles, queue caps, failure feedback, captain death/checkpoint, escape safety, prepared boss victory, 50 simulation encounter cycles, idempotent disposal, malformed saves, ordered writes, injected quota failure, immutable snapshots, and subscription release. Expanded scenarios cover work-slot races, work interruption/death, resource-limited repairs/healing/cooking, skill books, owned loadouts, armor caps, hull sinking, explicit once-only prize handling, capture, guarded islands, fractional waypoint completion, station relocation, and bounded schema-1 migration. Version 0.3 adds fishing/galley supply and reserve limits, cancellation of unfinished catches, trait effects on movement/work/needs, fixed repair targets under incoming hits, refit wear preservation, reachable work components, and immutable v1/v2 migration with malformed trait/wear rejection.
 
 `npm run build`: TypeScript and production build pass. `npm run format:check` checks readable source formatting. Dependency audit covers dev and production packages; initial older tooling was updated to patched versions.
 
@@ -53,7 +53,7 @@ A real baseline laptop/GPU; Chrome/Firefox/Safari browser matrix; full 30-minute
 
 ## Measured Chromium run
 
-See [machine-readable report](validation-results.json). Version 0.8.1 development build, Chromium SwiftShader software rendering, 1440 × 1080 viewport. Scoped sample: frame p95 30.01 ms, tick p95 0.1 ms, zero stalls. Diagnostic-GC retained JS heap: 9,088,964 → 9,074,008 bytes across fifty rendered encounters; listeners 75 → 75, textures 10 → 10. Body, equipment and foreground-hand counts finish at four each, matching living crew. Expedition, management, destruction, persistence, context, audio, loadout changes, combat poses, pause/reduced motion, both artwork failure/reload paths and final disposal checks pass without page errors. Registration checks verify coincident hand/weapon grips, layer order and matching poses through both facing directions and walking for all initial crew and loadouts. Ten scene restarts retain matching hand/body counts without adding listeners or textures.
+See [machine-readable report](validation-results.json). Version 0.9.0 development build, Chromium SwiftShader software rendering, 1440 × 1080 viewport. Scoped sample: frame p95 30.01 ms, tick p95 0.1 ms, zero stalls. Diagnostic-GC retained JS heap: 9,219,096 → 9,173,316 bytes across fifty rendered encounters; listeners 75 → 75, textures 10 → 10. Body, equipment and foreground-hand counts finish at four each, matching living crew. Sea/swimmer/crossing owners finish at zero. Expedition, management, destruction, persistence, context, audio, loadout changes, combat poses, pause/reduced motion, both artwork failure/reload paths and final disposal checks pass without page errors. Registration checks verify coincident hand/weapon grips, layer order and matching poses through both facing directions and walking for all initial crew and loadouts. Ten scene restarts retain matching hand/body counts without adding listeners or textures.
 
 Atlas checks verify hard opaque/transparent alpha, twenty-one frames per 280 × 168 body atlas, nine equipment frames in 288 × 168, and forty-two foreground-hand frames in 280 × 336. The CPU source count returns to zero, including failed artwork requests. Supplemental checks repeat final grip registration and inspect the hand atlas and full pistol portrait gutter at 1440, 700 and 375 px, with matching whole-pixel hand atlas scales and no page overflow. Root and project-path production hosting checks pass.
 
@@ -130,3 +130,7 @@ The source PNG adds 1,273,328 downloaded bytes and about 6 MiB temporary decoded
 ## Version 0.8.1 weapon handling
 
 [Handling review](design/weapon-handling.md) records body → equipment → foreground-finger layers, character-specific grip points, movement/facing registration, and pistol aim/recoil arm poses. Muzzle marks follow the equipped barrel tip. The accepted source illustration, faces and costumes are preserved. Atlas RGBA grows by 577.5 KiB to approximately 1.26 MiB, with ten shared textures and one bounded hand sprite per living actor. Hand sprites release on death/removal, scene shutdown and app disposal; their portrait CSS binding releases on shutdown. No combat-rule or save-schema change is introduced.
+
+## Version 0.9 sea movement and recovery
+
+[Sea movement review](design/sea-traversal.md) records timed rope traversal, passive Swimming, exposure limits, crew rescue lines and actual runtime captures. Schema 5 accepts the added passive skill and migrates earlier checkpoints. Safe transitions reject active sea owners; failed port-recovery writes restore exposure time/position/claims together with the campaign. Nineteen new unit scenarios bring the suite to 111, including all twelve trained allies and fifty recovery cycles. The dedicated browser harness validates visible controls, crossing/pause, submerged art and stowed items, rescue ownership, scene restart, recovery, checkpoint reload and quota rollback. It records [sea-specific results](sea-validation-results.json); accelerated fixture timing is not a performance measurement. Shared texture count remains ten and no new sprites/atlases/timers are introduced.

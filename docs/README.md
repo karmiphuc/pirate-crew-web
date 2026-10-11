@@ -37,3 +37,5 @@ Initial baseline: 2026-10-05. Design documents describe the target; the implemen
 Changes that affect several systems should update their contracts and acceptance scenarios before implementation. New consequential architecture decisions receive a numbered decision record.
 
 - [Weapon handling and visible grips, 0.8.1](design/weapon-handling.md) — actual runtime poses, character anchors, and hand-layer ownership.
+
+- [Boarding, swimming and sea rescue, 0.9.0](design/sea-traversal.md) — gameplay, captured runtime, save migration and ownership.

@@ -1,0 +1,54 @@
+{
+  "swimmingBookAndReload": "passed",
+  "timedRopeAndPause": "passed",
+  "swimmingCropAndStoredWeapons": "passed",
+  "rescueControlAndLine": "passed",
+  "sceneRestartDuringRescue": "passed",
+  "cropAndWeaponRecovery": "passed",
+  "prizeCheckpoint": "passed",
+  "seaRollbackOnQuotaFailure": "passed",
+  "restAndReloadRecovery": "passed",
+  "diagnostics": {
+    "frameMs": {
+      "count": 3,
+      "p50": 15.173333333333332,
+      "p95": 15.173333333333332,
+      "p99": 15.173333333333332
+    },
+    "tickMs": {
+      "count": 0,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0
+    },
+    "stalls": 0,
+    "views": {
+      "artwork": true,
+      "sourceImages": 0,
+      "actors": 3,
+      "equipment": 3,
+      "grips": 3,
+      "subscriptions": 4,
+      "clouds": 3,
+      "textures": 10,
+      "shutdownHandlers": 13,
+      "destroyHandlers": 13
+    },
+    "graphs": 1,
+    "searches": 0,
+    "commands": 0,
+    "audioVoices": 0,
+    "tasks": 0,
+    "falls": 0,
+    "sea": 0,
+    "swimmers": 0,
+    "crossings": 0,
+    "claims": 0,
+    "listeners": 5,
+    "saveWrites": 0,
+    "lock": "owned",
+    "tick": 378,
+    "phase": "port"
+  },
+  "errors": []
+}

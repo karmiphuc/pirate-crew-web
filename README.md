@@ -54,9 +54,9 @@ Only one browser tab can own writable save state. Backgrounding pauses the voyag
 
 ## Current scope
 
-Version 0.8.1: one harbour, ten map locations, three pirate ship encounters, two explorable islands, four pirate lords, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/fishing/repairs/healing, destructible planks, one-gap jumps, lower-deck falls and targeted restoration, hull combat, recruit traits and previews, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1, version-2 and version-3 checkpoints migrate without losing their original campaign map.
+Version 0.9.0: one harbour, ten map locations, three pirate ship encounters, two explorable islands, four pirate lords, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/fishing/repairs/healing, destructible planks, one-gap jumps, lower-deck falls, timed rope boarding, swimming/rescue and targeted restoration, hull combat, recruit traits and previews, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1 through version-4 checkpoints migrate without losing their original campaign map.
 
-This is a growing remake, not a verified 1:1 recreation. Art, names, interfaces, terrain, and balance are original. Full equipment/drop inventories, swimming, rum/toys, the complete trait catalogue, procedural world topology, music/voice lines, pets, and full original content remain. Boarding uses a drawn rope with abstract transfers; navigation uses a deck/ladder graph. The [fidelity tracker](docs/fidelity.md) distinguishes reference behavior, delivered systems, and gaps.
+This is a growing remake, not a verified 1:1 recreation. Art, names, interfaces, terrain, and balance are original. Full equipment/drop inventories, rum/toys, the complete trait catalogue, procedural world topology, music/voice lines, pets, and full original content remain. Boarding crosses a timed rope; trained swimmers and crew rescue lines recover overboard pirates. Navigation uses a deck/ladder graph. The [fidelity tracker](docs/fidelity.md) distinguishes reference behavior, delivered systems, and gaps.
 
 ## Robustness and verification
 
@@ -97,3 +97,7 @@ Version 0.8.0 replaces crew source art with an original six-character design she
 Version 0.8.1 improves weapon handling with visible gripping fingers, character-specific arm positions, separate pistol aim/recoil poses, and matching movement/facing in the world and roster. [Runtime previews and resource decisions](docs/design/weapon-handling.md).
 
 ![Actual weapon handling in both facing directions](docs/images/weapon-handling-poses.png)
+
+Version 0.9.0 adds timed rope boarding, learnable Swimming, crew rescue lines, bounded sea exposure and safe recovery/checkpoint rollback. [Behavior, runtime captures and limits](docs/design/sea-traversal.md). Run `npm run test:sea:browser` for the sea-specific browser checks.
+
+![Actual crew rescue line](docs/images/rescue-line.webp)

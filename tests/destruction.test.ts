@@ -83,6 +83,8 @@ describe("damaged deck traversal", () => {
     sim.state.phase = "encounter";
     destroy(sim, [[0, 4]]);
     sim.tick();
+    expect(p.hp).toBeGreaterThan(0);
+    run(sim, 270);
     expect(p.hp).toBe(0);
     expect(sim.state.phase).toBe("gameover");
     expect(sim.fallingCount).toBe(0);
@@ -194,7 +196,7 @@ describe("schema 4 topology recovery", () => {
     old.ships[0].tiles.find((t: any) => t.x === 3 && t.y === 4).damage = 100;
     const before = JSON.stringify(old),
       migrated = validateSave(old);
-    expect(migrated.schemaVersion).toBe(4);
+    expect(migrated.schemaVersion).toBe(5);
     expect(
       migrated.ships[0].tiles.find((t) => t.x === 3 && t.y === 4)!.damage,
     ).toBe(99);

@@ -71,3 +71,7 @@ Schema 4 changes damage 100 from cosmetic maximum wear to a destroyed support. S
 Port repair is a recovery transaction: its pre-repair rollback snapshot may be temporarily unsafe, but is never written as a checkpoint. Failed storage restores both the prior state and transient fall origins; successful repair must pass normal supported-position validation before commit. Other purchases continue to require a safe prior checkpoint.
 
 Legacy diagonal ladder-corner samples snap to the already-validated rounded standing cell during v3 migration. Normal supported deck/ladder fractions are retained. New movement paths reach the current grid waypoint before changing axes, and new checkpoints reject unsupported corner samples.
+
+## Version 0.9 schema 5
+
+Schemas 1–4 migrate through schema 5, preserving prior fields and validating the added Swimming skill. Sea transits and rescue ownership remain simulation-owned transient records. Saves and safe voyage/prize transitions refuse active sea owners. Port recovery is transactional: a failed save restores the prior campaign, fall origins and sea records, including elapsed exposure and rescue claims. No storage failure may silently move crew aboard or reset drowning time.

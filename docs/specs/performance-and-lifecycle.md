@@ -85,3 +85,7 @@ WebGL context loss pauses play and attempts only an already-valid checkpoint. Re
 ## Evidence required
 
 See [validation](../validation.md): frame-time percentiles, tick times, allocation traces, retention paths, scope counters, repeated teardown, ordinary unforced GC runs, and supported-browser save/lifecycle failures. Passing a heap test does not establish GPU or audio cleanup.
+
+## Sea movement owners, version 0.9
+
+The simulation sea map is capped at 24 living actor records. It owns numeric coordinates, tick counters, mode and IDs for origin/destination/line ownership. Cached water landings are invalidated by graph revision. At most one actor lands each tick; crossing starts have a six-tick minimum spacing. Death, gameover, encounter teardown, port recovery and simulation disposal release the records. Scene restart only replaces views. Sea drawing reuses existing sprites/graphics with no new textures, particles, timers or callbacks. Transactional rest rollback keeps bounded copies of these records rather than retaining the old simulation.

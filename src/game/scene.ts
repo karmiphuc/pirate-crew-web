@@ -1,3 +1,4 @@
+import { SeaTransit, SHIP_SEPARATION, inWater, seaX } from "../sim/sea";
 import Phaser from "phaser";
 import {
   paintWeapon,
@@ -36,11 +37,12 @@ import { intact } from "../sim/navigation";
 import { Lifetime } from "../app/lifetime";
 export const TILE = 18;
 export const HOME_X = 230;
-export const ENEMY_X = 800;
+export const ENEMY_X = HOME_X + SHIP_SEPARATION * TILE;
 export const SHIP_Y = 300;
 export interface ViewHost {
   state(): Campaign;
   selected(): readonly number[];
+  seaPosition(id: number): Readonly<SeaTransit> | undefined;
   draft(): Tile[] | null;
   draftStations(): Station[] | null;
   reducedMotion(): boolean;
@@ -854,13 +856,29 @@ export class SeaScene extends Phaser.Scene {
     const g = this.overlay;
     g.clear();
     if (s.ships.length > 1) {
-      g.lineStyle(2, 0xc7b987, 0.7);
-      g.lineBetween(
-        HOME_X + 18 * TILE,
-        SHIP_Y + 4 * TILE - 2,
-        ENEMY_X,
-        SHIP_Y + 4 * TILE - 2,
-      );
+      for (const pirate of s.pirates) {
+        const crossing = this.host.seaPosition(pirate.id);
+        if (crossing?.mode !== "rope") continue;
+        const startX = HOME_X + crossing.startX * TILE + 9,
+          startY = SHIP_Y + (crossing.startY + 1) * TILE,
+          endX =
+            HOME_X +
+            seaX(crossing.targetShip, nodeX(crossing.targetNode)) * TILE +
+            9,
+          endY = SHIP_Y + (nodeY(crossing.targetNode) + 1) * TILE;
+        g.lineStyle(2, 0xc7b987, 0.85);
+        g.beginPath();
+        g.moveTo(startX, startY);
+        for (let i = 1; i <= 12; i++) {
+          const t = i / 12;
+          g.lineTo(
+            startX + (endX - startX) * t,
+            startY + (endY - startY) * t + Math.sin(Math.PI * t) * 0.6 * TILE,
+          );
+        }
+        g.strokePath();
+        break;
+      }
     }
     for (const ship of s.ships)
       if (ship.kind === "ship") {
@@ -955,7 +973,42 @@ export class SeaScene extends Phaser.Scene {
           y -= Math.sin((Math.PI * Math.abs(p.x - gx)) / 2) * 12;
         }
       }
+      const transit = this.host.seaPosition(p.id),
+        submerged = inWater(transit);
+      if (submerged && !this.host.reducedMotion())
+        y += Math.floor(s.tick / 5) % 2;
       actor.setPosition(Math.round(x), Math.round(y));
+      if (submerged) {
+        actor.setCrop(0, 0, PIRATE_WIDTH, 34);
+        g.lineStyle(2, 0x87afb1, 0.9);
+        g.lineBetween(x - 15, y - 20, x + 15, y - 20);
+      } else actor.setCrop();
+      this.equipment
+        .get(p.id)!
+        .setVisible(!transit && p.status !== "Hauling rescue line");
+      this.grips.get(p.id)!.setVisible(!transit);
+      if (transit?.rescuerId !== null && transit?.rescuerId !== undefined) {
+        const rescuer = s.pirates.find(
+          (actor) => actor.id === transit.rescuerId,
+        );
+        if (rescuer) {
+          g.lineStyle(1, 0xe9bf68, 0.8);
+          g.lineBetween(
+            HOME_X +
+              seaX(rescuer.shipId, rescuer.x) * TILE +
+              9 +
+              (transit.x < seaX(rescuer.shipId, rescuer.x) ? -1 : 1) *
+                (HAND_POSES.attack[pirateCharacter(rescuer)][0] -
+                  PIRATE_WIDTH / 2),
+            SHIP_Y +
+              (rescuer.y + 1) * TILE +
+              HAND_POSES.attack[pirateCharacter(rescuer)][1] -
+              PIRATE_HEIGHT,
+            x,
+            y - 24,
+          );
+        }
+      }
       const moving =
         Math.abs(p.x - p.previousX) + Math.abs(p.y - p.previousY) > 0.001;
       const reducedMotion = this.host.reducedMotion();
@@ -988,17 +1041,20 @@ export class SeaScene extends Phaser.Scene {
             : "fire"
           : pose;
       const bodyPose: PirateFrame =
-        handPose !== "idle"
-          ? handPose
-          : walking
-            ? "walk"
-            : blinking
-              ? "blink"
-              : "idle";
+        p.status === "Hauling rescue line"
+          ? "attack"
+          : handPose !== "idle"
+            ? handPose
+            : walking
+              ? "walk"
+              : blinking
+                ? "blink"
+                : "idle";
       const frame = PIRATE_FRAMES[bodyPose][pirateVariant(p)];
       if (actor.frame.name !== frame) actor.setFrame(frame);
       if (moving) actor.setFlipX(p.x < p.previousX);
-      else if (target && target.hp > 0) actor.setFlipX(target.x < p.x);
+      else if (target && target.hp > 0)
+        actor.setFlipX(seaX(target.shipId, target.x) < seaX(p.shipId, p.x));
       const item = this.equipment.get(p.id)!;
       const itemFrame = WEAPON_ANIMATIONS[p.weapon][pose];
       if (item.frame.name !== itemFrame) item.setFrame(itemFrame);
@@ -1027,7 +1083,7 @@ export class SeaScene extends Phaser.Scene {
       }
       if (this.host.selected().includes(p.id)) {
         g.lineStyle(2, 0xe8d394);
-        g.strokeEllipse(x, y + 1, 25, 6);
+        g.strokeEllipse(x, y + (submerged ? -19 : 1), 25, 6);
       }
       this.rect(g, x - 13, y - 60, 26, 3, 0x203b40);
       this.rect(
