@@ -35,3 +35,5 @@ Initial baseline: 2026-10-05. Design documents describe the target; the implemen
 **Research** means a sourced account of the reference game. **Proposed** means our design. **Provisional** means a value or choice that requires prototype evidence. Requirements in system specs describe the intended MVP, not behavior already implemented.
 
 Changes that affect several systems should update their contracts and acceptance scenarios before implementation. New consequential architecture decisions receive a numbered decision record.
+
+- [Weapon handling and visible grips, 0.8.1](design/weapon-handling.md) — actual runtime poses, character anchors, and hand-layer ownership.

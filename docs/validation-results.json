@@ -8,6 +8,8 @@
   "opaquePixelArt": "passed",
   "idleBlinkAndReducedMotion": "passed",
   "dynamicEquipmentLayers": "passed",
+  "foregroundGripsAndPistolPoses": "passed",
+  "gripRegistrationBothDirectionsAndMovement": "passed",
   "idleFacingAndIntegerPortraits": "passed",
   "combatPosesPauseAndReducedMotion": "passed",
   "artworkFailureAndReload": "passed",
@@ -31,40 +33,40 @@
   "quotaRollback": "passed",
   "memory": {
     "heapBefore": {
-      "usedSize": 9074480,
+      "usedSize": 9088964,
       "totalSize": 13099008,
-      "embedderHeapUsedSize": 2085032,
-      "backingStorageSize": 12023390
+      "embedderHeapUsedSize": 2135280,
+      "backingStorageSize": 12632800
     },
     "heapAfter": {
-      "usedSize": 8983572,
-      "totalSize": 9953280,
-      "embedderHeapUsedSize": 1651696,
-      "backingStorageSize": 12023442
+      "usedSize": 9074008,
+      "totalSize": 10215424,
+      "embedderHeapUsedSize": 1829768,
+      "backingStorageSize": 12632852
     },
     "domBefore": {
       "documents": 1,
-      "nodes": 325,
+      "nodes": 352,
       "jsEventListeners": 75
     },
     "domAfter": {
       "documents": 1,
-      "nodes": 374,
+      "nodes": 379,
       "jsEventListeners": 75
     }
   },
   "diagnostics": {
     "frameMs": {
       "count": 600,
-      "p50": 23.329999999999927,
-      "p95": 33.32999999999993,
-      "p99": 35.009999999999856
+      "p50": 24.990000000000144,
+      "p95": 30.01000000000022,
+      "p99": 35
     },
     "tickMs": {
-      "count": 134,
+      "count": 127,
       "p50": 0,
       "p95": 0.10000000149011612,
-      "p99": 0.19999999925494194
+      "p99": 4.699999999254942
     },
     "stalls": 0,
     "views": {
@@ -72,9 +74,10 @@
       "sourceImages": 0,
       "actors": 4,
       "equipment": 4,
+      "grips": 4,
       "subscriptions": 4,
       "clouds": 3,
-      "textures": 9,
+      "textures": 10,
       "shutdownHandlers": 13,
       "destroyHandlers": 13
     },
@@ -88,7 +91,7 @@
     "listeners": 5,
     "saveWrites": 0,
     "lock": "owned",
-    "tick": 13241,
+    "tick": 13405,
     "phase": "port"
   },
   "errors": []

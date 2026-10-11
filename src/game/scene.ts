@@ -9,16 +9,19 @@ import {
 } from "./equipment-art";
 import {
   paintPirate,
+  paintGrip,
+  GRIP_FRAMES,
+  type PirateFrame,
   prepareCharacters,
   characterIndex,
   pirateCharacter,
-  HAND_ANCHORS,
   PIRATE_WIDTH,
   PIRATE_HEIGHT,
   pirateVariant,
   PIRATE_VARIANTS,
   PIRATE_FRAMES,
 } from "./pirate-art";
+import { HAND_POSES, WEAPON_GRIPS, type HandPose } from "./weapon-handling";
 import {
   Campaign,
   nodeX,
@@ -84,6 +87,37 @@ function createTextures(scene: Phaser.Scene) {
     "--pirate-equipment",
     `url("${(scene.textures.get("pirate-equipment").getSourceImage() as HTMLCanvasElement).toDataURL()}")`,
   );
+  if (!scene.textures.exists("pirate-grips")) {
+    const frames = Object.keys(PIRATE_FRAMES) as PirateFrame[];
+    const texture = scene.textures.createCanvas(
+      "pirate-grips",
+      PIRATE_WIDTH * frames.length,
+      PIRATE_HEIGHT * 6,
+    )!;
+    for (let character = 0; character < 6; character++) {
+      frames.forEach((frame, column) => {
+        const x = column * PIRATE_WIDTH,
+          y = character * PIRATE_HEIGHT;
+        texture.context.save();
+        texture.context.translate(x, y);
+        paintGrip(texture.context, character, frame);
+        texture.context.restore();
+        texture.add(
+          GRIP_FRAMES[frame][character],
+          0,
+          x,
+          y,
+          PIRATE_WIDTH,
+          PIRATE_HEIGHT,
+        );
+      });
+    }
+    texture.refresh();
+  }
+  document.documentElement.style.setProperty(
+    "--pirate-grips",
+    `url("${(scene.textures.get("pirate-grips").getSourceImage() as HTMLCanvasElement).toDataURL()}")`,
+  );
   const needsBodies = [0, 1, 2, 3].some(
     (i) => !scene.textures.exists(`pirate-${i}`),
   );
@@ -142,6 +176,7 @@ export class SeaScene extends Phaser.Scene {
   private overlay!: Phaser.GameObjects.Graphics;
   private actors = new Map<number, Phaser.GameObjects.Sprite>();
   private equipment = new Map<number, Phaser.GameObjects.Sprite>();
+  private grips = new Map<number, Phaser.GameObjects.Sprite>();
   private seenEnemyRevision = -1;
   private seenRevision = -1;
   private seenPhase = "";
@@ -299,6 +334,9 @@ export class SeaScene extends Phaser.Scene {
     for (let i = 0; i < 4; i++)
       document.documentElement.style.removeProperty(`--pirate-${i}`);
     document.documentElement.style.removeProperty("--pirate-equipment");
+    document.documentElement.style.removeProperty("--pirate-grips");
+    for (const grip of this.grips.values()) grip.destroy();
+    this.grips.clear();
     for (const item of this.equipment.values()) item.destroy();
     this.equipment.clear();
     for (const actor of this.actors.values()) actor.destroy();
@@ -312,6 +350,7 @@ export class SeaScene extends Phaser.Scene {
       sourceImages: this.cache.custom["crew-source"]?.getKeys().length ?? 0,
       actors: this.actors.size,
       equipment: this.equipment.size,
+      grips: this.grips.size,
       subscriptions: this.scope.count,
       clouds: this.clouds.length,
       textures: this.textures?.getTextureKeys().length ?? 0,
@@ -872,6 +911,8 @@ export class SeaScene extends Phaser.Scene {
         this.actors.delete(p.id);
         this.equipment.get(p.id)?.destroy();
         this.equipment.delete(p.id);
+        this.grips.get(p.id)?.destroy();
+        this.grips.delete(p.id);
         continue;
       }
       let actor = this.actors.get(p.id);
@@ -889,6 +930,12 @@ export class SeaScene extends Phaser.Scene {
         this.equipment.set(
           p.id,
           this.add.sprite(0, 0, "pirate-equipment", p.weapon).setOrigin(0.5, 1),
+        );
+        this.grips.set(
+          p.id,
+          this.add
+            .sprite(0, 0, "pirate-grips", GRIP_FRAMES.idle[pirateCharacter(p)])
+            .setOrigin(0.5, 1),
         );
       }
       const x =
@@ -934,36 +981,47 @@ export class SeaScene extends Phaser.Scene {
               ? "ready"
               : "idle"
           : "idle";
-      const frames =
-        pose === "attack"
-          ? PIRATE_FRAMES.attack
-          : pose === "ready"
-            ? PIRATE_FRAMES.ready
-            : walking
-              ? PIRATE_FRAMES.walk
-              : blinking
-                ? PIRATE_FRAMES.blink
-                : PIRATE_FRAMES.idle;
-      const frame = frames[pirateVariant(p)];
+      const handPose: HandPose =
+        p.weapon === "pistol" && pose !== "idle"
+          ? pose === "ready"
+            ? "aim"
+            : "fire"
+          : pose;
+      const bodyPose: PirateFrame =
+        handPose !== "idle"
+          ? handPose
+          : walking
+            ? "walk"
+            : blinking
+              ? "blink"
+              : "idle";
+      const frame = PIRATE_FRAMES[bodyPose][pirateVariant(p)];
       if (actor.frame.name !== frame) actor.setFrame(frame);
       if (moving) actor.setFlipX(p.x < p.previousX);
       else if (target && target.hp > 0) actor.setFlipX(target.x < p.x);
       const item = this.equipment.get(p.id)!;
       const itemFrame = WEAPON_ANIMATIONS[p.weapon][pose];
       if (item.frame.name !== itemFrame) item.setFrame(itemFrame);
-      const hand = HAND_ANCHORS[pirateCharacter(p)],
-        offsetX = pose === "idle" ? hand[0] - 32 : 0,
-        offsetY = pose === "idle" ? hand[1] - 38 : 0;
+      const character = pirateCharacter(p),
+        hand = HAND_POSES[handPose][character],
+        reference = HAND_POSES[handPose][0],
+        offsetX = hand[0] - reference[0],
+        offsetY = hand[1] - reference[1];
       item
         .setPosition(
           actor.x + offsetX * (actor.flipX ? -1 : 1),
           actor.y + offsetY + (walking ? 1 : 0),
         )
         .setFlipX(actor.flipX);
+      const grip = this.grips.get(p.id)!,
+        gripFrame = GRIP_FRAMES[bodyPose][character];
+      if (grip.frame.name !== gripFrame) grip.setFrame(gripFrame);
+      grip.setPosition(actor.x, actor.y).setFlipX(actor.flipX);
       if (pose === "attack" && p.weapon === "pistol" && sinceAttack === 0) {
         const direction = actor.flipX ? -1 : 1,
-          muzzleX = actor.x + direction * 28,
-          muzzleY = actor.y - 25;
+          anchor = WEAPON_GRIPS.fire,
+          muzzleX = item.x + direction * (anchor[0] + 12 - WEAPON_WIDTH / 2),
+          muzzleY = item.y + anchor[1] - 5 - PIRATE_HEIGHT;
         this.rect(g, muzzleX, muzzleY, 3, 2, 0xffe1b0);
         this.rect(g, muzzleX + direction * 3, muzzleY - 1, 2, 4, 0xe9bf68);
       }
@@ -987,6 +1045,8 @@ export class SeaScene extends Phaser.Scene {
         this.actors.delete(id);
         this.equipment.get(id)?.destroy();
         this.equipment.delete(id);
+        this.grips.get(id)?.destroy();
+        this.grips.delete(id);
       }
     this.waves.clear();
     const t = this.host.reducedMotion() ? 0 : _time * 0.012;

@@ -81,9 +81,9 @@ try {
     });
   });
   for (const atlas of rasterArt) {
-    assert.equal(atlas.width, 200);
+    assert.equal(atlas.width, 280);
     assert.equal(atlas.height, 168);
-    assert.equal(atlas.frames, 15);
+    assert.equal(atlas.frames, 21);
     assert.equal(atlas.softEdges, 0);
   }
   const itemArt = await page.evaluate(() => {
@@ -124,6 +124,28 @@ try {
     ),
     false,
   );
+  const gripArt = await page.evaluate(() => {
+    const texture = window.__privateer.game.textures.get("pirate-grips"),
+      source = texture.getSourceImage();
+    const pixels = source
+      .getContext("2d")
+      .getImageData(0, 0, source.width, source.height).data;
+    let softEdges = 0;
+    for (let i = 3; i < pixels.length; i += 4)
+      if (pixels[i] !== 0 && pixels[i] !== 255) softEdges++;
+    return {
+      width: source.width,
+      height: source.height,
+      frames: texture.getFrameNames().length,
+      softEdges,
+    };
+  });
+  assert.deepEqual(gripArt, {
+    width: 280,
+    height: 336,
+    frames: 42,
+    softEdges: 0,
+  });
   assert.equal((await diagnostics()).views.sourceImages, 0);
   await page.evaluate(async () => {
     const { paintWeapon, WEAPON_FRAMES, WEAPON_POSES, WEAPON_WIDTH } =
@@ -197,7 +219,7 @@ try {
       await assetPage.evaluate(
         () => window.__privateer.diagnostics().views.textures,
       ),
-      9,
+      10,
     );
     assert.equal(
       await assetPage.evaluate(
@@ -294,19 +316,22 @@ try {
       const body = scene.actors.get(p.id),
         item = scene.equipment.get(p.id);
       if (
-        body.frame.name !== "attack-0" ||
+        body.frame.name !== (weapon === "pistol" ? "fire-0" : "attack-0") ||
         item.frame.name !== weapon + "-attack"
       )
         throw new Error(
           "Actual attack cooldown must select body and equipment strike frames",
         );
       scene.update(0, 0);
-      if (body.frame.name !== "attack-0" || s.tick !== tick)
+      if (
+        body.frame.name !== (weapon === "pistol" ? "fire-0" : "attack-0") ||
+        s.tick !== tick
+      )
         throw new Error("Paused strike must remain still");
       p.cooldown = 2;
       scene.update(0, 0);
       if (
-        body.frame.name !== "ready-0" ||
+        body.frame.name !== (weapon === "pistol" ? "aim-0" : "ready-0") ||
         item.frame.name !== weapon + "-ready"
       )
         throw new Error("Late cooldown must prepare the next strike");
@@ -315,6 +340,8 @@ try {
       if (
         body.frame.name.startsWith("attack") ||
         body.frame.name.startsWith("ready") ||
+        body.frame.name.startsWith("aim") ||
+        body.frame.name.startsWith("fire") ||
         item.frame.name !== weapon
       )
         throw new Error("Reduced motion must suppress attack animation");
@@ -327,6 +354,103 @@ try {
     }
     Object.assign(p, original);
     s.phase = phase;
+    app.paused = paused;
+    app.lowMotion = motion;
+    scene.update(0, 0);
+  });
+  // Grip centres must coincide in actual sprite coordinates in both directions and every pose.
+  await page.evaluate(async () => {
+    const { HAND_POSES, WEAPON_GRIPS } = await import(
+      "/src/game/weapon-handling.ts"
+    );
+    const { pirateCharacter } = await import("/src/game/pirate-art.ts");
+    const app = window.__privateer,
+      scene = app.game.scene.getScene("sea"),
+      s = app.sim.state;
+    const phase = s.phase,
+      paused = app.paused,
+      motion = app.lowMotion,
+      tick = s.tick;
+    app.paused = true;
+    app.lowMotion = false;
+    s.phase = "encounter";
+    for (const p of s.pirates) {
+      const original = { ...p },
+        target = s.pirates.find((other) => other.id !== p.id),
+        targetX = target.x;
+      p.targetId = target.id;
+      p.previousY = p.y;
+      for (const weapon of ["cutlass", "sabre", "pistol"]) {
+        p.weapon = weapon;
+        p.status = weapon === "pistol" ? "Firing pistol" : "Fighting";
+        for (const direction of [-1, 1])
+          for (const pose of ["idle", "ready", "attack", "walk"]) {
+            target.x = p.x + direction * 2;
+            p.previousX = pose === "walk" ? p.x - direction * 0.1 : p.x;
+            p.cooldown =
+              pose === "attack"
+                ? { cutlass: 15, sabre: 13, pistol: 22 }[weapon]
+                : pose === "ready"
+                  ? 2
+                  : 0;
+            s.tick = 5;
+            scene.update(0, 0);
+            const body = scene.actors.get(p.id),
+              item = scene.equipment.get(p.id),
+              grip = scene.grips.get(p.id);
+            const handPose =
+              weapon === "pistol" && (pose === "ready" || pose === "attack")
+                ? pose === "ready"
+                  ? "aim"
+                  : "fire"
+                : pose === "walk"
+                  ? "idle"
+                  : pose;
+            const character = pirateCharacter(p),
+              [hx, hy] = HAND_POSES[handPose][character],
+              [wx, wy] = WEAPON_GRIPS[handPose];
+            if (
+              grip.x !== body.x ||
+              grip.y !== body.y ||
+              grip.flipX !== body.flipX ||
+              item.flipX !== body.flipX
+            )
+              throw new Error(
+                "Foreground fingers must follow body position and facing",
+              );
+            if (
+              grip.x + direction * (hx - 20) !==
+                item.x + direction * (wx - 48) ||
+              grip.y + hy + (pose === "walk" ? 1 : 0) !== item.y + wy
+            )
+              throw new Error(
+                "Weapon grip must meet the fingers through movement and combat poses",
+              );
+            const renderedPose = pose === "walk" ? "walk" : handPose;
+            if (
+              grip.frame.name !== `${renderedPose}-${character}` ||
+              !body.frame.name.startsWith(renderedPose)
+            )
+              throw new Error(
+                "Body and fingers must select the same handling pose",
+              );
+            const list = scene.children.list;
+            if (
+              !(
+                list.indexOf(body) < list.indexOf(item) &&
+                list.indexOf(item) < list.indexOf(grip)
+              )
+            )
+              throw new Error(
+                "Equipment must render between the body and foreground fingers",
+              );
+          }
+      }
+      Object.assign(p, original);
+      target.x = targetX;
+    }
+    s.phase = phase;
+    s.tick = tick;
     app.paused = paused;
     app.lowMotion = motion;
     scene.update(0, 0);
@@ -352,7 +476,7 @@ try {
     portrait: [80, 112],
     body: [80, 112],
     item: [192, 112],
-    bodyAtlas: "400px 336px",
+    bodyAtlas: "560px 336px",
     itemAtlas: "576px 336px",
   });
   await page.screenshot({ path: "artifacts/harbour.png", fullPage: true });
@@ -735,9 +859,10 @@ try {
   const restart = await diagnostics();
   assert.equal(restart.views.subscriptions, 4);
   assert.equal(restart.views.clouds, 3);
-  assert.equal(restart.views.textures, 9);
+  assert.equal(restart.views.textures, 10);
   assert.equal(restart.views.actors, (await state()).pirates.length);
   assert.equal(restart.views.equipment, restart.views.actors);
+  assert.equal(restart.views.grips, restart.views.actors);
   assert.equal(restart.views.destroyHandlers, before.views.destroyHandlers);
   assert.equal(restart.views.shutdownHandlers, before.views.shutdownHandlers);
   // Explicit visibility handler test; documented as synthetic rather than real background scheduling.
@@ -819,7 +944,8 @@ try {
     assert.ok(d.audioVoices <= 8);
     assert.equal(d.views.actors, 4);
     assert.equal(d.views.equipment, 4);
-    assert.equal(d.views.textures, 9);
+    assert.equal(d.views.grips, 4);
+    assert.equal(d.views.textures, 10);
     assert.equal(d.views.sourceImages, 0);
   }
   // Muting immediately releases every owned voice; scene restarts retain one app audio owner.
@@ -875,6 +1001,8 @@ try {
     opaquePixelArt: "passed",
     idleBlinkAndReducedMotion: "passed",
     dynamicEquipmentLayers: "passed",
+    foregroundGripsAndPistolPoses: "passed",
+    gripRegistrationBothDirectionsAndMovement: "passed",
     idleFacingAndIntegerPortraits: "passed",
     combatPosesPauseAndReducedMotion: "passed",
     artworkFailureAndReload: "passed",
@@ -905,7 +1033,7 @@ try {
     portrait: [40, 56],
     body: [40, 56],
     item: [96, 56],
-    bodyAtlas: "200px 168px",
+    bodyAtlas: "280px 168px",
     itemAtlas: "288px 168px",
   });
   await page.screenshot({ path: "artifacts/compact.png", fullPage: true });
@@ -914,7 +1042,7 @@ try {
     portrait: [80, 112],
     body: [80, 112],
     item: [192, 112],
-    bodyAtlas: "400px 336px",
+    bodyAtlas: "560px 336px",
     itemAtlas: "576px 336px",
   });
   assert.equal(
@@ -938,6 +1066,7 @@ try {
     () =>
       document.querySelector("canvas") === null &&
       window.__disposedScene.equipment.size === 0 &&
+      window.__disposedScene.grips.size === 0 &&
       window.__disposedScene.actors.size === 0,
   );
   await page.evaluate(() => {

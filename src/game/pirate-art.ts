@@ -1,3 +1,5 @@
+import { HAND_ANCHORS, HAND_POSES } from "./weapon-handling";
+export { HAND_ANCHORS } from "./weapon-handling";
 /** Original Image Gen character art, adapted once to bounded, hard-edge pixel atlases. */
 export const PIRATE_WIDTH = 40;
 export const PIRATE_HEIGHT = 56;
@@ -8,8 +10,21 @@ export const PIRATE_FRAMES = {
   blink: ["blink-0", "blink-1", "blink-2"],
   ready: ["ready-0", "ready-1", "ready-2"],
   attack: ["attack-0", "attack-1", "attack-2"],
+  aim: ["aim-0", "aim-1", "aim-2"],
+  fire: ["fire-0", "fire-1", "fire-2"],
 } as const;
 export type PirateFrame = keyof typeof PIRATE_FRAMES;
+const gripNames = (frame: PirateFrame) =>
+  Array.from({ length: 6 }, (_, character) => `${frame}-${character}`);
+export const GRIP_FRAMES = {
+  idle: gripNames("idle"),
+  walk: gripNames("walk"),
+  blink: gripNames("blink"),
+  ready: gripNames("ready"),
+  attack: gripNames("attack"),
+  aim: gripNames("aim"),
+  fire: gripNames("fire"),
+} as const;
 const NAMED_VARIANTS: Readonly<Record<string, number>> = {
   "Molly Flint": 0,
   "Red Anne": 0,
@@ -30,14 +45,6 @@ export function pirateVariant(pirate: {
 export function characterIndex(role: number, variant: number): number {
   return role === 0 ? 0 : role === 1 ? 5 : role === 2 ? 4 : variant + 1;
 }
-export const HAND_ANCHORS = [
-  [32, 38],
-  [32, 38],
-  [30, 38],
-  [29, 38],
-  [33, 38],
-  [31, 38],
-] as const;
 export function pirateCharacter(pirate: {
   id: number;
   role: string;
@@ -208,19 +215,50 @@ export function paintPirate(
         px(skin, x, y, 2, 3);
         px("#303346", x, y + 1, 2);
       }
-  } else if (frame === "ready" || frame === "attack") {
-    const [handX] = HAND_ANCHORS[character];
-    ctx.clearRect(handX - 1, 35, PIRATE_WIDTH - handX + 1, 8);
+  } else if (
+    frame === "ready" ||
+    frame === "attack" ||
+    frame === "aim" ||
+    frame === "fire"
+  ) {
+    const [oldX] = HAND_ANCHORS[character],
+      [hx, hy] = HAND_POSES[frame][character];
+    // Replace the relaxed forearm, preserving the shoulder, face and costume.
+    ctx.clearRect(oldX - 2, 33, PIRATE_WIDTH - oldX + 2, 10);
+    const elbow = oldX - 4;
+    px("#192333", elbow, 32, 4, 6);
+    px(SLEEVES[character], elbow + 1, 33, 2, 4);
     if (frame === "ready") {
-      px("#192333", 28, 33, 5, 8);
-      px(SLEEVES[character], 29, 34, 3, 6);
-      px("#192333", 31, 32, 5, 5);
-      px(SKIN[character], 32, 33, 3, 3);
+      px("#192333", hx - 3, hy + 1, 4, 6);
+      px(SKIN[character], hx - 2, hy + 2, 2, 4);
     } else {
-      px("#192333", 28, 34, 9, 5);
-      px(SLEEVES[character], 29, 35, 6, 3);
-      px("#192333", 35, 34, 5, 5);
-      px(SKIN[character], 36, 35, 3, 3);
+      px("#192333", elbow + 1, hy - 1, hx - elbow, 4);
+      px(SKIN[character], elbow + 2, hy, hx - elbow - 1, 2);
+      px("#bf7b53", elbow + 2, hy + 1, hx - elbow - 2);
     }
+    px("#192333", hx - 2, hy - 2, 4, 5);
+    px(SKIN[character], hx - 1, hy - 1, 3, 3);
   }
+}
+/** Only knuckles/thumb render above equipment; a transparent gap reveals the wooden grip. */
+export function paintGrip(
+  ctx: CanvasRenderingContext2D,
+  character: number,
+  frame: PirateFrame,
+) {
+  const pose = frame === "walk" || frame === "blink" ? "idle" : frame;
+  const [hx, baseY] = HAND_POSES[pose][character],
+    hy = baseY + (frame === "walk" ? 1 : 0);
+  const px = (color: string, x: number, y: number, w = 1, h = 1) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, w, h);
+  };
+  const shadow = character === 3 ? "#8d563e" : "#bf7b53";
+  const light = character === 3 ? "#eaa276" : "#ffe2b2";
+  px("#192333", hx - 2, hy - 1, 1, 4);
+  px(shadow, hx - 1, hy - 1, 3, 3);
+  ctx.clearRect(hx, hy, 1, 1);
+  px(light, hx - 1, hy - 1, 2);
+  px(SKIN[character], hx - 1, hy + 1, 2);
+  px(SKIN[character], hx + 1, hy);
 }

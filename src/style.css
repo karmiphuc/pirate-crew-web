@@ -397,7 +397,7 @@ main {
   height: 100%;
   background-image: var(--pirate-0);
   image-rendering: pixelated;
-  background-size: calc(200px * var(--portrait-scale))
+  background-size: calc(280px * var(--portrait-scale))
     calc(168px * var(--portrait-scale));
   background-position: 0
     calc(-56px * var(--portrait-scale) * var(--portrait-variant, 0));
@@ -1147,4 +1147,16 @@ footer button {
   .portrait {
     --portrait-scale: 2;
   }
+}
+
+.portrait .grip {
+  position: absolute;
+  inset: 0;
+  background-image: var(--pirate-grips);
+  background-size: calc(280px * var(--portrait-scale))
+    calc(336px * var(--portrait-scale));
+  background-position: 0
+    calc(-56px * var(--portrait-scale) * var(--portrait-character, 0));
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
 }
