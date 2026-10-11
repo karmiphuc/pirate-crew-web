@@ -8,6 +8,8 @@ import { checkpoint, validateSave } from "../src/storage/save";
 import { cabinSpans, drawPixelShip } from "../src/game/ship-art";
 import {
   SHIP_CELL_HEIGHT,
+  SHIP_CELL_WIDTH,
+  SHIP_ORIGIN_Y,
   CABIN_CEILING_DEPTH,
   MIN_CABIN_HEADROOM,
   cabinJumpHeight,
@@ -37,7 +39,10 @@ describe("encounter fleet architecture", () => {
   });
   it("keeps jumping hats below cabin beams while open roofs retain an arc", () => {
     const ship = createCampaign().ships[0];
-    expect(cabinJumpHeight(ship.tiles, 3, 4)).toBe(0);
+    expect(cabinJumpHeight(ship.tiles, 3, 4)).toBe(12);
+    expect(
+      cabinJumpHeight([...ship.tiles, { x: 3, y: 2, kind: "hull" }], 3, 4),
+    ).toBe(0);
     expect(cabinJumpHeight(ship.tiles, 3, 1)).toBe(12);
     expect(
       cabinJumpHeight(
@@ -145,9 +150,9 @@ describe("encounter fleet architecture", () => {
       ship,
       ship.tiles,
       ship.stations,
-      806,
-      248,
-      18,
+      998,
+      SHIP_ORIGIN_Y,
+      SHIP_CELL_WIDTH,
       false,
       ship.furnishings,
       SHIP_CELL_HEIGHT,

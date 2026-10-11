@@ -61,6 +61,99 @@ try {
   await page
     .locator(".voyage")
     .screenshot({ path: "artifacts/fleet-starter.png" });
+  const facing = await page.evaluate(async () => {
+    const app = window.__privateer,
+      scene = app.game.scene.getScene("sea"),
+      { tileNode } = await import("/src/sim/model.ts"),
+      p = app.state().pirates[0];
+    app.state().pirates.forEach((p) => (p.duty = "guard"));
+    const directions = new Set();
+    let verticalLeft = 0;
+    for (const [x, y] of [
+      [10, 3],
+      [5, 3],
+      [5, 0],
+    ]) {
+      if (
+        !app.sim.queue([p.id], {
+          action: "move",
+          shipId: 1,
+          node: tileNode(x, y),
+        })
+      )
+        throw new Error("Movement rejected");
+      for (let i = 0; i < 180; i++) {
+        app.sim.tick();
+        scene.update(0, 0);
+        const actor = scene.actors.get(p.id),
+          item = scene.equipment.get(p.id),
+          grip = scene.grips.get(p.id);
+        if (actor.flipX !== item.flipX || actor.flipX !== grip.flipX)
+          throw new Error("Detached direction layers");
+        const dx = p.x - p.previousX,
+          dy = p.y - p.previousY;
+        if (Math.abs(dx) > 0.001) {
+          if (actor.flipX !== dx < 0) throw new Error("Wrong movement facing");
+          directions.add(dx < 0 ? "left" : "right");
+        }
+        if (
+          x === 5 &&
+          y === 0 &&
+          Math.abs(dx) < 0.001 &&
+          Math.abs(dy) > 0.001
+        ) {
+          if (!actor.flipX) throw new Error("Climb reset left-facing pirate");
+          verticalLeft++;
+        }
+      }
+      if (p.x !== x || p.y !== y) throw new Error("Destination not reached");
+    }
+    if (!scene.actors.get(p.id).flipX || !verticalLeft)
+      throw new Error("Stopped direction lost");
+    return { directions: [...directions].sort(), verticalLeft };
+  });
+  assert.deepEqual(facing.directions, ["left", "right"]);
+  await page
+    .locator(".voyage")
+    .screenshot({ path: "artifacts/roomier-facing-left.png" });
+  const weaponFacing = await page.evaluate(() => {
+    const app = window.__privateer,
+      scene = app.game.scene.getScene("sea"),
+      s = app.state(),
+      p = s.pirates[0],
+      target = s.pirates[1],
+      before = structuredClone(p),
+      targetBefore = structuredClone(target),
+      phase = s.phase;
+    const checks = [];
+    try {
+      s.phase = "encounter";
+      p.x = p.previousX = 4;
+      p.y = p.previousY = 3;
+      p.targetId = target.id;
+      for (const weapon of ["cutlass", "sabre", "pistol"])
+        for (const left of [true, false]) {
+          p.weapon = weapon;
+          p.cooldown = 1;
+          p.status = weapon === "pistol" ? "Firing pistol" : "Fighting";
+          target.x = target.previousX = left ? 2 : 8;
+          scene.update(0, 0);
+          const body = scene.actors.get(p.id),
+            item = scene.equipment.get(p.id),
+            grip = scene.grips.get(p.id);
+          if ([body, item, grip].some((layer) => layer.flipX !== left))
+            throw new Error("Combat direction mismatch");
+          checks.push({ weapon, left });
+        }
+    } finally {
+      Object.assign(p, before);
+      Object.assign(target, targetBefore);
+      s.phase = phase;
+      scene.update(0, 0);
+    }
+    return checks.length;
+  });
+  assert.equal(weaponFacing, 6);
   const layouts = [];
   const headroom = [];
   const checkHeadroom = async () => {
@@ -97,7 +190,7 @@ try {
     });
     assert.ok(sample.length > 0);
     sample.forEach((gap) =>
-      assert.ok(gap >= 8, `Hat meets ceiling: ${gap}px clearance`),
+      assert.ok(gap >= 26, `Hat meets ceiling: ${gap}px clearance`),
     );
     headroom.push(...sample);
   };
@@ -133,7 +226,32 @@ try {
       };
     }, fixture);
     assert.equal(layout.kind, fixture.kind);
+    assert.equal(
+      await page.evaluate(() => {
+        const app = window.__privateer,
+          scene = app.game.scene.getScene("sea");
+        return app
+          .state()
+          .pirates.filter((p) => p.side === "enemy" && p.hp > 0)
+          .every((p) => scene.actors.get(p.id).flipX);
+      }),
+      true,
+    );
     layouts.push(layout);
+    await page.click('[data-action="view-away"]');
+    assert.equal(
+      await page.getAttribute('[data-action="view-away"]', "aria-pressed"),
+      "true",
+    );
+    const camera = await page.evaluate(() => {
+      const scene = window.__privateer.game.scene.getScene("sea");
+      return {
+        scroll: scene.cameras.main.scrollX,
+        zoom: scene.cameras.main.zoom,
+      };
+    });
+    assert.ok(camera.scroll > 0 && Number.isInteger(camera.scroll));
+    assert.equal(camera.zoom, 1);
     await checkHeadroom();
     await page.waitForTimeout(100);
     await page
@@ -161,6 +279,42 @@ try {
   });
   assert.deepEqual(lower, [2, 16, 6, true]);
   await checkHeadroom();
+  // Select an allied pirate through the panned canvas, then issue a real move.
+  const canvas = await page.locator("canvas").boundingBox();
+  const screen = await page.evaluate(() => {
+    const scene = window.__privateer.game.scene.getScene("sea"),
+      actor = scene.actors.get(3);
+    return { x: actor.x - scene.cameras.main.scrollX, y: actor.y - 28 };
+  });
+  await page.mouse.click(
+    canvas.x + (screen.x * canvas.width) / 1280,
+    canvas.y + (screen.y * canvas.height) / 640,
+  );
+  assert.deepEqual(await page.evaluate(() => window.__privateer.selected()), [
+    3,
+  ]);
+  const move = await page.evaluate(() => {
+    const scene = window.__privateer.game.scene.getScene("sea");
+    return {
+      x: 998 + 18 * 24 + 12 - scene.cameras.main.scrollX,
+      y: 244 + 6 * 32 + 16,
+    };
+  });
+  await page.mouse.click(
+    canvas.x + (move.x * canvas.width) / 1280,
+    canvas.y + (move.y * canvas.height) / 640,
+  );
+  assert.deepEqual(
+    await page.evaluate(() => {
+      const app = window.__privateer;
+      for (let i = 0; i < 120; i++) app.sim.tick();
+      app.game.scene.getScene("sea").update(0, 0);
+      const p = app.state().pirates[0];
+      return [p.x, p.y];
+    }),
+    [18, 6],
+  );
+  await page.click('[data-action="view-crew"]');
   await page
     .locator(".voyage")
     .screenshot({ path: "artifacts/fleet-lower-cabin.png" });
@@ -171,7 +325,18 @@ try {
     app.game.scene.getScene("sea").update(0, 0);
     app.renderUI(true);
   });
+  await page.click('[data-action="view-away"]');
   await page.click('[data-action="capture"]');
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-action="view-home"]')
+        .getAttribute("aria-pressed") === "true",
+  );
+  assert.equal(
+    await page.locator('[data-action="view-away"]').isVisible(),
+    false,
+  );
   assert.equal(
     await page.evaluate(() => window.__privateer.state().ships.length),
     1,
@@ -309,6 +474,10 @@ try {
   assert.deepEqual(errors, []);
   const report = {
     layouts,
+    facing,
+    equippedCombatDirections: weaponFacing,
+    pannedSelectionAndMove: "passed",
+    nativeCameraZoom: 1,
     cabinHeadroomPx: {
       minimum: Math.min(...headroom),
       checkedActors: headroom.length,

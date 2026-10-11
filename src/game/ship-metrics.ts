@@ -1,11 +1,12 @@
 import type { Tile } from "../sim/model";
 import { PIRATE_HEIGHT, PIRATE_WIDTH } from "./pirate-art";
 
-// A three-cell cabin needs a 56px actor, a 14px cornice and 8px of headroom.
-// Horizontal cells stay narrow so the largest fleet hull still fits the camera.
-export const SHIP_CELL_WIDTH = 18;
-export const SHIP_CELL_HEIGHT = 26;
-export const SHIP_ORIGIN_Y = 248;
+// Roomier cabins preserve the 56px crew frame and leave 26px above its hats.
+export const SHIP_CELL_WIDTH = 24;
+export const SHIP_CELL_HEIGHT = 32;
+export const SHIP_ORIGIN_Y = 244;
+export const SEA_VIEW_WIDTH = 1280;
+export const SEA_VIEW_HEIGHT = 640;
 export const CABIN_CEILING_DEPTH = 14;
 export const MIN_CABIN_HEADROOM = 8;
 

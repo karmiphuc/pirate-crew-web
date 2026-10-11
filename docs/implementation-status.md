@@ -1,6 +1,6 @@
 # First playable implementation
 
-Version: 0.10.1. Date: 2026-10-11. Previous baseline: 0.10.0.
+Version: 0.10.2. Date: 2026-10-11. Previous baseline: 0.10.1.
 
 ## Delivered
 
@@ -150,3 +150,11 @@ The source PNG adds 1,273,328 downloaded bytes and about 6 MiB temporary decoded
 143 unit tests include 512 seeded layout combinations and real brig/flagship boarding, hold movement, retreat, capture and reload. Focused browser checks prove lower-deck cannon access after a captured ship returns to harbour, ten scene restarts, compact overflow and delayed disposal. Ten textures/four subscriptions remain stable, with no new sprites, atlases, timers or template cache. A 100-forced-redraw sample measures CPU scene-update p95 1.40 ms/max 4.50 ms, excluding GPU completion. [Focused results](fleet-validation-results.json). The full lifecycle/browser stress and existing ship/refit checks are rerun alongside production build/format/root/project-path hosting. Fixed small mobile targets, banner overlap, ordinary-GC soak and broader hardware/browser evidence remain limitations.
 
 User review identified ceiling overlap missed in the first fleet pass. The corrected presentation grid uses 26-pixel vertical cells, giving three-cell cabins 78 pixels and at least eight pixels above the unchanged full 56-pixel crew frame after cornice clearance. All vertical artwork/input/rope projections match. Taller doors and beam-limited decorative jumps maintain those proportions. Browser sprite-bound checks and unit clearance scenarios guard the specific defect. Geometry/save schema and horizontal ship footprint remain unchanged.
+
+## Version 0.10.2 roomier ships and turning
+
+The presentation grid grows from 18 × 26 to 24 × 32 pixels. Starter hulls widen from 324 to 432 pixels; three-cell rooms grow from 78 to 96 pixels. Doors, windows, ladders, furniture and fittings grow with those rooms. Native 40 × 56 crew frames and equipment remain unchanged. A 1280 × 640 scene and whole-pixel horizontal camera keep the larger encountered vessels accessible through Your ship, Other vessel and Follow crew controls. Canvas input converts through that camera. Simulation coordinates, saved layouts and schema 6 are unchanged.
+
+Pirates turn with horizontal travel or a living target, retain their last direction during stops and vertical travel, and mirror body, item and fingers together. New enemies initially face toward the home ship. This fixes vertical ladder travel resetting left-facing pirates to the right.
+
+[Visual review, evidence and limits](design/roomier-ships.md). No new textures, timers or subscriptions are introduced. Browser checks exercise actual two-way movement, vertical travel, all three weapons facing both ways, panned selection/movement, both cabin levels, capture/reload and disposal. Very low custom roofs and compact touch scale remain limitations.

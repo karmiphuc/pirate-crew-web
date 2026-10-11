@@ -583,8 +583,8 @@ try {
   await page.click('[data-action="station-food"]');
   const canvas = await page.locator("canvas").boundingBox();
   await page.mouse.click(
-    canvas.x + ((230 + 4 * 18 + 9) * canvas.width) / 1280,
-    canvas.y + ((248 + 3 * 26 + 13) * canvas.height) / 540,
+    canvas.x + ((230 + 4 * 24 + 12) * canvas.width) / 1280,
+    canvas.y + ((244 + 3 * 32 + 16) * canvas.height) / 640,
   );
   await page.click('[data-action="apply-build"]');
   await page.waitForFunction(

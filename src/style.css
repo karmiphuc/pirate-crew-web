@@ -205,7 +205,7 @@ main {
 }
 #game {
   width: 100%;
-  aspect-ratio: 1280/540;
+  aspect-ratio: 1280/640;
 }
 #game canvas {
   display: block !important;
@@ -1163,4 +1163,30 @@ footer button {
     calc(-56px * var(--portrait-scale) * var(--portrait-character, 0));
   background-repeat: no-repeat;
   image-rendering: pixelated;
+}
+
+.camera-tools {
+  position: absolute;
+  right: 20px;
+  bottom: 48px;
+  display: flex;
+  gap: 6px;
+  z-index: 3;
+}
+.camera-tools button {
+  font: 10px monospace;
+  padding: 7px 9px;
+  background: #19343aea;
+  color: #d6e0c4;
+}
+.camera-tools button[aria-pressed="true"] {
+  color: #19343a;
+  background: #dfcc94;
+}
+@media (max-width: 900px) {
+  .camera-tools {
+    position: static;
+    justify-content: flex-end;
+    padding: 5px 8px 34px;
+  }
 }

@@ -4,7 +4,10 @@ import {
   SHIP_CELL_HEIGHT,
   SHIP_ORIGIN_Y,
   cabinJumpHeight,
+  SEA_VIEW_WIDTH,
+  SEA_VIEW_HEIGHT,
 } from "./ship-metrics";
+import { facingLeft } from "./facing";
 import { SeaTransit, SHIP_SEPARATION, inWater, seaX } from "../sim/sea";
 import Phaser from "phaser";
 import {
@@ -201,6 +204,10 @@ export class SeaScene extends Phaser.Scene {
   private phaseLabel!: Phaser.GameObjects.Text;
   private shipLabel!: Phaser.GameObjects.Text;
   private enemyLabel!: Phaser.GameObjects.Text;
+  cameraMode: "home" | "away" | "crew" = "crew";
+  private cameraMaxScroll = 0;
+  private homeCenter = 0;
+  private awayCenter = 0;
   private clouds: Phaser.GameObjects.Graphics[] = [];
   constructor(private host: ViewHost) {
     super("sea");
@@ -265,9 +272,10 @@ export class SeaScene extends Phaser.Scene {
     this.background = this.add
       .image(0, 0, "sea-backdrop")
       .setOrigin(0)
-      .setDisplaySize(1280, 540);
+      .setDisplaySize(SEA_VIEW_WIDTH, SEA_VIEW_HEIGHT)
+      .setScrollFactor(0);
     this.scenery = this.add.graphics();
-    this.waves = this.add.graphics();
+    this.waves = this.add.graphics().setScrollFactor(0);
     for (let i = 0; i < 3; i++) {
       const cloud = this.add.graphics();
       cloud.fillStyle(0xf6e9c8, 0.06);
@@ -275,6 +283,7 @@ export class SeaScene extends Phaser.Scene {
       cloud.fillEllipse(27, 9, 39, 19);
       cloud.fillEllipse(52, 7, 47, 20);
       cloud.setPosition(80 + i * 420, 45 + (i % 2) * 30);
+      cloud.setScrollFactor(0);
       this.clouds.push(cloud);
     }
     this.shipLabel = this.add
@@ -299,8 +308,10 @@ export class SeaScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     this.overlay = this.add.graphics();
+    this.phaseLabel.setScrollFactor(0);
     const pointer = (p: Phaser.Input.Pointer) => {
       if (p.downElement !== this.game.canvas) return;
+      const world = this.cameras.main.getWorldPoint(p.x, p.y);
       let id: number | null = null,
         shipId = 1,
         x = 0,
@@ -309,15 +320,19 @@ export class SeaScene extends Phaser.Scene {
         const px =
             (actor.shipId === 1 ? HOME_X : ENEMY_X) + actor.x * TILE + TILE / 2,
           py = SHIP_Y + actor.y * TILE_HEIGHT + TILE_HEIGHT;
-        if (Math.abs(p.x - px) < 22 && p.y > py - 60 && p.y < py + 8) {
+        if (
+          Math.abs(world.x - px) < 22 &&
+          world.y > py - 60 &&
+          world.y < py + 8
+        ) {
           id = actor.id;
           shipId = actor.shipId;
           break;
         }
       }
-      if (id === null) shipId = p.x >= ENEMY_X - 20 ? 2 : 1;
-      x = Math.floor((p.x - (shipId === 1 ? HOME_X : ENEMY_X)) / TILE);
-      y = Math.floor((p.y - SHIP_Y) / TILE_HEIGHT);
+      if (id === null) shipId = world.x >= ENEMY_X - 20 ? 2 : 1;
+      x = Math.floor((world.x - (shipId === 1 ? HOME_X : ENEMY_X)) / TILE);
+      y = Math.floor((world.y - SHIP_Y) / TILE_HEIGHT);
       this.host.click(
         shipId,
         x,
@@ -363,6 +378,8 @@ export class SeaScene extends Phaser.Scene {
     this.furnitureRef = null;
     this.seenHomeShip = null;
     this.seenEnemyShip = null;
+    this.cameraMaxScroll = 0;
+    this.homeCenter = this.awayCenter = 0;
   }
   get counters() {
     return {
@@ -398,11 +415,29 @@ export class SeaScene extends Phaser.Scene {
     g.clear();
     this.background
       .setFrame(s.phase === "port" ? "__BASE" : "open-sea")
-      .setDisplaySize(1280, 540);
+      .setDisplaySize(SEA_VIEW_WIDTH, SEA_VIEW_HEIGHT);
     // The shared environment asset owns the landscape; foreground remains interactive geometry.
     this.drawShip(g, s.ships[0], HOME_X, this.host.draft());
     if (s.ships.length > 1) this.drawShip(g, s.ships[1], ENEMY_X, null);
     const draft = this.host.draft();
+    let right = SEA_VIEW_WIDTH;
+    for (const ship of s.ships) {
+      const tiles = ship.id === 1 ? (draft ?? ship.tiles) : ship.tiles;
+      if (!tiles.length) continue;
+      const origin = ship.id === 1 ? HOME_X : ENEMY_X;
+      const left = Math.min(...tiles.map((t) => t.x)) * TILE + origin;
+      const edge = (Math.max(...tiles.map((t) => t.x)) + 1) * TILE + origin;
+      if (ship.id === 1) this.homeCenter = (left + edge) / 2;
+      else this.awayCenter = (left + edge) / 2;
+      right = Math.max(right, edge);
+    }
+    this.cameraMaxScroll = Math.max(0, right - SEA_VIEW_WIDTH / 2);
+    this.cameras.main.setBounds(
+      0,
+      0,
+      SEA_VIEW_WIDTH + this.cameraMaxScroll,
+      SEA_VIEW_HEIGHT,
+    );
     if (draft) {
       g.lineStyle(1, 0xefe6c5, 0.25);
       for (let x = 0; x <= 32; x++)
@@ -437,7 +472,7 @@ export class SeaScene extends Phaser.Scene {
         SHIP_Y + (Math.max(...hull.map((t) => t.y)) + 1) * TILE_HEIGHT;
       label.setPosition(
         (index === 0 ? HOME_X : ENEMY_X) + ((left + right + 1) * TILE) / 2,
-        Math.min(494, Math.max(465, bottom + 16)),
+        Math.min(570, Math.max(510, bottom + 16)),
       );
     }
     this.phaseLabel.setText(
@@ -703,12 +738,12 @@ export class SeaScene extends Phaser.Scene {
       for (const pirate of s.pirates) {
         const crossing = this.host.seaPosition(pirate.id);
         if (crossing?.mode !== "rope") continue;
-        const startX = HOME_X + crossing.startX * TILE + 9,
+        const startX = HOME_X + crossing.startX * TILE + TILE / 2,
           startY = SHIP_Y + (crossing.startY + 1) * TILE_HEIGHT,
           endX =
             HOME_X +
             seaX(crossing.targetShip, nodeX(crossing.targetNode)) * TILE +
-            9,
+            TILE / 2,
           endY = SHIP_Y + (nodeY(crossing.targetNode) + 1) * TILE_HEIGHT;
         g.lineStyle(2, 0xc7b987, 0.85);
         g.beginPath();
@@ -790,7 +825,8 @@ export class SeaScene extends Phaser.Scene {
             PIRATE_FRAMES.idle[pirateVariant(p)],
           )
           .setScale(1)
-          .setOrigin(0.5, 1);
+          .setOrigin(0.5, 1)
+          .setFlipX(p.side === "enemy");
         this.actors.set(p.id, actor);
         this.equipment.set(
           p.id,
@@ -806,7 +842,7 @@ export class SeaScene extends Phaser.Scene {
       const x =
         (p.shipId === 1 ? HOME_X : ENEMY_X) +
         (p.previousX + (p.x - p.previousX) * alpha) * TILE +
-        9;
+        TILE / 2;
       let y =
         SHIP_Y + (p.previousY + (p.y - p.previousY) * alpha + 1) * TILE_HEIGHT;
       const next = p.path[0];
@@ -846,7 +882,7 @@ export class SeaScene extends Phaser.Scene {
           g.lineBetween(
             HOME_X +
               seaX(rescuer.shipId, rescuer.x) * TILE +
-              9 +
+              TILE / 2 +
               (transit.x < seaX(rescuer.shipId, rescuer.x) ? -1 : 1) *
                 (HAND_POSES.attack[pirateCharacter(rescuer)][0] -
                   PIRATE_WIDTH / 2),
@@ -902,9 +938,15 @@ export class SeaScene extends Phaser.Scene {
                 : "idle";
       const frame = PIRATE_FRAMES[bodyPose][pirateVariant(p)];
       if (actor.frame.name !== frame) actor.setFrame(frame);
-      if (moving) actor.setFlipX(p.x < p.previousX);
-      else if (target && target.hp > 0)
-        actor.setFlipX(seaX(target.shipId, target.x) < seaX(p.shipId, p.x));
+      actor.setFlipX(
+        facingLeft(
+          actor.flipX,
+          p.x - p.previousX,
+          target && target.hp > 0
+            ? seaX(target.shipId, target.x) - seaX(p.shipId, p.x)
+            : undefined,
+        ),
+      );
       const item = this.equipment.get(p.id)!;
       const itemFrame = WEAPON_ANIMATIONS[p.weapon][pose];
       if (item.frame.name !== itemFrame) item.setFrame(itemFrame);
@@ -972,5 +1014,42 @@ export class SeaScene extends Phaser.Scene {
     if (!this.host.reducedMotion())
       for (let i = 0; i < this.clouds.length; i++)
         this.clouds[i].x = ((80 + i * 420 + _time * 0.002) % 1400) - 70;
+    this.updateCamera(delta);
+  }
+
+  focus(mode: "home" | "away" | "crew") {
+    this.cameraMode = mode;
+    if (this.artReady) this.updateCamera(0, true);
+  }
+  private updateCamera(delta: number, immediate = false) {
+    const state = this.host.state();
+    if (this.cameraMode === "away" && !state.ships[1]) this.cameraMode = "home";
+    let center =
+      this.cameraMode === "away" && state.ships[1]
+        ? this.awayCenter
+        : this.homeCenter;
+    if (this.cameraMode === "crew" && !this.host.draft()) {
+      const selected = state.pirates.find(
+        (p) => p.hp > 0 && this.host.selected().includes(p.id),
+      );
+      if (selected)
+        center =
+          (selected.shipId === 1 ? HOME_X : ENEMY_X) +
+          (selected.x + 0.5) * TILE;
+    }
+    const target = Math.max(
+      0,
+      Math.min(this.cameraMaxScroll, center - SEA_VIEW_WIDTH / 2),
+    );
+    const camera = this.cameras.main;
+    const blend =
+      immediate || this.host.reducedMotion()
+        ? 1
+        : Math.min(1, Math.max(0, delta) / 100);
+    const next = camera.scrollX + (target - camera.scrollX) * blend;
+    camera.setScroll(
+      Math.abs(target - next) < 1 ? target : Math.round(next),
+      0,
+    );
   }
 }

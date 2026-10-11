@@ -1,6 +1,6 @@
 # Fidelity tracker
 
-Updated 2026-10-11 for version 0.10.1. This is a working comparison, not a claim of a verified 1:1 recreation. No Steam installation, original source, or extracted asset bundle is present in the workspace. Original build/version and exact formulas have not been measured. All sprites, scenery, names, sound effects, and balance shipped here are newly authored.
+Updated 2026-10-11 for version 0.10.2. This is a working comparison, not a claim of a verified 1:1 recreation. No Steam installation, original source, or extracted asset bundle is present in the workspace. Original build/version and exact formulas have not been measured. All sprites, scenery, names, sound effects, and balance shipped here are newly authored.
 
 | Reference behavior | Delivered browser behavior | Remaining fidelity gap |
 | --- | --- | --- |
@@ -29,3 +29,5 @@ Version 0.9.1 adds original modular cabin/deck architecture and a pixel hull/sai
 Version 0.10.0 adds a first owned construction inventory, decorative cabin fittings, port buy/sell, validated placements, once-only salvage and independent capture transfer. General equipment/consumable drops, full furnishings and interactive effects remain gaps.
 
 Version 0.10.1 adds authored seeded sloop/brig hulls and two-masted boss flagships, real connected lower cabins, extra owned fittings and preserved capture geometry. This addresses repeating enemy silhouettes; it does not implement procedural world topology, original ship blueprints or structural physics. [Fleet evidence and limits](design/ship-fleet.md).
+
+Version 0.10.2 enlarges authored ship interiors and adds horizontal camera focus without reducing crew size. Bidirectional body/item/finger layers follow movement and targets; vertical travel preserves direction. These are measured presentation/handling improvements, not claims of original-game proportions. [Review](design/roomier-ships.md).

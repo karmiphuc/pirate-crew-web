@@ -157,10 +157,11 @@ export function drawPixelShip(
   const deckY = oy + deck * cellHeight;
   const drawMast = (fraction: number, height: number, sailWidth: number) => {
     const mastTile = deckTiles[Math.floor(deckTiles.length * fraction)];
-    const mast = ox + mastTile.x * unit + 8;
-    const top = deckY - height;
-    const sailTop = top + 34,
-      sailBottom = top + 158;
+    const mast = ox + mastTile.x * unit + unit / 2 - 1;
+    const mastHeight = Math.min(height, deckY - (fraction < 0.5 ? 108 : 80));
+    const top = deckY - mastHeight;
+    const sailTop = top + Math.round(mastHeight * 0.13),
+      sailBottom = top + Math.round(mastHeight * 0.67);
     const sailLeft = mast - sailWidth / 2,
       sailRight = mast + sailWidth / 2;
     // All contours and seams are stepped native pixels, including cloth and rigging.
@@ -193,7 +194,7 @@ export function drawPixelShip(
         sailLeft + Math.round((i * sailWidth) / 5),
         sailTop + 3,
         1,
-        115,
+        sailBottom - sailTop - 9,
         ship.id === 1 ? 0xcab58c : 0x5a7070,
       );
     r(sailLeft, sailTop - 4, sailWidth, 4, c.dark);
@@ -222,7 +223,7 @@ export function drawPixelShip(
         if (bit === "1")
           r(
             mast - 12 + x * 2,
-            sailTop + 44 + y * 2,
+            sailTop + Math.round((sailBottom - sailTop - 24) / 2) + y * 2,
             2,
             2,
             ship.id === 1 ? 0x756d59 : 0xd9c794,
@@ -231,8 +232,8 @@ export function drawPixelShip(
     );
   };
   if (max - min >= 21 && rooms.some((room) => room.floorY >= 7))
-    drawMast(0.22, 224, 94);
-  drawMast(0.68, 256, 130);
+    drawMast(0.22, 256, 114);
+  drawMast(0.68, 288, 156);
 
   // The cutaway rear wall only fills columns with a surviving roof and floor.
   for (const room of rooms) {
@@ -254,31 +255,46 @@ export function drawPixelShip(
     r(x + w - 4, y, 4, bottom - y, c.trim);
     r(x + 1, y + 8, 1, bottom - y - 8, c.sun);
     r(x + w - 3, y + 8, 1, bottom - y - 8, c.light);
-    const doorX = x + Math.floor((w - 24) / 2),
-      doorHeight = Math.min(58, bottom - y - 12),
+    const doorWidth = Math.min(32, w - 8),
+      doorX = x + Math.floor((w - doorWidth) / 2),
+      doorHeight = Math.min(70, bottom - y - 12),
       doorTop = bottom - doorHeight,
       panelHeight = Math.floor((doorHeight - 13) / 2);
-    r(doorX, doorTop, 24, doorHeight, c.ink);
-    r(doorX + 2, doorTop + 2, 20, doorHeight - 2, c.trim);
-    r(doorX + 4, doorTop + 5, 16, panelHeight, c.dark);
-    r(doorX + 4, bottom - panelHeight - 5, 16, panelHeight, c.dark);
-    r(doorX + 5, doorTop + 6, 14, 1, c.light);
-    r(doorX + 5, bottom - panelHeight - 4, 14, 1, c.light);
-    r(doorX + 18, bottom - Math.floor(doorHeight / 2), 2, 2, c.sun);
+    r(doorX, doorTop, doorWidth, doorHeight, c.ink);
+    r(doorX + 2, doorTop + 2, doorWidth - 4, doorHeight - 2, c.trim);
+    r(doorX + 4, doorTop + 5, doorWidth - 8, panelHeight, c.dark);
+    r(doorX + 4, bottom - panelHeight - 5, doorWidth - 8, panelHeight, c.dark);
+    r(doorX + 5, doorTop + 6, doorWidth - 10, 1, c.light);
+    r(doorX + 5, bottom - panelHeight - 4, doorWidth - 10, 1, c.light);
+    r(doorX + doorWidth - 6, bottom - Math.floor(doorHeight / 2), 2, 2, c.sun);
     const windows = [x + 8];
     for (let wx = x + 3 * unit + 8; wx < x + w - 24; wx += 3 * unit)
       windows.push(wx);
     windows.push(x + w - 24);
     for (const wx of windows) {
-      if (wx + 18 > doorX - 2 && wx < doorX + 26) continue;
-      r(wx, bottom - 35, 16, 20, c.ink);
-      r(wx + 1, bottom - 34, 14, 18, c.sun);
-      r(wx + 3, bottom - 32, 10, 14, c.glass);
-      r(wx + 4, bottom - 31, 4, 5, c.glassLight);
-      r(wx + 3, bottom - 26, 10, 2, c.trim);
-      r(wx + 7, bottom - 32, 2, 14, c.trim);
-      r(wx - 2, bottom - 15, 20, 3, c.trim);
-      r(wx - 1, bottom - 15, 18, 1, c.sun);
+      if (wx + 23 > doorX - 2 && wx < doorX + doorWidth + 2) continue;
+      const wr = (
+        px: number,
+        py: number,
+        width: number,
+        height: number,
+        color: number,
+      ) =>
+        r(
+          wx + (px - wx) * 1.25,
+          bottom + (py - bottom) * 1.25,
+          width * 1.25,
+          height * 1.25,
+          color,
+        );
+      wr(wx, bottom - 35, 16, 20, c.ink);
+      wr(wx + 1, bottom - 34, 14, 18, c.sun);
+      wr(wx + 3, bottom - 32, 10, 14, c.glass);
+      wr(wx + 4, bottom - 31, 4, 5, c.glassLight);
+      wr(wx + 3, bottom - 26, 10, 2, c.trim);
+      wr(wx + 7, bottom - 32, 2, 14, c.trim);
+      wr(wx - 2, bottom - 15, 20, 3, c.trim);
+      wr(wx - 1, bottom - 15, 18, 1, c.sun);
     }
     r(x, bottom - 5, w, 5, c.trim);
     r(x + 4, bottom - 5, w - 8, 1, c.light);
@@ -372,12 +388,12 @@ export function drawPixelShip(
       const x = ox + t.x * unit,
         y = oy + t.y * cellHeight;
       r(x + 2, y, 3, cellHeight, c.dark);
-      r(x + 13, y, 3, cellHeight, c.dark);
+      r(x + unit - 5, y, 3, cellHeight, c.dark);
       r(x + 2, y, 1, cellHeight, c.sun);
-      r(x + 13, y, 1, cellHeight, c.sun);
+      r(x + unit - 5, y, 1, cellHeight, c.sun);
       for (let dy = 2; dy < cellHeight - 2; dy += 6) {
-        r(x + 3, y + dy, 12, 3, c.trim);
-        r(x + 3, y + dy, 12, 1, c.sun);
+        r(x + 3, y + dy, unit - 6, 3, c.trim);
+        r(x + 3, y + dy, unit - 6, 1, c.sun);
       }
     }
   // Sparse stern/bow rails belong to the actual outermost standing deck cells.
@@ -400,40 +416,54 @@ export function drawPixelShip(
   for (const station of stations) {
     const x = ox + station.x * unit,
       y = oy + (station.y + 1) * cellHeight;
+    const pr = (
+      px: number,
+      py: number,
+      width: number,
+      height: number,
+      color: number,
+    ) =>
+      r(
+        x + ((px - x) * unit) / 18,
+        y + ((py - y) * cellHeight) / 26,
+        (width * unit) / 18,
+        (height * cellHeight) / 26,
+        color,
+      );
     if (station.kind === "cannon") {
-      r(x - 2, y - 18, 30, 9, c.ink);
-      r(x - 2, y - 16, 29, 5, 0x40565b);
-      r(x, y - 17, 26, 2, 0x8faaa4);
-      r(x + 27, y - 19, 4, 11, 0x25343b);
-      r(x + 28, y - 17, 2, 6, 0x172831);
-      r(x, y - 9, 24, 5, c.wood);
-      r(x, y - 9, 24, 1, c.sun);
+      pr(x - 2, y - 18, 30, 9, c.ink);
+      pr(x - 2, y - 16, 29, 5, 0x40565b);
+      pr(x, y - 17, 26, 2, 0x8faaa4);
+      pr(x + 27, y - 19, 4, 11, 0x25343b);
+      pr(x + 28, y - 17, 2, 6, 0x172831);
+      pr(x, y - 9, 24, 5, c.wood);
+      pr(x, y - 9, 24, 1, c.sun);
       for (const wx of [x + 2, x + 19]) {
-        r(wx, y - 6, 8, 6, c.ink);
-        r(wx + 1, y - 7, 6, 8, c.ink);
-        r(wx + 2, y - 5, 4, 4, c.light);
-        r(wx + 3, y - 4, 2, 2, c.dark);
+        pr(wx, y - 6, 8, 6, c.ink);
+        pr(wx + 1, y - 7, 6, 8, c.ink);
+        pr(wx + 2, y - 5, 4, 4, c.light);
+        pr(wx + 3, y - 4, 2, 2, c.dark);
       }
     } else if (station.kind === "food") {
-      r(x + 1, y - 21, 16, 21, c.dark);
-      r(x - 1, y - 18, 20, 15, c.wood);
-      r(x + 2, y - 19, 14, 18, c.light);
-      for (let sx = x + 4; sx < x + 16; sx += 4) r(sx, y - 18, 1, 17, c.wood);
-      r(x, y - 17, 18, 3, 0x46565a);
-      r(x, y - 6, 18, 3, 0x46565a);
-      r(x + 1, y - 17, 16, 1, 0x90a39b);
-      r(x + 1, y - 6, 16, 1, 0x90a39b);
-      r(x + 3, y - 21, 12, 3, c.sun);
+      pr(x + 1, y - 21, 16, 21, c.dark);
+      pr(x - 1, y - 18, 20, 15, c.wood);
+      pr(x + 2, y - 19, 14, 18, c.light);
+      for (let sx = x + 4; sx < x + 16; sx += 4) pr(sx, y - 18, 1, 17, c.wood);
+      pr(x, y - 17, 18, 3, 0x46565a);
+      pr(x, y - 6, 18, 3, 0x46565a);
+      pr(x + 1, y - 17, 16, 1, 0x90a39b);
+      pr(x + 1, y - 6, 16, 1, 0x90a39b);
+      pr(x + 3, y - 21, 12, 3, c.sun);
     } else {
-      r(x + 5, y - 22, 10, 6, c.dark);
-      r(x + 7, y - 21, 6, 3, c.sun);
-      r(x - 1, y - 17, 22, 17, c.dark);
-      r(x, y - 16, 20, 14, 0xd6c49c);
-      r(x + 2, y - 15, 2, 14, c.light);
-      r(x + 16, y - 15, 2, 14, c.light);
-      r(x + 8, y - 13, 4, 10, c.paint);
-      r(x + 5, y - 10, 10, 4, c.paint);
-      r(x, y - 2, 20, 2, c.trim);
+      pr(x + 5, y - 22, 10, 6, c.dark);
+      pr(x + 7, y - 21, 6, 3, c.sun);
+      pr(x - 1, y - 17, 22, 17, c.dark);
+      pr(x, y - 16, 20, 14, 0xd6c49c);
+      pr(x + 2, y - 15, 2, 14, c.light);
+      pr(x + 16, y - 15, 2, 14, c.light);
+      pr(x + 8, y - 13, 4, 10, c.paint);
+      pr(x + 5, y - 10, 10, 4, c.paint);
+      pr(x, y - 2, 20, 2, c.trim);
     }
   }
   for (const f of furniture) {
@@ -441,40 +471,54 @@ export function drawPixelShip(
     if (!supported && !blueprint) continue;
     const x = ox + f.x * unit,
       y = oy + (f.y + 1) * cellHeight;
+    const pr = (
+      px: number,
+      py: number,
+      width: number,
+      height: number,
+      color: number,
+    ) =>
+      r(
+        x + ((px - x) * unit) / 18,
+        y + ((py - y) * cellHeight) / 26,
+        (width * unit) / 18,
+        (height * cellHeight) / 26,
+        color,
+      );
     if (f.kind === "bunk") {
-      r(x + 1, y - 26, 3, 26, c.dark);
-      r(x + 32, y - 18, 3, 18, c.dark);
-      r(x + 4, y - 19, 28, 15, c.trim);
-      r(x + 4, y - 19, 28, 3, 0xe7d4aa);
-      r(x + 5, y - 19, 9, 4, 0xf4e7c4);
-      r(x + 15, y - 16, 17, 9, c.paint);
-      r(x + 16, y - 15, 14, 1, 0xc77c59);
-      r(x + 4, y - 5, 28, 3, c.light);
-      r(x + 2, y - 25, 1, 22, c.sun);
-      r(x + 33, y - 17, 1, 17, c.light);
+      pr(x + 1, y - 26, 3, 26, c.dark);
+      pr(x + 32, y - 18, 3, 18, c.dark);
+      pr(x + 4, y - 19, 28, 15, c.trim);
+      pr(x + 4, y - 19, 28, 3, 0xe7d4aa);
+      pr(x + 5, y - 19, 9, 4, 0xf4e7c4);
+      pr(x + 15, y - 16, 17, 9, c.paint);
+      pr(x + 16, y - 15, 14, 1, 0xc77c59);
+      pr(x + 4, y - 5, 28, 3, c.light);
+      pr(x + 2, y - 25, 1, 22, c.sun);
+      pr(x + 33, y - 17, 1, 17, c.light);
     } else if (f.kind === "table") {
-      r(x + 2, y - 23, 32, 5, c.dark);
-      r(x + 3, y - 23, 30, 2, c.sun);
-      r(x + 6, y - 18, 3, 18, c.trim);
-      r(x + 27, y - 18, 3, 18, c.trim);
-      r(x + 7, y - 16, 1, 16, c.light);
-      r(x + 28, y - 16, 1, 16, c.light);
-      r(x + 10, y - 10, 17, 2, c.dark);
-      r(x + 11, y - 27, 13, 4, 0xd2c198);
-      r(x + 14, y - 26, 5, 1, 0x849b84);
-      r(x + 26, y - 28, 4, 5, 0xeee0b1);
-      r(x + 30, y - 27, 2, 3, c.sun);
+      pr(x + 2, y - 23, 32, 5, c.dark);
+      pr(x + 3, y - 23, 30, 2, c.sun);
+      pr(x + 6, y - 18, 3, 18, c.trim);
+      pr(x + 27, y - 18, 3, 18, c.trim);
+      pr(x + 7, y - 16, 1, 16, c.light);
+      pr(x + 28, y - 16, 1, 16, c.light);
+      pr(x + 10, y - 10, 17, 2, c.dark);
+      pr(x + 11, y - 27, 13, 4, 0xd2c198);
+      pr(x + 14, y - 26, 5, 1, 0x849b84);
+      pr(x + 26, y - 28, 4, 5, 0xeee0b1);
+      pr(x + 30, y - 27, 2, 3, c.sun);
     } else {
-      r(x + 8, y - 52, 2, 11, c.dark);
-      r(x + 5, y - 43, 9, 3, c.dark);
-      r(x + 4, y - 39, 11, 15, c.dark);
-      r(x + 5, y - 38, 9, 13, 0xbb8947);
-      r(x + 7, y - 36, 5, 9, 0xf4cf78);
-      r(x + 8, y - 34, 3, 6, 0xffe8a3);
-      r(x + 4, y - 25, 11, 2, c.sun);
-      r(x + 6, y - 40, 7, 1, c.sun);
-      r(x + 7, y - 36, 1, 10, c.wood);
-      r(x + 11, y - 36, 1, 10, c.wood);
+      pr(x + 8, y - 52, 2, 11, c.dark);
+      pr(x + 5, y - 43, 9, 3, c.dark);
+      pr(x + 4, y - 39, 11, 15, c.dark);
+      pr(x + 5, y - 38, 9, 13, 0xbb8947);
+      pr(x + 7, y - 36, 5, 9, 0xf4cf78);
+      pr(x + 8, y - 34, 3, 6, 0xffe8a3);
+      pr(x + 4, y - 25, 11, 2, c.sun);
+      pr(x + 6, y - 40, 7, 1, c.sun);
+      pr(x + 7, y - 36, 1, 10, c.wood);
+      pr(x + 11, y - 36, 1, 10, c.wood);
     }
     if (!supported) r(x, y - 2, FURNISHINGS[f.kind].width * unit, 2, 0xd57560);
   }
