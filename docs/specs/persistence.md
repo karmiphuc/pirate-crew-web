@@ -87,3 +87,7 @@ Schema 7 requires exactly six plain integer counters (`rum`, `elixir`, `boneMeal
 ## Carried loadouts, schema 8
 
 Persist optional melee (`cutlass`/`sabre`), ranged (`pistol`) and accessory (`boots`/`diaper`) slots, the active weapon enum, three-key personal weapon ownership and at most two unique personally owned accessories. Require at least one carried weapon; active and carried gear must be owned and in the correct slot. Shared hold stock expands to eight fixed known integer keys, each 0–99. Schema 1–7 migration is immutable: preserve existing six-kind item stock, maps and lockers, put the formerly active weapon into only its corresponding slot, and initialize empty accessory stock/lockers. Reject malformed legacy stock before extension. Failed equip/stow transactions restore slots, active weapon, ownership, stock and gold together. Renderer resources and ray caches never enter saves.
+
+## Crew progression, schema 9
+
+Schema 9 explicitly copies six integer attributes (0–100), trainingPoints (0–400) and group (1–4). Spent plus unspent points cannot exceed four times level. Schema 8 migrates immutably to zero attributes/points and group 1 while preserving prior stats, slots, lockers, stock and chart; no retroactive leveling. Prior migration paths remain. Reject malformed new attributes/budgets and retain old equipment/stock validation. Failed port training/group writes restore complete checkpoints and the prior selection mode.

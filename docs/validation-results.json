@@ -1,4 +1,5 @@
 {
+  "version": "0.13.0",
   "viewport": {
     "width": 1440,
     "height": 1080
@@ -17,7 +18,7 @@
   "equipmentFrameBounds": "passed",
   "skillAndEquipmentPurchases": "passed",
   "fishingAndGalley": "passed",
-  "traitsAndSchema8": "passed",
+  "traitsAndSchema9": "passed",
   "destroyedDeckAndRepair": "passed",
   "unsafePortRepairRecovery": "passed",
   "islandExplorationAndReturn": "passed",
@@ -33,40 +34,40 @@
   "quotaRollback": "passed",
   "memory": {
     "heapBefore": {
-      "usedSize": 10469776,
-      "totalSize": 11649024,
-      "embedderHeapUsedSize": 2272792,
-      "backingStorageSize": 12872348
+      "usedSize": 10567456,
+      "totalSize": 11915264,
+      "embedderHeapUsedSize": 2448400,
+      "backingStorageSize": 12909319
     },
     "heapAfter": {
-      "usedSize": 9741012,
-      "totalSize": 10862592,
-      "embedderHeapUsedSize": 1930744,
-      "backingStorageSize": 12872400
+      "usedSize": 9823988,
+      "totalSize": 10604544,
+      "embedderHeapUsedSize": 2038296,
+      "backingStorageSize": 12909145
     },
     "domBefore": {
       "documents": 1,
-      "nodes": 349,
+      "nodes": 392,
       "jsEventListeners": 75
     },
     "domAfter": {
       "documents": 1,
-      "nodes": 408,
+      "nodes": 421,
       "jsEventListeners": 75
     }
   },
   "diagnostics": {
     "frameMs": {
-      "count": 561,
-      "p50": 30.009999999999856,
-      "p95": 41.66999999999971,
-      "p99": 56.67000000000007
+      "count": 572,
+      "p50": 29.990000000000144,
+      "p95": 40.00000000000036,
+      "p99": 43.340000000000146
     },
     "tickMs": {
       "count": 138,
       "p50": 0,
       "p95": 0.10000000149011612,
-      "p99": 0.29999999701976776
+      "p99": 0.20000000298023224
     },
     "stalls": 0,
     "views": {
@@ -94,8 +95,9 @@
     "listeners": 5,
     "saveWrites": 0,
     "lock": "owned",
-    "tick": 13825,
+    "tick": 13832,
     "phase": "port"
   },
-  "errors": []
+  "errors": [],
+  "noLivingSelection": "passed"
 }

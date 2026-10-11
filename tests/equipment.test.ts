@@ -247,7 +247,7 @@ it("schema-seven migration preserves stock/map/lockers and only the previously a
   const before = structuredClone(old),
     m = validateSave(old);
   expect(old).toEqual(before);
-  expect(m.schemaVersion).toBe(8);
+  expect(m.schemaVersion).toBe(9);
   expect(m.world).toEqual(before.world);
   expect(m.itemStock).toEqual({ ...old.itemStock, boots: 0, diaper: 0 });
   expect([m.pirates[0].meleeWeapon, m.pirates[0].rangedWeapon]).toEqual([

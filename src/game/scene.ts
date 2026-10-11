@@ -1,3 +1,4 @@
+import { attackCooldown } from "../sim/progression";
 import { drawPixelShip } from "./ship-art";
 import {
   SHIP_CELL_WIDTH,
@@ -908,8 +909,11 @@ export class SeaScene extends Phaser.Scene {
           : undefined;
       const fighting =
         (s.phase === "encounter" || s.phase === "aftermath") &&
-        (p.status === "Fighting" || p.status === "Firing pistol");
-      const sinceAttack = WEAPONS[p.weapon].cooldown - p.cooldown;
+        (p.status === "Fighting" ||
+          p.status === "Firing pistol" ||
+          p.status === "Critical shot" ||
+          p.status === "Critical strike");
+      const sinceAttack = attackCooldown(p, p.weapon) - p.cooldown;
       const pose =
         !reducedMotion && fighting && !moving && p.cooldown > 0
           ? sinceAttack >= 0 && sinceAttack < 3

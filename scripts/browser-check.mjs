@@ -746,7 +746,7 @@ try {
   assert.equal((await state()).gold, checkpointGold);
   assert.match((await state()).ships[0].name, /captured/);
   // Verify traits and fishing through the management UI, then exercise the galley loop.
-  assert.equal((await state()).schemaVersion, 8);
+  assert.equal((await state()).schemaVersion, 9);
   assert.deepEqual((await state()).pirates[3].traits, ["swift"]);
   await page.click('[data-action="select"][data-id="6"]');
   await page.click('[data-action="crew-settings"]');
@@ -996,6 +996,7 @@ try {
   assert.match(await page.locator("#toast").textContent(), /quota failure/);
 
   const report = {
+    version: "0.13.0",
     viewport: { width: 1440, height: 1080 },
     renderer: "Chromium SwiftShader (headless software rendering)",
     fullLoop: "passed",
@@ -1011,7 +1012,7 @@ try {
     equipmentFrameBounds: "passed",
     skillAndEquipmentPurchases: "passed",
     fishingAndGalley: "passed",
-    traitsAndSchema8: "passed",
+    traitsAndSchema9: "passed",
     destroyedDeckAndRepair: "passed",
     unsafePortRepairRecovery: "passed",
     islandExplorationAndReturn: "passed",
@@ -1051,6 +1052,21 @@ try {
     true,
   );
   await page.screenshot({ path: "artifacts/phone.png", fullPage: true });
+  await page.evaluate(() => {
+    const app = window.__privateer;
+    app.state().pirates.forEach((p) => {
+      p.hp = 0;
+    });
+    app.state().phase = "gameover";
+    app.selection = [];
+    app.selectedGroup = null;
+    app.renderUI(true);
+  });
+  assert.equal(
+    await page.locator("#crew-summary").innerText(),
+    "No living crew selected.",
+  );
+  report.noLivingSelection = "passed";
   await page.evaluate(async () => {
     const app = window.__privateer,
       audioContext = app.sound.context,

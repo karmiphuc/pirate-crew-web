@@ -1353,6 +1353,140 @@ footer button {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
+.crew-groups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+.crew-groups > span {
+  font: 10px monospace;
+  letter-spacing: 1px;
+  color: #b7c7b4;
+  margin-right: 6px;
+}
+.crew-groups button {
+  min-height: 36px;
+  padding: 7px 12px;
+  font: 12px monospace;
+}
+.crew-group {
+  --group-color: #d7ad6b;
+  border-left: 3px solid var(--group-color);
+}
+.crew-group[data-group="2"] {
+  --group-color: #91bac5;
+}
+.crew-group[data-group="3"] {
+  --group-color: #a1b58b;
+}
+.crew-group[data-group="4"] {
+  --group-color: #c99b96;
+}
+.crew-groups button[aria-pressed="true"] {
+  color: #20383c;
+  background: #e5d5a9;
+  outline: 1px solid #d7ad6b;
+  outline-offset: 2px;
+}
+.progression-panel {
+  margin: 18px 0;
+  border: 1px solid #b7b99d;
+  background: #e5dfc7;
+}
+.progression-panel summary {
+  padding: 14px;
+  cursor: pointer;
+  color: #263e40;
+  font-size: 13px;
+}
+.progression-panel summary strong {
+  display: inline-block;
+  font: 11px monospace;
+  margin-left: 12px;
+  color: #445d4d;
+}
+.progression-content {
+  padding: 0 14px 12px;
+}
+.attribute-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.attribute-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #c4c2a5;
+  background: #f0ead8;
+  min-width: 0;
+}
+.attribute-code {
+  width: 38px;
+  flex-shrink: 0;
+  color: #496251;
+  font: bold 12px monospace;
+}
+.attribute-card > div {
+  flex: 1;
+  min-width: 0;
+}
+.attribute-card h4 {
+  margin: 0 0 6px;
+  color: #263e40;
+  font-size: 12px;
+}
+.attribute-card h4 strong {
+  display: block;
+  font: 18px monospace;
+  margin-top: 6px;
+}
+.attribute-card h4 small {
+  color: #506259;
+  font-size: 10px;
+}
+.modal-card .attribute-card p {
+  font-size: 10px;
+  line-height: 1.5;
+  margin: 0;
+}
+.attribute-card button {
+  min-width: 38px;
+  min-height: 38px;
+  padding: 8px;
+}
+.group-assignment {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.group-assignment button[aria-pressed="true"] {
+  opacity: 1;
+  background: #d6d6b9;
+  color: #263e40;
+}
+@media (max-width: 650px) {
+  .attribute-grid {
+    grid-template-columns: 1fr;
+  }
+  .progression-panel summary strong {
+    display: block;
+    margin: 6px 0 0 18px;
+  }
+  .crew-groups {
+    gap: 6px;
+  }
+  .crew-groups > span {
+    flex-basis: 100%;
+  }
+  .crew-groups button {
+    flex: 1;
+    padding: 7px 8px;
+  }
+}
 .loadout-slot {
   padding: 14px 10px 10px;
   background: #20383c;

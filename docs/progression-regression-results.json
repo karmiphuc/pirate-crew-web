@@ -1,0 +1,76 @@
+{
+  "version": "0.13.0",
+  "focusedTiming": "Functional fleet/progression/hosting checks overlapped; timings are not an isolated benchmark.",
+  "fleet": {
+    "layouts": [
+      {
+        "kind": "sloop",
+        "parts": 63,
+        "depth": 6,
+        "fittings": 3
+      },
+      {
+        "kind": "brig",
+        "parts": 73,
+        "depth": 8,
+        "fittings": 6
+      },
+      {
+        "kind": "flagship",
+        "parts": 96,
+        "depth": 8,
+        "fittings": 6
+      }
+    ],
+    "facing": {
+      "directions": [
+        "left",
+        "right"
+      ],
+      "verticalLeft": 21
+    },
+    "equippedCombatDirections": 6,
+    "pannedSelectionAndMove": "passed",
+    "cameraFallbackUiWithoutRevision": "passed",
+    "nativeCameraZoom": 1,
+    "cabinHeadroomPx": {
+      "minimum": 26,
+      "checkedActors": 17,
+      "nativeSpriteHeight": 56
+    },
+    "boardingAndLowerCabin": "passed",
+    "retreatCaptureReload": "passed",
+    "capturedCannonAccess": "passed",
+    "forcedStaticRedrawMs": {
+      "samples": 100,
+      "p95": 4.700000002980232,
+      "max": 26.600000001490116
+    },
+    "sceneRestarts": 10,
+    "compactOverflow": "passed",
+    "disposal": "passed",
+    "views": {
+      "artwork": true,
+      "sourceImages": 0,
+      "actors": 3,
+      "equipment": 3,
+      "grips": 3,
+      "subscriptions": 4,
+      "clouds": 3,
+      "textures": 10,
+      "shutdownHandlers": 13,
+      "destroyHandlers": 13
+    },
+    "errors": []
+  },
+  "hosting": {
+    "root": "passed",
+    "repositoryPath": "passed",
+    "noBrowserErrors": true,
+    "finalBuildRecheck": "passed"
+  },
+  "dependencyAudit": {
+    "reportedVulnerabilities": 0
+  },
+  "fullLifecycleReport": "validation-results.json"
+}

@@ -2,7 +2,7 @@
 
 ## Pirate model
 
-Stable ID, name, role, traits, health, injury, hunger, morale, experience, skills, equipment, job priorities, current command, and movement state. Initial attributes: vitality, melee proficiency, ranged proficiency, and work proficiency. Numeric ranges and progression curves are provisional.
+Stable ID, name, role, traits, health, injury, hunger, morale, experience, skills, equipment, job priorities, current command, and movement state. Current attributes: STR, VIT, INT, DEX, AGI and LUCK with bounded earned points. Exact Steam progression curves and skill ranks remain unmeasured or deferred.
 
 Recruit cards expose cost, role, key skill, and relevant traits before purchase. Recruiting spends gold exactly once, checks the crew cap, and places the recruit safely aboard or in the port roster.
 
@@ -66,3 +66,7 @@ Hold use selects one living allied recipient and rejects unsafe sea/fall/transit
 ## Carried accessories, 0.12.0
 
 One optional accessory derives effects from its equipped enum, so repeated equip/stow cannot stack bonuses. Boots of Mobility multiply deck/ladder path speed by 1.25, combining with Swift; sea/rope/rescue speed is unchanged. Diaper excludes that living supported home wearer from the hundred-tick dirt contribution. Dead, falling, at-sea and away-vessel pirates add no home dirt. Port-only gear changes are saved atomically and retain individual personal ownership. [Authored values and save rules](../design/crew-loadouts.md).
+
+## Version 0.13.0 attributes and groups
+
+Six bounded STR/VIT/INT/DEX/AGI/LUCK attributes, earned point budgets and four persistent groups follow the [progression contract](../design/crew-progression.md). Training and group assignment require living allies in port; both use atomic checkpoint writes. Group selection filters living members, preserves explicit empty groups and copies IDs into the existing command queue. Direct orders retain existing task interruption; changing group alone preserves duty/orders. Exact Steam formulas, ranked skills and reference point rates remain unmeasured or deferred.

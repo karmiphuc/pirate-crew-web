@@ -12,6 +12,14 @@ import { validateFurniture } from "../sim/furniture";
 import { ITEM_KINDS, ITEM_STOCK_CAP, ACCESSORY_KINDS } from "../sim/items";
 import { Navigation, Search, validateLayout } from "../sim/navigation";
 import { tileNode } from "../sim/model";
+import {
+  ATTRIBUTE_KEYS,
+  ATTRIBUTE_CAP,
+  POINTS_PER_LEVEL,
+  POINT_CAP,
+  CREW_GROUPS,
+  emptyAttributes,
+} from "../sim/progression";
 const MAX = 1_000_000_000;
 function record(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
@@ -160,9 +168,27 @@ export function validateSave(value: unknown): Campaign {
       ),
     };
   }
+  if (record(value) && value.schemaVersion === 8) {
+    if (!Array.isArray(value.pirates) || value.pirates.length > LIMITS.allies)
+      throw new Error("Invalid legacy crew.");
+    value = {
+      ...value,
+      schemaVersion: 9,
+      pirates: value.pirates.map((p) =>
+        record(p)
+          ? {
+              ...p,
+              attributes: emptyAttributes(),
+              trainingPoints: 0,
+              group: 1,
+            }
+          : p,
+      ),
+    };
+  }
   if (
     !record(value) ||
-    value.schemaVersion !== 8 ||
+    value.schemaVersion !== 9 ||
     !text(value.campaignId) ||
     !["port", "travel", "victory", "won"].includes(String(value.phase))
   )
@@ -366,6 +392,29 @@ export function validateSave(value: unknown): Campaign {
       !["captain", "boarder", "gunner", "medic"].includes(String(p.role))
     )
       throw new Error("Invalid crew identity.");
+    if (
+      !record(p.attributes) ||
+      Object.keys(p.attributes).length !== ATTRIBUTE_KEYS.length ||
+      ATTRIBUTE_KEYS.some(
+        (k) =>
+          !Object.hasOwn(p.attributes as object, k) ||
+          !integer(
+            (p.attributes as Record<string, unknown>)[k],
+            0,
+            ATTRIBUTE_CAP,
+          ),
+      ) ||
+      !integer(p.trainingPoints, 0, POINT_CAP) ||
+      !CREW_GROUPS.includes(p.group as any) ||
+      !integer(p.level, 1, 100) ||
+      ATTRIBUTE_KEYS.reduce(
+        (sum, k) => sum + (p.attributes as Record<string, number>)[k],
+        0,
+      ) +
+        p.trainingPoints >
+        p.level * POINTS_PER_LEVEL
+    )
+      throw new Error("Invalid crew progression.");
     ids.add(p.id);
     if (p.role === "captain") captains++;
     for (const key of ["x", "previousX"])
@@ -411,7 +460,7 @@ export function validateSave(value: unknown): Campaign {
       throw new Error("Invalid journal.");
   // Only explicit fields enter the application. Unknown properties are discarded.
   return {
-    schemaVersion: 8,
+    schemaVersion: 9,
     campaignId: state.campaignId,
     revision: state.revision,
     tick: state.tick,
@@ -462,6 +511,11 @@ export function validateSave(value: unknown): Campaign {
       morale: p.morale,
       level: p.level,
       xp: p.xp,
+      attributes: Object.fromEntries(
+        ATTRIBUTE_KEYS.map((k) => [k, p.attributes[k]]),
+      ) as Campaign["pirates"][number]["attributes"],
+      trainingPoints: p.trainingPoints,
+      group: p.group,
       damage: p.damage,
       cooldown: p.cooldown,
       orders: [],

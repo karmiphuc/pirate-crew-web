@@ -218,7 +218,7 @@ try {
   await idle();
   assert.equal(
     await page.evaluate(() => window.__privateer.state().schemaVersion),
-    8,
+    9,
   );
   const migrated = await snapshot();
   assert.equal(migrated.crew[0].ranged, "pistol");
@@ -348,7 +348,7 @@ try {
     equipStowAccessoryQuotaRollback: "passed",
     nonDuplicatingStow: "passed",
     accessoryChanges: 150,
-    reloadSchema8: "passed",
+    reloadSchema9: "passed",
     visibleLegacyImport: "passed",
     actualPistolToMelee: "passed",
     bidirectionalGrips: "passed",

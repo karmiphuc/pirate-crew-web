@@ -1,4 +1,5 @@
 import type { Pirate, WorldNode } from "./model";
+import { POINTS_PER_LEVEL, POINT_CAP } from "./progression";
 
 // Original balance for the browser game's 0..100 needs, not reference formulas.
 export const ITEMS = {
@@ -63,9 +64,14 @@ export function itemEffectReason(p: Pirate, kind: ItemKind): string | null {
   return null;
 }
 export function awardExperience(p: Pirate, amount: number) {
-  p.xp = Math.min(1_000_000_000, p.xp + amount);
+  if (!Number.isFinite(amount) || amount <= 0 || p.level >= 100) return;
+  p.xp = Math.min(
+    1_000_000_000,
+    p.xp + Math.floor((amount * (100 + p.attributes.int)) / 100),
+  );
   while (p.level < 100 && p.xp >= p.level * 30) {
     p.level++;
+    p.trainingPoints = Math.min(POINT_CAP, p.trainingPoints + POINTS_PER_LEVEL);
     p.damage = Math.min(1000, p.damage + 2);
     p.maxHp = Math.min(1000, p.maxHp + 8);
     p.hp = Math.min(p.maxHp, p.hp + 20);

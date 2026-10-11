@@ -39,6 +39,16 @@ import {
   type Accessory,
 } from "./items";
 import { weaponForTarget, clearShot } from "./equipment";
+import {
+  ATTRIBUTE_KEYS,
+  ATTRIBUTE_CAP,
+  ATTRIBUTE_INFO,
+  CREW_GROUPS,
+  attackDamage,
+  attackCooldown,
+  type Attribute,
+  type CrewGroup,
+} from "./progression";
 import { Navigation, Search, validateLayout, intact } from "./navigation";
 export class Simulation {
   private commands: InputCommand[] = [];
@@ -491,6 +501,10 @@ export class Simulation {
   }
   queue(ids: number[], order: Order, queue = false) {
     if (this.disposed) return false;
+    if (ids.length === 0) {
+      notify(this.state, "Select living crew before issuing an order.", "bad");
+      return false;
+    }
     if (!["port", "encounter", "aftermath"].includes(this.state.phase)) {
       notify(
         this.state,
@@ -800,15 +814,19 @@ export class Simulation {
       p.path.length = 0;
       p.status = ranged ? "Firing pistol" : "Fighting";
       if (p.cooldown === 0) {
+        const roll = Math.floor(random(this.state) * 4);
+        // Zero luck retains the original RNG sequence. Blocked shots consume neither roll.
+        const critical =
+          p.attributes.luck > 0 && random(this.state) < p.attributes.luck / 200;
         const damage = Math.max(
           1,
-          p.damage +
-            weapon.bonus +
-            Math.floor(random(this.state) * 4) -
-            target.armor,
+          Math.floor(
+            (attackDamage(p, p.weapon) + roll) * (critical ? 1.5 : 1),
+          ) - target.armor,
         );
         target.hp = Math.max(0, target.hp - damage);
-        p.cooldown = weapon.cooldown;
+        p.cooldown = attackCooldown(p, p.weapon);
+        if (critical) p.status = ranged ? "Critical shot" : "Critical strike";
         if (target.hp === 0) {
           this.clearOrder(target);
           target.orders.length = 0;
@@ -1961,6 +1979,63 @@ export class Simulation {
     s.gold -= 70;
     s.tutorial = Math.max(1, s.tutorial);
     notify(s, `${p.name} joins the crew. Welcome aboard!`, "good");
+    this.touch();
+    return true;
+  }
+  trainAttribute(id: number, attribute: Attribute) {
+    if (this.disposed) return false;
+    const s = this.state,
+      p = s.pirates.find((p) => p.id === id && p.side === "ally" && p.hp > 0);
+    if (s.phase !== "port" || !p || !ATTRIBUTE_KEYS.includes(attribute)) {
+      notify(s, "Train a living crewmate's attributes in port.", "bad");
+      return false;
+    }
+    if (
+      p.trainingPoints < 1 ||
+      p.attributes[attribute] >= ATTRIBUTE_CAP ||
+      (attribute === "vit" && p.maxHp >= 1000)
+    ) {
+      notify(
+        s,
+        "No training points available, or this attribute is at its limit.",
+        "bad",
+      );
+      return false;
+    }
+    p.trainingPoints--;
+    p.attributes[attribute]++;
+    if (attribute === "vit") {
+      const gain = Math.min(4, 1000 - p.maxHp);
+      p.maxHp += gain;
+      p.hp += gain; // Preserve missing health; training is not a full heal.
+    }
+    notify(
+      s,
+      `${p.name}: ${ATTRIBUTE_INFO[attribute].name} increased to ${p.attributes[attribute]}.`,
+      "good",
+    );
+    this.touch();
+    return true;
+  }
+  assignGroup(id: number, group: CrewGroup) {
+    if (this.disposed) return false;
+    const s = this.state,
+      p = s.pirates.find((p) => p.id === id && p.side === "ally" && p.hp > 0);
+    if (
+      s.phase !== "port" ||
+      !p ||
+      !CREW_GROUPS.includes(group) ||
+      p.group === group
+    ) {
+      notify(
+        s,
+        "Assign a living crewmate to a different group in port.",
+        "bad",
+      );
+      return false;
+    }
+    p.group = group;
+    notify(s, `${p.name} joins crew group ${group}.`, "good");
     this.touch();
     return true;
   }

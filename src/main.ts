@@ -42,6 +42,14 @@ import {
 } from "./sim/items";
 import { itemIcon } from "./ui/item-icons";
 import { loadoutMarkup } from "./ui/loadout";
+import { progressionMarkup } from "./ui/progression";
+import {
+  CREW_GROUPS,
+  groupMembers,
+  attackDamage,
+  type CrewGroup,
+  type Attribute,
+} from "./sim/progression";
 import {
   acquireWriter,
   checkpoint,
@@ -54,13 +62,13 @@ import { SeaScene, ViewHost } from "./game/scene";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
-<header class="masthead"><a class="brand" href="#" aria-label="Pixel Privateer home"><span class="brand-mark">☠</span><span><strong>PIXEL PRIVATEER<span class="beta">08</span></strong><small>A PIRATE’S LIFE · UNOFFICIAL BROWSER REMAKE</small></span></a><nav><button data-action="help" class="text-button">Captain’s guide</button><button data-action="settings" class="text-button">⚙ Settings</button><button data-action="save" class="save-button">↓ Save voyage</button></nav></header>
+<header class="masthead"><a class="brand" href="#" aria-label="Pixel Privateer home"><span class="brand-mark">☠</span><span><strong>PIXEL PRIVATEER<span class="beta">13</span></strong><small>A PIRATE’S LIFE · UNOFFICIAL BROWSER REMAKE</small></span></a><nav><button data-action="help" class="text-button">Captain’s guide</button><button data-action="settings" class="text-button">⚙ Settings</button><button data-action="save" class="save-button">↓ Save voyage</button></nav></header>
 <main>
  <section class="supplies" aria-label="Ship supplies"><div class="location"><span class="live-dot"></span><span id="location">Saltwater Harbour</span><small id="phase">IN PORT</small></div><div class="resources"><span><i class="coin">●</i><b id="gold">420</b> <small>GOLD</small></span><span><i>▣</i><b id="food">18</b> <small>FOOD</small></span><span><i>●</i><b id="ammo">12</b> <small>AMMO</small></span><span><i>✚</i><b id="medicine">5</b> <small>MEDICINE</small></span><span><i>▰</i><b id="parts">12</b> <small>TIMBER</small></span></div></section>
  <section class="voyage" aria-label="Side-view pirate game"><div class="scene-top"><div><span class="eyebrow">THE WAYWARD GULL</span><h1 id="scene-title">A small ship. A grand adventure.</h1><p id="objective">Stock the hold, gather your crew, and see what lies beyond the harbour.</p></div><button data-action="pause" id="pause" class="pause-button">Ⅱ Pause <kbd>SPACE</kbd></button></div><div id="game"></div><div id="scene-banner" class="scene-banner" hidden></div><div id="build-tools" class="build-tools" hidden><span>SHIPWRIGHT <small>Click grid to place / remove</small></span><button data-action="hull" class="active">Hull</button><button data-action="ladder">Ladder</button><button data-action="station-food">Move galley</button><button data-action="station-cannon">Move cannon</button><button data-action="station-medical">Move clinic</button><button data-action="furniture-bunk">Cabin bunk</button><button data-action="furniture-table">Mess table</button><button data-action="furniture-lantern">Brass lantern</button><button data-action="apply-build" class="primary">Apply refit</button><button data-action="cancel-build">Cancel</button></div><div class="camera-tools" aria-label="Vessel view"><button data-action="view-home" aria-pressed="false">Your ship</button><button data-action="view-away" aria-pressed="false" hidden>Other vessel</button><button data-action="view-crew" aria-pressed="true">Follow crew</button></div><div class="sea-compass" aria-hidden="true">N<br>✧</div><div class="scene-bottom"><span id="hint">Click a pirate to select · Click a deck to move · Space to pause</span><span id="ship-readout"></span><span id="save-state">Preparing logbook…</span></div></section>
  <section class="actionbar" aria-label="Crew actions"><div class="command-group"><button data-action="select-all">♟ Select crew</button><button data-action="board" id="board">⚔ Board / go ashore</button><button data-action="cannon" id="cannon">● Fire cannon</button><button data-action="retreat" id="retreat">↶ Retreat</button><button data-action="rescue" hidden>↟ Rescue overboard</button><button data-action="heal">✚ Treat wounds</button><button data-action="collect" id="collect" hidden>✦ Collect chest</button><button data-action="plunder" id="plunder" hidden>✦ Plunder / take spoils</button><button data-action="capture" id="capture" hidden>⚑ Capture ship</button><button data-action="escape" id="escape" hidden>↗ Break off</button></div><div class="command-group"><button data-action="build" id="build">▦ Build ship</button><button data-action="map" class="primary" id="chart">◇ Chart a course <span>→</span></button></div></section>
  <div id="loot-preview" class="loot-preview" aria-label="Encounter items" hidden></div>
- <section class="below-deck"><div class="crew-panel"><div class="panel-heading"><h2>Your crew <span id="crew-count">3 / 12</span></h2><button data-action="recruit" id="recruit">+ Recruit <small>70 gold</small></button></div><div id="crew" class="crew-list"></div><div class="port-tools"><button data-action="crew-settings">☷ Duties & equipment</button><button data-action="shop">▣ Harbour market</button><button data-action="hold" id="hold-button">▤ Ship’s hold</button><button data-action="rest">☾ Tavern & repairs <small>25 gold</small></button><span id="recruit-preview"></span><span id="crew-summary">Three souls, one horizon.</span></div></div><aside class="log-panel"><div class="panel-heading"><h2>Captain’s log</h2><span id="day">DAY 01</span></div><div id="journal" aria-live="polite"></div></aside></section>
+ <section class="below-deck"><div class="crew-panel"><div class="panel-heading"><h2>Your crew <span id="crew-count">3 / 12</span></h2><button data-action="recruit" id="recruit">+ Recruit <small>70 gold</small></button></div><div class="crew-groups" role="group" aria-label="Select command group"><span>CREW GROUPS</span><button data-action="select-all" aria-pressed="false">All · Q</button>${CREW_GROUPS.map((g) => `<button id="crew-group-${g}" class="crew-group" data-group="${g}" data-action="select-group" data-kind="${g}" aria-label="Select crew group ${g}" aria-pressed="false">⚑ ${g}</button>`).join("")}</div><div id="crew" class="crew-list"></div><div class="port-tools"><button data-action="crew-settings">☷ Duties & equipment</button><button data-action="shop">▣ Harbour market</button><button data-action="hold" id="hold-button">▤ Ship’s hold</button><button data-action="rest">☾ Tavern & repairs <small>25 gold</small></button><span id="recruit-preview"></span><span id="crew-summary">Three souls, one horizon.</span></div></div><aside class="log-panel"><div class="panel-heading"><h2>Captain’s log</h2><span id="day">DAY 01</span></div><div id="journal" aria-live="polite"></div></aside></section>
  <footer><span>Built for the love of pirate adventures.</span><button data-action="credits">Pixel Piracy tribute · Credits & attribution ↗</button><span id="diagnostics"></span></footer>
 </main><div id="toast" role="status" hidden></div><div id="modal" class="modal-backdrop" hidden></div>`;
 const escape = (value: string) =>
@@ -89,6 +97,7 @@ class Application implements ViewHost {
   private game: Phaser.Game | null = null;
   private sea: SeaScene | null = null;
   private selection: number[] = [3];
+  private selectedGroup: CrewGroup | "all" | null = null;
   private draftTiles: Tile[] | null = null;
   private brush: "hull" | "ladder" | Station["kind"] | FurnitureKind = "hull";
   private draftFurnitureList: Furniture[] | null = null;
@@ -148,9 +157,9 @@ class Application implements ViewHost {
         }
         return;
       }
-      if (event.code === "Space") {
+      if (event.code === "Space" && !this.modalKind && !this.draftTiles) {
         event.preventDefault();
-        if (!this.modalKind && !this.draftTiles) this.togglePause();
+        this.togglePause();
       }
       if (
         !this.modalKind &&
@@ -160,6 +169,12 @@ class Application implements ViewHost {
         !event.metaKey &&
         !event.altKey
       ) {
+        const group = Number(event.code.replace("Digit", ""));
+        if (CREW_GROUPS.includes(group as CrewGroup)) {
+          event.preventDefault();
+          void this.action("select-group", { kind: String(group) });
+          return;
+        }
         const shortcut = (
           {
             KeyB: "board",
@@ -366,6 +381,7 @@ class Application implements ViewHost {
     if (id !== null) {
       const actor = this.state().pirates.find((p) => p.id === id)!;
       if (actor.side === "ally") {
+        this.selectedGroup = null;
         if (queue) {
           if (this.selection.includes(id))
             this.selection = this.selection.filter((i) => i !== id);
@@ -426,6 +442,7 @@ class Application implements ViewHost {
     this.sim = new Simulation(state);
     this.generation++;
     this.selection = [state.pirates[0].id];
+    this.selectedGroup = null;
     this.accumulator = 0;
     this.uiRevision = -1;
     this.bannerPhase = "";
@@ -587,11 +604,24 @@ class Application implements ViewHost {
         });
         break;
       case "select-all":
+        this.selectedGroup = "all";
         this.selection = this.state()
           .pirates.filter((p) => p.side === "ally" && p.hp > 0)
           .map((p) => p.id);
         break;
+      case "select-group": {
+        const group = Number(data.kind) as CrewGroup;
+        if (!CREW_GROUPS.includes(group)) break;
+        this.selectedGroup = group;
+        this.selection = groupMembers(this.state(), group);
+        if (!this.selection.length)
+          this.showToast(
+            `Group ${group} has no living crew. Assign members in Duties & equipment.`,
+          );
+        break;
+      }
       case "select":
+        this.selectedGroup = null;
         this.selection = [Number(data.id)];
         break;
       case "board":
@@ -658,6 +688,7 @@ class Application implements ViewHost {
         this.openModal("hold");
         break;
       case "hold-crew":
+        this.selectedGroup = null;
         if (
           this.state().pirates.some(
             (p) => p.id === Number(data.id) && p.side === "ally" && p.hp > 0,
@@ -695,6 +726,8 @@ class Application implements ViewHost {
       case "buy-item":
       case "sell-item":
       case "teach":
+      case "train-attribute":
+      case "assign-group":
       case "equip":
       case "stow-weapon":
       case "equip-accessory":
@@ -705,6 +738,8 @@ class Application implements ViewHost {
             action === "rest"
               ? structuredClone(this.state())
               : checkpoint(this.state());
+          const selectedBefore = [...this.selection],
+            groupBefore = this.selectedGroup;
           const falls = action === "rest" ? this.sim.snapshotFalls() : [];
           const sea = action === "rest" ? this.sim.snapshotSea() : [];
           let changed = false;
@@ -723,6 +758,16 @@ class Application implements ViewHost {
             changed = this.sim.buyFurniture(data.kind as FurnitureKind);
           if (action === "teach")
             changed = this.sim.teach(Number(data.id), data.kind as Skill);
+          if (action === "train-attribute")
+            changed = this.sim.trainAttribute(
+              Number(data.id),
+              data.kind as Attribute,
+            );
+          if (action === "assign-group")
+            changed = this.sim.assignGroup(
+              Number(data.id),
+              Number(data.kind) as CrewGroup,
+            );
           if (action === "equip")
             changed = this.sim.equip(Number(data.id), data.kind as Weapon);
           if (action === "stow-weapon")
@@ -737,10 +782,17 @@ class Application implements ViewHost {
             );
           if (action === "armor") changed = this.sim.armor(Number(data.id));
           if (changed) {
+            // Reassigning the last selected group member must keep their inspector usable.
+            if (action === "assign-group") {
+              this.selectedGroup = null;
+              this.selection = [Number(data.id)];
+            }
             try {
               await this.save();
             } catch (e) {
               this.replace(before);
+              this.selection = selectedBefore;
+              this.selectedGroup = groupBefore;
               if (action === "rest") {
                 this.sim.restoreFalls(falls);
                 this.sim.restoreSea(sea);
@@ -878,7 +930,7 @@ class Application implements ViewHost {
       );
       if (!p) body = "<p>Select a crew member first.</p>";
       else
-        body = `<p class="modal-intro"><strong>${escape(p.name)}</strong> · ${p.role} · Level ${p.level} · ${p.xp} XP · Gold ${s.gold}<br>Direct movement and combat orders interrupt work. Choose a duty to resume it.</p>${loadoutMarkup(p, s)}<h3>Crew traits</h3><p>${p.traits.length ? p.traits.map((t) => `${TRAITS[t].name}: ${TRAITS[t].description}`).join("<br>") : "No special traits."}</p><h3>Duty roster</h3><div class="duty-grid">${DUTIES.map((d) => `<div class="duty-item ${p.duty === d ? "active" : ""}"><strong>${DUTY_NAMES[d]}</strong><p>${{ guard: "Free for boarding and fighting.", cook: "Galley: 1 raw provision → 2 cooked meals.", clean: "Clean decks protect crew morale.", repair: "1 timber repairs 12 hull health and up to 60% plank wear.", medic: "1 medicine restores 25 crew health.", gunner: "Works at the cannon and fires when ready.", fish: "Fishes from the rail: 1 raw provision per catch." }[d]}</p><button data-action="${p.skills.includes(d) ? "duty" : "teach"}" data-id="${p.id}" data-kind="${d}" ${(!p.skills.includes(d) && s.phase !== "port") || p.duty === d ? "disabled" : ""}>${p.duty === d ? "Assigned" : p.skills.includes(d) ? "Assign duty" : "Skill book · 60 gold"}</button></div>`).join("")}</div><h3>Sea safety</h3><p>Swimming lets this pirate return to a reachable rail after falling overboard. Untrained pirates need another crewmate to throw a rescue line; sea exposure can be fatal.</p><button data-action="teach" data-id="${p.id}" data-kind="swim" ${p.skills.includes("swim") || s.phase !== "port" ? "disabled" : ""}>${p.skills.includes("swim") ? "Swimming learned" : "Swimming book · 60 gold"}</button>`;
+        body = `<p class="modal-intro"><strong>${escape(p.name)}</strong> · ${p.role} · Level ${p.level} · ${p.xp} XP · Gold ${s.gold}<br>Direct movement and combat orders interrupt work. Choose a duty to resume it.</p>${progressionMarkup(p, s, !!document.querySelector<HTMLDetailsElement>(".progression-panel")?.open)}${loadoutMarkup(p, s)}<h3>Crew traits</h3><p>${p.traits.length ? p.traits.map((t) => `${TRAITS[t].name}: ${TRAITS[t].description}`).join("<br>") : "No special traits."}</p><h3>Duty roster</h3><div class="duty-grid">${DUTIES.map((d) => `<div class="duty-item ${p.duty === d ? "active" : ""}"><strong>${DUTY_NAMES[d]}</strong><p>${{ guard: "Free for boarding and fighting.", cook: "Galley: 1 raw provision → 2 cooked meals.", clean: "Clean decks protect crew morale.", repair: "1 timber repairs 12 hull health and up to 60% plank wear.", medic: "1 medicine restores 25 crew health.", gunner: "Works at the cannon and fires when ready.", fish: "Fishes from the rail: 1 raw provision per catch." }[d]}</p><button data-action="${p.skills.includes(d) ? "duty" : "teach"}" data-id="${p.id}" data-kind="${d}" ${(!p.skills.includes(d) && s.phase !== "port") || p.duty === d ? "disabled" : ""}>${p.duty === d ? "Assigned" : p.skills.includes(d) ? "Assign duty" : "Skill book · 60 gold"}</button></div>`).join("")}</div><h3>Sea safety</h3><p>Swimming lets this pirate return to a reachable rail after falling overboard. Untrained pirates need another crewmate to throw a rescue line; sea exposure can be fatal.</p><button data-action="teach" data-id="${p.id}" data-kind="swim" ${p.skills.includes("swim") || s.phase !== "port" ? "disabled" : ""}>${p.skills.includes("swim") ? "Swimming learned" : "Swimming book · 60 gold"}</button>`;
     } else if (kind === "hold") {
       title = "Ship’s hold";
       const crew = s.pirates.filter((p) => p.side === "ally" && p.hp > 0),
@@ -931,7 +983,7 @@ class Application implements ViewHost {
       body = `<p class="modal-intro">Local checkpoints live in this browser. Export a backup to keep your voyage safe.</p><div class="settings-grid"><button data-action="save">↓ Save checkpoint</button><button data-action="load">↶ Restore checkpoint</button><button data-action="recover">↶ Previous checkpoint</button><button data-action="export">↗ Export backup</button><label class="file-button">↙ Import backup<input id="import-file" type="file" accept="application/json,.json"></label><button data-action="sound">Sound effects: ${this.sound.enabled ? "ON" : "OFF"}</button><button data-action="motion">Reduced motion: ${this.lowMotion ? "ON" : "OFF"}</button></div><details class="new-voyage"><summary>Start another voyage</summary><p>Your current checkpoint becomes the previous backup. Export it first if you want to keep it.</p><label class="world-seed-label">World seed <input id="world-seed" type="number" min="1" max="4294967295" step="1" placeholder="Random new chart"></label><button data-action="new">Start fresh voyage</button></details>`;
     } else if (kind === "help") {
       title = "Captain’s guide";
-      body = `<p class="modal-intro">A ship is only as good as the pirates aboard it.</p><ol class="guide"><li><strong>Prepare in port.</strong> Recruit for 70 gold. Buy food, cannonballs and timber at the market. Tavern rest repairs the ship and heals everyone.</li><li><strong>Refit your ship.</strong> Build ship pauses the game. Click a block to remove it, or an empty grid cell to place hull/ladder. Keep every station and pirate reachable.</li><li><strong>Choose your adventure.</strong> Chart a course previews food and wages. Castaway Cay is an unguarded island to explore; the Crooked Cutlass is the easiest battle.</li><li><strong>Command your crew.</strong> Click pirates or crew cards to select. Shift-click adds to selection. Click a deck to move, or an enemy to attack. Select crew then Board ship to cross.</li><li><strong>Fight and survive.</strong> Assign a trained Cannoneer to work at the cannon. Incoming fire damages hull; a Shipwright uses timber to repair it. Use Treat wounds and Retreat. Pause with Space to plan; queued orders execute on resume.</li><li><strong>Bring home the spoils.</strong> Once enemies fall, return every survivor with Retreat, then Plunder to claim rewards or Capture ship to take an intact hull. On islands, go ashore and Collect chest first. Sail back to the harbour, train your weapons, and prepare for Admiral Blackthorn.</li></ol><p class="muted">Duties & equipment assigns trained cooks, cleaners, fishers, shipwrights, doctors, and cannoneers. Destroyed planks remove support: crew can jump one clear gap or fall to a lower deck. Assign a Shipwright to restore access; if you lack timber or a trained repairer, restore your departure checkpoint from Settings. Food must be cooked to feed the crew. Captain death restores from a living checkpoint. Hidden tabs pause. Sound effects can be muted in Settings. Hotkeys: Q select crew, B board, R return, C cannon, F chest, P plunder, I crew, M map.</p>`;
+      body = `<p class="modal-intro">A ship is only as good as the pirates aboard it.</p><ol class="guide"><li><strong>Prepare in port.</strong> Recruit for 70 gold. Buy food, cannonballs and timber at the market. Tavern rest repairs the ship and heals everyone.</li><li><strong>Refit your ship.</strong> Build ship pauses the game. Click a block to remove it, or an empty grid cell to place hull/ladder. Keep every station and pirate reachable.</li><li><strong>Choose your adventure.</strong> Chart a course previews food and wages. Castaway Cay is an unguarded island to explore; the Crooked Cutlass is the easiest battle.</li><li><strong>Command your crew.</strong> Click pirates or crew cards to select. Shift-click adds to selection. Click a deck to move, or an enemy to attack. Select crew then Board ship to cross.</li><li><strong>Fight and survive.</strong> Assign a trained Cannoneer to work at the cannon. Incoming fire damages hull; a Shipwright uses timber to repair it. Use Treat wounds and Retreat. Pause with Space to plan; queued orders execute on resume.</li><li><strong>Bring home the spoils.</strong> Once enemies fall, return every survivor with Retreat, then Plunder to claim rewards or Capture ship to take an intact hull. On islands, go ashore and Collect chest first. Sail back to the harbour, train your weapons, and prepare for Admiral Blackthorn.</li></ol><p class="muted">Duties & equipment assigns trained cooks, cleaners, fishers, shipwrights, doctors, and cannoneers. Destroyed planks remove support: crew can jump one clear gap or fall to a lower deck. Assign a Shipwright to restore access; if you lack timber or a trained repairer, restore your departure checkpoint from Settings. Food must be cooked to feed the crew. Captain death restores from a living checkpoint. Hidden tabs pause. Sound effects can be muted in Settings. Earn training points when leveling; spend them on attributes and assign groups in port. Hotkeys: 1–4 select a crew group, Q select crew, B board, R return, C cannon, F chest, P plunder, I crew, M map.</p>`;
     } else {
       title = "Made for the pirate life";
       body = `<p class="modal-intro">An unofficial personal-use browser tribute to Pixel Piracy.</p><p>Reference-game credit: Quadro Delta (Vitali Kirpu and Alexander Poysky), Re-Logic, and the creators credited by the original game. Current Steam listing: Vitali Kirpu.</p><p>Gameplay draws on its ship-building, crew-management, exploration and boarding loop. All visuals in this build are newly drawn procedural pixel art. No Steam assets or source code are included.</p><p>Intended sharing: free and noncommercial, with proper attribution. No official endorsement is implied.</p><a href="https://store.steampowered.com/app/264140/Pixel_Piracy/" target="_blank" rel="noreferrer">Visit Pixel Piracy on Steam ↗</a>`;
@@ -1063,17 +1115,35 @@ class Application implements ViewHost {
                 : s.phase === "won"
                   ? "All four pirate lords are defeated. Your crew has earned a place in pirate legend."
                   : "Restore your checkpoint and try a different battle plan.";
+    if (this.selectedGroup === "all")
+      this.selection = s.pirates
+        .filter((p) => p.side === "ally" && p.hp > 0)
+        .map((p) => p.id);
+    else if (this.selectedGroup !== null)
+      this.selection = groupMembers(s, this.selectedGroup);
     this.selection = this.selection.filter((id) =>
       s.pirates.some((p) => p.id === id && p.side === "ally" && p.hp > 0),
     );
     if (
       !this.selection.length &&
+      this.selectedGroup === null &&
       s.pirates.some((p) => p.side === "ally" && p.hp > 0)
     )
       this.selection = [
         s.pirates.find((p) => p.side === "ally" && p.hp > 0)!.id,
       ];
     const crew = s.pirates.filter((p) => p.side === "ally" && p.hp > 0);
+    for (const g of CREW_GROUPS) {
+      const button = el(`crew-group-${g}`) as HTMLButtonElement;
+      button.textContent = `⚑ ${g} · ${groupMembers(s, g).length}`;
+      button.setAttribute("aria-pressed", String(this.selectedGroup === g));
+      button.disabled = this.busy;
+    }
+    document
+      .querySelectorAll('[data-action="select-all"]')
+      .forEach((b) =>
+        b.setAttribute("aria-pressed", String(this.selectedGroup === "all")),
+      );
     el("ship-readout").textContent =
       `HULL ${Math.ceil(s.ships[0].hp)}/${s.ships[0].maxHp} · DIRT ${s.ships[0].dirt}% · MEALS ${s.meals}${this.sim.swimmerCount ? ` · OVERBOARD ${this.sim.swimmerCount}` : ""}`;
     el("crew-count").textContent = `${crew.length} / 12`;
@@ -1106,7 +1176,7 @@ class Application implements ViewHost {
     const signature = crew
       .map(
         (p) =>
-          `${p.id}:${p.hp}:${p.hunger}:${p.morale}:${p.level}:${p.duty}:${p.weapon}:${p.status}:${this.selection.includes(p.id)}`,
+          `${p.id}:${p.hp}:${p.hunger}:${p.morale}:${p.level}:${p.trainingPoints}:${p.group}:${p.duty}:${p.weapon}:${p.status}:${this.selection.includes(p.id)}`,
       )
       .join("|");
     if (el("crew").dataset.signature !== signature) {
@@ -1114,7 +1184,7 @@ class Application implements ViewHost {
       el("crew").innerHTML = crew
         .map(
           (p) =>
-            `<button class="crew-card ${this.selection.includes(p.id) ? "selected" : ""}" data-action="select" data-id="${p.id}" aria-pressed="${this.selection.includes(p.id)}"><span class="portrait ${p.role}" style="--portrait-variant:${pirateVariant(p)};--portrait-character:${pirateCharacter(p)};--hand-x:${HAND_ANCHORS[pirateCharacter(p)][0] - HAND_ANCHORS[0][0]};--hand-y:${HAND_ANCHORS[pirateCharacter(p)][1] - HAND_ANCHORS[0][1]}"><i></i><b class="held-item ${p.weapon}" aria-hidden="true"></b><em class="grip" aria-hidden="true"></em></span><span class="crew-info"><strong>${escape(p.name)} <small>LV.${p.level}</small></strong><span>${p.role.toUpperCase()} · ${DUTY_NAMES[p.duty]}</span><span class="health"><i style="width:${(100 * p.hp) / p.maxHp}%"></i></span><small>${Math.ceil(p.hp)} / ${p.maxHp} HP · ${escape(p.status)}</small><small>FOOD ${p.hunger}% · MORALE ${p.morale}%</small></span></button>`,
+            `<button class="crew-card ${this.selection.includes(p.id) ? "selected" : ""}" data-action="select" data-id="${p.id}" aria-pressed="${this.selection.includes(p.id)}"><span class="portrait ${p.role}" style="--portrait-variant:${pirateVariant(p)};--portrait-character:${pirateCharacter(p)};--hand-x:${HAND_ANCHORS[pirateCharacter(p)][0] - HAND_ANCHORS[0][0]};--hand-y:${HAND_ANCHORS[pirateCharacter(p)][1] - HAND_ANCHORS[0][1]}"><i></i><b class="held-item ${p.weapon}" aria-hidden="true"></b><em class="grip" aria-hidden="true"></em></span><span class="crew-info"><strong>${escape(p.name)} <small>LV.${p.level}</small></strong><span>Group ${p.group} · ${DUTY_NAMES[p.duty]}</span><span class="health"><i style="width:${(100 * p.hp) / p.maxHp}%"></i></span><small>${Math.ceil(p.hp)} / ${p.maxHp} HP · ${escape(p.status)}</small><small>FOOD ${p.hunger}% · MORALE ${p.morale}%${p.trainingPoints ? ` · ${p.trainingPoints} TP` : ""}</small></span></button>`,
         )
         .join("");
     }
@@ -1139,8 +1209,10 @@ class Application implements ViewHost {
         .join("");
     }
     el("crew-summary").textContent = this.selection.length
-      ? `${this.selection.length} selected · Weapon ${s.pirates.find((p) => p.id === this.selection[0])?.damage ?? 0} dmg`
-      : "";
+      ? `${this.selection.length} selected${this.selectedGroup && this.selectedGroup !== "all" ? ` · Group ${this.selectedGroup}` : ""} · ${attackDamage(s.pirates.find((p) => p.id === this.selection[0])!, s.pirates.find((p) => p.id === this.selection[0])!.weapon)} damage`
+      : this.selectedGroup !== null && this.selectedGroup !== "all"
+        ? `Group ${this.selectedGroup} has no living crew. Select a pirate to assign members.`
+        : "No living crew selected.";
     el("escape").hidden = !["encounter", "aftermath"].includes(s.phase);
     el("collect").hidden =
       s.phase !== "encounter" || s.ships[1]?.kind !== "island";
@@ -1161,7 +1233,9 @@ class Application implements ViewHost {
       (el(id) as HTMLButtonElement).disabled = !port || this.busy;
     for (const id of ["board", "retreat"])
       (el(id) as HTMLButtonElement).disabled =
-        !["encounter", "aftermath"].includes(s.phase) || this.busy;
+        !["encounter", "aftermath"].includes(s.phase) ||
+        this.busy ||
+        this.selection.length === 0;
     (el("cannon") as HTMLButtonElement).disabled =
       s.phase !== "encounter" || s.ships[1]?.kind !== "ship" || this.busy;
     (el("chart") as HTMLButtonElement).disabled =

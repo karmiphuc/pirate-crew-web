@@ -1,5 +1,10 @@
 import { emptyItemStock, type ItemStock, type Accessory } from "./items";
 import { generateWorld } from "./world";
+import {
+  emptyAttributes,
+  type Attributes,
+  type CrewGroup,
+} from "./progression";
 
 export const LIMITS = {
   allies: 12,
@@ -152,6 +157,9 @@ export interface Pirate {
   morale: number;
   level: number;
   xp: number;
+  attributes: Attributes;
+  trainingPoints: number;
+  group: CrewGroup;
   damage: number;
   cooldown: number;
   orders: Order[];
@@ -176,7 +184,7 @@ export interface Notice {
   tone: "info" | "good" | "bad";
 }
 export interface Campaign {
-  schemaVersion: 8;
+  schemaVersion: 9;
   campaignId: string;
   revision: number;
   tick: number;
@@ -321,6 +329,9 @@ export function makePirate(
     morale: 100,
     level: 1,
     xp: 0,
+    attributes: emptyAttributes(),
+    trainingPoints: side === "ally" ? 4 : 0,
+    group: side === "ally" && index === 1 ? 3 : index === 2 ? 2 : 1,
     damage: side === "ally" ? 12 : 3 + danger * 2,
     cooldown: 0,
     orders: [],
@@ -337,7 +348,7 @@ export function createCampaign(
   seed = seed >>> 0 || 1;
   const world = generateWorld(seed);
   return {
-    schemaVersion: 8,
+    schemaVersion: 9,
     campaignId,
     revision: 0,
     tick: 0,

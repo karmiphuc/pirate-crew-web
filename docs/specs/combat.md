@@ -56,3 +56,7 @@ At damage 100 the actual plank disappears from rendering/navigation. A cannon st
 ## Carried weapon choice, 0.12.0
 
 Each actor may carry one blade and one pistol. At cooldown zero, choose melee for a target within its range, otherwise the carried pistol if available. Keep the prior attack weapon during its shared cooldown; selecting/stowing cannot reset it for extra attacks. Ranged-only actors retain their pistol in close combat; melee-only actors pursue valid reachable targets. Intact hull tile rectangles block a chest-height ranged segment; ladders/destroyed hull/decorative rear cabin art do not. No physics or persistent shot cache is involved. Independent per-weapon reload, handgun ammunition, crit/accuracy/knockback and weapon instance levels remain gaps. [Contract and evidence](../design/crew-loadouts.md).
+
+## Version 0.13.0 attribute effects
+
+Base damage plus weapon bonus plus relevant STR/DEX gives attack damage. AGI shortens shared attack intervals by the authored rate in the [progression contract](../design/crew-progression.md); animation uses the same interval. Positive LUCK adds one seeded critical roll only at an unblocked attack boundary; zero LUCK preserves the existing RNG stream. Critical pre-armor damage is multiplied by 1.5 and rounded down, with at least one damage after armor. No unbounded effects are spawned. Current Steam formulas, dodge, accuracy, knockback and independent weapon reloads remain unverified or deferred.
