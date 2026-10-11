@@ -58,3 +58,7 @@ Work-site selection uses graph-owned connected-component labels, built once with
 ## Version 0.9 sea safety
 
 Swimming is a passive skill purchased in port; it does not occupy a duty slot. The learned-skill cap is eight, including the seven existing duties. Overboard pirates cannot accept ordinary orders or work/fight remotely. Rescue selects a living home crewmate and claims one overboard ally; path failure, a replacement order or death releases the line. During a crossing, new orders are rejected with feedback until landing. [Sea rules](../design/sea-traversal.md).
+
+## Targeted consumables, 0.11.0
+
+Hold use selects one living allied recipient and rejects unsafe sea/fall/transit states. Rum restores morale, Elixir health, bone meal hunger and a feather XP, all clamped. Full-stat/max-level use keeps the item. XP awards cross every earned threshold, bounded by level 100/stat caps. Recovered weapons transfer one shared stock item to one personal locker; switching an owned weapon does not consume another. Simultaneous melee/ranged/accessory slots remain deferred. [Authored values and tests](../design/loot-and-seeded-world.md).

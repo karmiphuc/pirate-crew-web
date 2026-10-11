@@ -32,6 +32,15 @@ import {
 } from "./sim/model";
 import { Simulation } from "./sim/engine";
 import {
+  ITEMS,
+  ITEM_KINDS,
+  ITEM_STOCK_CAP,
+  type ItemKind,
+  encounterLoot,
+  itemDescription,
+} from "./sim/items";
+import { itemIcon } from "./ui/item-icons";
+import {
   acquireWriter,
   checkpoint,
   openDatabase,
@@ -48,7 +57,8 @@ app.innerHTML = `
  <section class="supplies" aria-label="Ship supplies"><div class="location"><span class="live-dot"></span><span id="location">Saltwater Harbour</span><small id="phase">IN PORT</small></div><div class="resources"><span><i class="coin">●</i><b id="gold">420</b> <small>GOLD</small></span><span><i>▣</i><b id="food">18</b> <small>FOOD</small></span><span><i>●</i><b id="ammo">12</b> <small>AMMO</small></span><span><i>✚</i><b id="medicine">5</b> <small>MEDICINE</small></span><span><i>▰</i><b id="parts">12</b> <small>TIMBER</small></span></div></section>
  <section class="voyage" aria-label="Side-view pirate game"><div class="scene-top"><div><span class="eyebrow">THE WAYWARD GULL</span><h1 id="scene-title">A small ship. A grand adventure.</h1><p id="objective">Stock the hold, gather your crew, and see what lies beyond the harbour.</p></div><button data-action="pause" id="pause" class="pause-button">Ⅱ Pause <kbd>SPACE</kbd></button></div><div id="game"></div><div id="scene-banner" class="scene-banner" hidden></div><div id="build-tools" class="build-tools" hidden><span>SHIPWRIGHT <small>Click grid to place / remove</small></span><button data-action="hull" class="active">Hull</button><button data-action="ladder">Ladder</button><button data-action="station-food">Move galley</button><button data-action="station-cannon">Move cannon</button><button data-action="station-medical">Move clinic</button><button data-action="furniture-bunk">Cabin bunk</button><button data-action="furniture-table">Mess table</button><button data-action="furniture-lantern">Brass lantern</button><button data-action="apply-build" class="primary">Apply refit</button><button data-action="cancel-build">Cancel</button></div><div class="camera-tools" aria-label="Vessel view"><button data-action="view-home" aria-pressed="false">Your ship</button><button data-action="view-away" aria-pressed="false" hidden>Other vessel</button><button data-action="view-crew" aria-pressed="true">Follow crew</button></div><div class="sea-compass" aria-hidden="true">N<br>✧</div><div class="scene-bottom"><span id="hint">Click a pirate to select · Click a deck to move · Space to pause</span><span id="ship-readout"></span><span id="save-state">Preparing logbook…</span></div></section>
  <section class="actionbar" aria-label="Crew actions"><div class="command-group"><button data-action="select-all">♟ Select crew</button><button data-action="board" id="board">⚔ Board / go ashore</button><button data-action="cannon" id="cannon">● Fire cannon</button><button data-action="retreat" id="retreat">↶ Retreat</button><button data-action="rescue" hidden>↟ Rescue overboard</button><button data-action="heal">✚ Treat wounds</button><button data-action="collect" id="collect" hidden>✦ Collect chest</button><button data-action="plunder" id="plunder" hidden>✦ Plunder / take spoils</button><button data-action="capture" id="capture" hidden>⚑ Capture ship</button><button data-action="escape" id="escape" hidden>↗ Break off</button></div><div class="command-group"><button data-action="build" id="build">▦ Build ship</button><button data-action="map" class="primary" id="chart">◇ Chart a course <span>→</span></button></div></section>
- <section class="below-deck"><div class="crew-panel"><div class="panel-heading"><h2>Your crew <span id="crew-count">3 / 12</span></h2><button data-action="recruit" id="recruit">+ Recruit <small>70 gold</small></button></div><div id="crew" class="crew-list"></div><div class="port-tools"><button data-action="crew-settings">☷ Duties & equipment</button><button data-action="shop">▣ Harbour market</button><button data-action="rest">☾ Tavern & repairs <small>25 gold</small></button><span id="recruit-preview"></span><span id="crew-summary">Three souls, one horizon.</span></div></div><aside class="log-panel"><div class="panel-heading"><h2>Captain’s log</h2><span id="day">DAY 01</span></div><div id="journal" aria-live="polite"></div></aside></section>
+ <div id="loot-preview" class="loot-preview" aria-label="Encounter items" hidden></div>
+ <section class="below-deck"><div class="crew-panel"><div class="panel-heading"><h2>Your crew <span id="crew-count">3 / 12</span></h2><button data-action="recruit" id="recruit">+ Recruit <small>70 gold</small></button></div><div id="crew" class="crew-list"></div><div class="port-tools"><button data-action="crew-settings">☷ Duties & equipment</button><button data-action="shop">▣ Harbour market</button><button data-action="hold" id="hold-button">▤ Ship’s hold</button><button data-action="rest">☾ Tavern & repairs <small>25 gold</small></button><span id="recruit-preview"></span><span id="crew-summary">Three souls, one horizon.</span></div></div><aside class="log-panel"><div class="panel-heading"><h2>Captain’s log</h2><span id="day">DAY 01</span></div><div id="journal" aria-live="polite"></div></aside></section>
  <footer><span>Built for the love of pirate adventures.</span><button data-action="credits">Pixel Piracy tribute · Credits & attribution ↗</button><span id="diagnostics"></span></footer>
 </main><div id="toast" role="status" hidden></div><div id="modal" class="modal-backdrop" hidden></div>`;
 const escape = (value: string) =>
@@ -526,10 +536,15 @@ class Application implements ViewHost {
         return;
       }
       await this.guarded(async () => {
-        const state = createCampaign(
-          Date.now() >>> 0 || 1,
-          `voyage-${Date.now()}`,
-        );
+        const seedInput =
+            document.querySelector<HTMLInputElement>("#world-seed"),
+          input = seedInput?.value.trim() ?? "",
+          seed = input ? Number(input) : Date.now() >>> 0 || 1;
+        if (!Number.isInteger(seed) || seed < 1 || seed > 4294967295)
+          throw new Error(
+            "World seed must be a whole number from 1 to 4294967295.",
+          );
+        const state = createCampaign(seed, `voyage-${Date.now()}`);
         await this.writer!.save(checkpoint(state));
         this.replace(state);
         this.closeModal();
@@ -636,12 +651,46 @@ class Application implements ViewHost {
       case "shop":
         this.openModal("shop");
         break;
+      case "hold":
+        this.openModal("hold");
+        break;
+      case "hold-crew":
+        if (
+          this.state().pirates.some(
+            (p) => p.id === Number(data.id) && p.side === "ally" && p.hp > 0,
+          )
+        )
+          this.selection = [Number(data.id)];
+        this.openModal("hold");
+        break;
+      case "use-item":
+        await this.guarded(async () => {
+          const safe = ["port", "travel", "victory", "won"].includes(
+            this.state().phase,
+          );
+          const before = safe ? checkpoint(this.state()) : null;
+          if (
+            this.sim.useItem(Number(data.id), data.kind as ItemKind) &&
+            before
+          ) {
+            try {
+              await this.save();
+            } catch (e) {
+              this.replace(before);
+              throw e;
+            }
+          }
+        });
+        if (this.modalKind === "hold") this.openModal("hold");
+        break;
       case "recruit":
       case "rest":
       case "upgrade":
       case "buy":
       case "buy-furniture":
       case "sell-furniture":
+      case "buy-item":
+      case "sell-item":
       case "teach":
       case "equip":
       case "armor":
@@ -659,6 +708,10 @@ class Application implements ViewHost {
           if (action === "upgrade")
             changed = this.sim.upgrade(this.selection[0]);
           if (action === "buy") changed = this.sim.buy(data.kind as "food");
+          if (action === "buy-item")
+            changed = this.sim.buyItem(data.kind as ItemKind);
+          if (action === "sell-item")
+            changed = this.sim.sellItem(data.kind as ItemKind);
           if (action === "sell-furniture")
             changed = this.sim.sellFurniture(data.kind as FurnitureKind);
           if (action === "buy-furniture")
@@ -795,12 +848,13 @@ class Application implements ViewHost {
     if (kind === "map") {
       title = "Chart a course";
       cls = "wide";
-      body = `<p class="modal-intro">The sea rewards the prepared. Choose your next destination.</p><div class="world-map"><span class="map-label">THE SALTWATER ARCHIPELAGO</span><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="${s.world
-        .slice(1)
-        .map((n) => `M${s.world[0].x} ${s.world[0].y} L${n.x} ${n.y}`)
+      const current = s.world.find((n) => n.id === s.location) ?? s.world[0];
+      body = `<p class="modal-intro">The sea rewards the prepared. Choose your next destination. ${s.world.length} locations · ${s.world.filter((n) => n.kind === "boss" && !n.cleared).length} pirate lords remain.</p><div class="world-map"><span class="map-label">THE SALTWATER ARCHIPELAGO</span><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="${s.world
+        .filter((n) => n.id !== current.id)
+        .map((n) => `M${current.x} ${current.y} L${n.x} ${n.y}`)
         .join(
           " ",
-        )}"/></svg>${s.world.map((n) => `<button data-action="destination" data-id="${n.id}" class="map-node ${n.kind} ${n.cleared ? "cleared" : ""} ${s.location === n.id ? "here" : ""}" style="left:${n.x}%;top:${n.y}%" aria-label="${escape(n.name)}"><span>${n.kind === "port" ? "⚓" : n.kind === "island" ? "✦" : n.kind === "boss" ? "☠" : "⚔"}</span><small>${escape(n.name)}</small></button>`).join("")}<span class="map-rose">N<br>✧<br>S</span></div><div id="route-details" class="route-details"><span>Select a destination on the chart.</span><small>Raw provisions: ${s.food} · Meals: ${s.meals} · Gold: ${s.gold}</small></div>`;
+        )}"/></svg>${s.world.map((n) => `<button data-action="destination" data-id="${n.id}" class="map-node ${n.kind} ${n.cleared ? "cleared" : ""} ${s.location === n.id ? "here" : ""}" style="left:${n.x}%;top:${n.y}%" aria-label="${escape(n.name)}${n.cleared ? ", already explored" : `, danger ${n.danger}`}" aria-pressed="false" title="${escape(n.name)}"><span>${n.kind === "port" ? "⚓" : n.kind === "island" ? "✦" : n.kind === "boss" ? "☠" : "⚔"}</span><small>${escape(n.name)}</small></button>`).join("")}<span class="map-rose">N<br>✧<br>S</span></div><div id="route-details" class="route-details"><span>Select a destination on the chart.</span><small>Raw provisions: ${s.food} · Meals: ${s.meals} · Gold: ${s.gold}</small></div>`;
     } else if (kind === "crew-settings") {
       title = "Crew duties & equipment";
       const p = s.pirates.find(
@@ -813,11 +867,27 @@ class Application implements ViewHost {
         )
           .map(
             ([key, w]) =>
-              `<button data-action="equip" data-id="${p.id}" data-kind="${key}" ${s.phase !== "port" || p.weapon === key ? "disabled" : ""}>${w.name} · ${p.weapon === key ? "Equipped" : p.ownedWeapons.includes(key as Weapon) ? "Equip owned" : `${w.price} gold`}<small>${w.range > 2 ? "Ranged" : "Melee"} · ${p.damage + w.bonus} damage</small></button>`,
+              `<button data-action="equip" data-id="${p.id}" data-kind="${key}" ${s.phase !== "port" || p.weapon === key ? "disabled" : ""}>${w.name} · ${p.weapon === key ? "Equipped" : p.ownedWeapons.includes(key as Weapon) ? "Equip owned" : key !== "cutlass" && s.itemStock[key as "sabre" | "pistol"] > 0 ? "Equip from hold" : `${w.price} gold`}<small>${w.range > 2 ? "Ranged" : "Melee"} · ${p.damage + w.bonus} damage</small></button>`,
           )
           .join(
             "",
-          )}<button data-action="armor" data-id="${p.id}" ${s.phase !== "port" || p.armor >= 8 ? "disabled" : ""}>Armor · ${p.armor}/8 protection<small>Upgrade +4 · 50 gold</small></button></div><p class="muted">Books and equipment are sold in port. Bought weapons stay in this pirate’s locker; switching back is free. Work slows below 30 morale.</p>`;
+          )}<button data-action="armor" data-id="${p.id}" ${s.phase !== "port" || p.armor >= 8 ? "disabled" : ""}>Armor · ${p.armor}/8 protection<small>Upgrade +4 · 50 gold</small></button></div><p class="muted">Books and equipment are sold in port. Bought or recovered weapons stay in this pirate’s locker; switching back is free. Work slows below 30 morale.</p>`;
+    } else if (kind === "hold") {
+      title = "Ship’s hold";
+      const crew = s.pirates.filter((p) => p.side === "ally" && p.hp > 0),
+        p = crew.find((p) => p.id === this.selection[0]) ?? crew[0];
+      body = `<p class="modal-intro">Spoils worth keeping. Choose a pirate, then use a consumable from your shared hold.</p><div class="hold-crew-list" role="group" aria-label="Item recipient">${crew.map((c) => `<button data-action="hold-crew" data-id="${c.id}" aria-pressed="${c.id === p?.id}">${escape(c.name)}</button>`).join("")}</div>${p ? `<div class="hold-recipient"><strong>${escape(p.name)}</strong><span>Health ${Math.ceil(p.hp)}/${p.maxHp}</span><span>Hunger ${p.hunger}/100</span><span>Morale ${p.morale}/100</span><span>Level ${p.level} · ${p.xp} XP</span></div>` : "<p>No living crew can use items.</p>"}<div class="hold-grid">${ITEM_KINDS.map(
+        (kind) => {
+          const item = ITEMS[kind],
+            reason = p
+              ? this.sim.itemUseReason(p.id, kind)
+              : "Select a living crew member.",
+            gear = item.effect === "equipment";
+          return `<article class="hold-item">${itemIcon(kind)}<div><h3>${item.name}<span class="item-count">× ${s.itemStock[kind]}</span></h3><p>${itemDescription(kind)}</p>${gear ? `<button data-action="crew-settings" ${p ? "" : "disabled"}>Open weapon locker</button>` : `<button data-action="use-item" data-kind="${kind}" data-id="${p?.id ?? 0}" ${reason ? "disabled" : ""}>Use on ${escape(p?.name ?? "crew")}</button><small>${escape(reason ?? "One item will be used.")}</small>`}</div></article>`;
+        },
+      ).join(
+        "",
+      )}</div><p class="muted">Recovered weapons transfer to one pirate’s locker when equipped in port. Item use during a battle belongs to this attempt; restoring the departure checkpoint restores its inventory too.</p>`;
     } else if (kind === "shop") {
       title = "Harbour market";
       body = `<p class="modal-intro">Provisions for the voyage. Keep a little gold aside for wages.</p><div class="shop-grid">${[
@@ -832,7 +902,14 @@ class Application implements ViewHost {
         )
         .join(
           "",
-        )} </div><h3>Cabin furnishings</h3><p>Decorative fittings for the ship builder. Place or remove them on a reachable floor; they do not block your crew.</p><div class="shop-grid">${Object.entries(
+        )} </div><h3>Consumables & recovered gear</h3><p>Items stay in the shared hold until used or equipped. Sell only stock you own.</p><div class="shop-grid">${ITEM_KINDS.map(
+        (kind) => {
+          const item = ITEMS[kind];
+          return `<div class="shop-item">${itemIcon(kind)}<h3>${item.name}</h3><p>${itemDescription(kind)} · ${s.itemStock[kind]} in hold</p><button data-action="buy-item" data-kind="${kind}" ${s.phase !== "port" || s.itemStock[kind] >= ITEM_STOCK_CAP ? "disabled" : ""}>Buy · ${item.price} gold</button><button data-action="sell-item" data-kind="${kind}" ${s.phase !== "port" || !s.itemStock[kind] ? "disabled" : ""}>Sell owned · ${Math.floor(item.price / 2)} gold</button></div>`;
+        },
+      ).join(
+        "",
+      )}</div><button data-action="hold">Open ship’s hold</button><h3>Cabin furnishings</h3><p>Decorative fittings for the ship builder. Place or remove them on a reachable floor; they do not block your crew.</p><div class="shop-grid">${Object.entries(
         FURNISHINGS,
       )
         .map(
@@ -844,7 +921,7 @@ class Application implements ViewHost {
         )}</div><p class="muted">In your hold: ${s.food} raw provisions · ${s.meals} cooked meals · ${s.ammo} ammo · ${s.medicine} medicine · ${s.parts} timber</p>`;
     } else if (kind === "settings") {
       title = "Your logbook";
-      body = `<p class="modal-intro">Local checkpoints live in this browser. Export a backup to keep your voyage safe.</p><div class="settings-grid"><button data-action="save">↓ Save checkpoint</button><button data-action="load">↶ Restore checkpoint</button><button data-action="recover">↶ Previous checkpoint</button><button data-action="export">↗ Export backup</button><label class="file-button">↙ Import backup<input id="import-file" type="file" accept="application/json,.json"></label><button data-action="sound">Sound effects: ${this.sound.enabled ? "ON" : "OFF"}</button><button data-action="motion">Reduced motion: ${this.lowMotion ? "ON" : "OFF"}</button></div><details class="new-voyage"><summary>Start another voyage</summary><p>Your current checkpoint becomes the previous backup. Export it first if you want to keep it.</p><button data-action="new">Start fresh voyage</button></details>`;
+      body = `<p class="modal-intro">Local checkpoints live in this browser. Export a backup to keep your voyage safe.</p><div class="settings-grid"><button data-action="save">↓ Save checkpoint</button><button data-action="load">↶ Restore checkpoint</button><button data-action="recover">↶ Previous checkpoint</button><button data-action="export">↗ Export backup</button><label class="file-button">↙ Import backup<input id="import-file" type="file" accept="application/json,.json"></label><button data-action="sound">Sound effects: ${this.sound.enabled ? "ON" : "OFF"}</button><button data-action="motion">Reduced motion: ${this.lowMotion ? "ON" : "OFF"}</button></div><details class="new-voyage"><summary>Start another voyage</summary><p>Your current checkpoint becomes the previous backup. Export it first if you want to keep it.</p><label class="world-seed-label">World seed <input id="world-seed" type="number" min="1" max="4294967295" step="1" placeholder="Random new chart"></label><button data-action="new">Start fresh voyage</button></details>`;
     } else if (kind === "help") {
       title = "Captain’s guide";
       body = `<p class="modal-intro">A ship is only as good as the pirates aboard it.</p><ol class="guide"><li><strong>Prepare in port.</strong> Recruit for 70 gold. Buy food, cannonballs and timber at the market. Tavern rest repairs the ship and heals everyone.</li><li><strong>Refit your ship.</strong> Build ship pauses the game. Click a block to remove it, or an empty grid cell to place hull/ladder. Keep every station and pirate reachable.</li><li><strong>Choose your adventure.</strong> Chart a course previews food and wages. Castaway Cay is an unguarded island to explore; the Crooked Cutlass is the easiest battle.</li><li><strong>Command your crew.</strong> Click pirates or crew cards to select. Shift-click adds to selection. Click a deck to move, or an enemy to attack. Select crew then Board ship to cross.</li><li><strong>Fight and survive.</strong> Assign a trained Cannoneer to work at the cannon. Incoming fire damages hull; a Shipwright uses timber to repair it. Use Treat wounds and Retreat. Pause with Space to plan; queued orders execute on resume.</li><li><strong>Bring home the spoils.</strong> Once enemies fall, return every survivor with Retreat, then Plunder to claim rewards or Capture ship to take an intact hull. On islands, go ashore and Collect chest first. Sail back to the harbour, train your weapons, and prepare for Admiral Blackthorn.</li></ol><p class="muted">Duties & equipment assigns trained cooks, cleaners, fishers, shipwrights, doctors, and cannoneers. Destroyed planks remove support: crew can jump one clear gap or fall to a lower deck. Assign a Shipwright to restore access; if you lack timber or a trained repairer, restore your departure checkpoint from Settings. Food must be cooked to feed the crew. Captain death restores from a living checkpoint. Hidden tabs pause. Sound effects can be muted in Settings. Hotkeys: Q select crew, B board, R return, C cannon, F chest, P plunder, I crew, M map.</p>`;
@@ -860,6 +937,13 @@ class Application implements ViewHost {
     const n = this.state().world.find((n) => n.id === id),
       cost = this.sim.routeCost(id);
     if (!n || !cost) return;
+    document
+      .querySelectorAll<HTMLButtonElement>(".map-node")
+      .forEach((button) => {
+        const selected = Number(button.dataset.id) === id;
+        button.classList.toggle("selected", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
     el("route-details").innerHTML =
       `<div><strong>${escape(n.name)}</strong><p>${n.kind === "port" ? "Safe harbour · Recruitment & supplies" : n.cleared ? "Charted waters · No new loot" : n.kind === "island" ? `Explore ashore · ${n.danger > 1 ? "Guarded chest" : "Unguarded chest"}` : `${"★".repeat(n.danger)} · ${n.kind === "boss" ? "Legendary captain" : "Hostile pirate ship"}`}</p></div><div><small>${cost.food} food · ${cost.wages} gold wages · ${Math.ceil(cost.ticks / 20)} sec voyage</small><button data-action="sail" data-id="${id}" class="primary" ${this.state().location === id || !["port", "victory"].includes(this.state().phase) ? "disabled" : ""}>Set sail →</button></div>`;
   }
@@ -979,6 +1063,8 @@ class Application implements ViewHost {
     el("ship-readout").textContent =
       `HULL ${Math.ceil(s.ships[0].hp)}/${s.ships[0].maxHp} · DIRT ${s.ships[0].dirt}% · MEALS ${s.meals}${this.sim.swimmerCount ? ` · OVERBOARD ${this.sim.swimmerCount}` : ""}`;
     el("crew-count").textContent = `${crew.length} / 12`;
+    el("hold-button").textContent =
+      `▤ Ship’s hold · ${ITEM_KINDS.reduce((sum, k) => sum + s.itemStock[k], 0)}`;
     for (const kind of Object.keys(FURNISHINGS) as FurnitureKind[]) {
       const available =
         s.furnitureStock[kind] +
@@ -1075,6 +1161,19 @@ class Application implements ViewHost {
           : "Click pirate to select · Click deck to move · Shift-click to add · Space to pause";
     if (this.bannerPhase !== s.phase) {
       this.bannerPhase = s.phase;
+      const lootPreview = el("loot-preview");
+      lootPreview.hidden = s.phase !== "aftermath";
+      if (s.phase === "aftermath") {
+        const node = s.world.find((n) => n.id === s.location)!,
+          loot = encounterLoot(node);
+        lootPreview.innerHTML = `<strong>Items in the prize</strong><span>Claim with plunder or capture</span>${ITEM_KINDS.filter(
+          (k) => loot[k] > 0,
+        )
+          .map(
+            (k) => `<span>${itemIcon(k)} ${ITEMS[k].name} × ${loot[k]}</span>`,
+          )
+          .join("")}`;
+      } else lootPreview.replaceChildren();
       const banner = el("scene-banner");
       banner.hidden = !["victory", "gameover", "won"].includes(s.phase);
       banner.innerHTML =

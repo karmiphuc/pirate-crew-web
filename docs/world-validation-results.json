@@ -1,0 +1,12 @@
+{
+  "locations": 18,
+  "seedInputValidation": "passed",
+  "seed42AndReload": "passed",
+  "keyboardRouteSelection": "passed",
+  "actualRoutePreviewAndTravel": "passed",
+  "seededIslandBoardingChestAndReturn": "passed",
+  "clearedRevisitAndReload": "passed",
+  "compactMapOverflow": "passed",
+  "disposal": "passed",
+  "errors": []
+}

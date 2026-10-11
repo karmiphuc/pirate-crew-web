@@ -196,7 +196,7 @@ describe("schema 4 topology recovery", () => {
     old.ships[0].tiles.find((t: any) => t.x === 3 && t.y === 4).damage = 100;
     const before = JSON.stringify(old),
       migrated = validateSave(old);
-    expect(migrated.schemaVersion).toBe(6);
+    expect(migrated.schemaVersion).toBe(7);
     expect(
       migrated.ships[0].tiles.find((t) => t.x === 3 && t.y === 4)!.damage,
     ).toBe(99);

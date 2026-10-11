@@ -658,7 +658,8 @@ export class SeaScene extends Phaser.Scene {
     const tiles = (draft ?? ship.tiles).filter((t) => draft || intact(t));
     if (ship.kind === "island") {
       this.drawIslandTerrain(g, tiles, ox);
-      for (const tx of [3, 9, 18])
+      const right = Math.max(...tiles.map((t) => t.x));
+      for (const tx of [3, 9, right - 2])
         this.drawPalm(
           g,
           ox + tx * TILE,

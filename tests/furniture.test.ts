@@ -171,7 +171,7 @@ describe("owned cabin furnishing transactions", () => {
     delete old.ships[0].furnishings;
     const before = structuredClone(old),
       migrated = validateSave(old);
-    expect(migrated.schemaVersion).toBe(6);
+    expect(migrated.schemaVersion).toBe(7);
     expect(migrated.furnitureStock).toEqual({ bunk: 0, table: 0, lantern: 0 });
     expect(migrated.ships[0].furnishings).toEqual([]);
     expect(migrated.ships[0].tiles).toEqual(

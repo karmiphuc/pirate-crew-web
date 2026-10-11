@@ -166,7 +166,7 @@ try {
   });
   assert.equal(
     await page.evaluate(() => window.__privateer.state().schemaVersion),
-    6,
+    7,
   );
   assert.deepEqual(
     await page.evaluate(() => window.__privateer.state().furnitureStock),

@@ -9,6 +9,7 @@ import {
   FURNITURE_STOCK_CAP,
 } from "../sim/model";
 import { validateFurniture } from "../sim/furniture";
+import { emptyItemStock, ITEM_KINDS, ITEM_STOCK_CAP } from "../sim/items";
 import { Navigation, Search, validateLayout } from "../sim/navigation";
 import { tileNode } from "../sim/model";
 const MAX = 1_000_000_000;
@@ -117,9 +118,11 @@ export function validateSave(value: unknown): Campaign {
       ),
     };
   }
+  if (record(value) && value.schemaVersion === 6)
+    value = { ...value, schemaVersion: 7, itemStock: emptyItemStock() };
   if (
     !record(value) ||
-    value.schemaVersion !== 6 ||
+    value.schemaVersion !== 7 ||
     !text(value.campaignId) ||
     !["port", "travel", "victory", "won"].includes(String(value.phase))
   )
@@ -140,6 +143,19 @@ export function validateSave(value: unknown): Campaign {
   for (const key of ["gold", "food", "meals", "ammo", "medicine", "parts"])
     if (!integer(value[key], 0, key === "gold" ? MAX : 999))
       throw new Error(`Invalid inventory: ${key}.`);
+  if (
+    !record(value.itemStock) ||
+    Object.keys(value.itemStock).length !== ITEM_KINDS.length ||
+    ITEM_KINDS.some(
+      (k) =>
+        !integer(
+          (value.itemStock as Record<string, unknown>)[k],
+          0,
+          ITEM_STOCK_CAP,
+        ),
+    )
+  )
+    throw new Error("Invalid item stock.");
   if (
     !record(value.furnitureStock) ||
     Object.keys(value.furnitureStock).length !== 3 ||
@@ -342,7 +358,7 @@ export function validateSave(value: unknown): Campaign {
       throw new Error("Invalid journal.");
   // Only explicit fields enter the application. Unknown properties are discarded.
   return {
-    schemaVersion: 6,
+    schemaVersion: 7,
     campaignId: state.campaignId,
     revision: state.revision,
     tick: state.tick,
@@ -417,6 +433,9 @@ export function validateSave(value: unknown): Campaign {
     medicine: state.medicine,
     parts: state.parts,
     furnitureStock: { ...state.furnitureStock },
+    itemStock: Object.fromEntries(
+      ITEM_KINDS.map((k) => [k, state.itemStock[k]]),
+    ) as Campaign["itemStock"],
     notices: state.notices.map((n) => ({
       id: n.id,
       text: n.text,

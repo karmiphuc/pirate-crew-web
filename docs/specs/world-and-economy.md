@@ -44,3 +44,9 @@ Unvisited encounters retain template IDs and seeds, not instantiated actors/view
 ## Version 0.10.0 construction inventory
 
 Bunk/table/lantern pieces are bought individually at port and sold from owned hold stock for half price rounded down. Fixed three-key stock has a cap of 64 per type; placed pieces cap at 32 per vessel. Refit count deltas consume/return stock atomically. Plunder recovers supported fittings exactly once; full stacks convert that salvage into stated sale gold with feedback. Capture transfers placed records without a second stock reward. These are authored construction transactions, not the full original item/drop economy.
+
+## Delivered starter items and region, 0.11.0
+
+One deterministic region has eighteen nodes: one harbour, seven pirate ships, six islands and four lords. Constructive slot allocation and fixed bounded draws guarantee two affordable starting choices; there is no rejection loop to exhaust. New-voyage seeds reproduce charts. Persisted old maps remain intact. All nodes use existing abstract direct travel; chart distance does not yet change duration/cost or introduce discovery. Islands vary eighteen through twenty-six cells, with connected rail, chest and guard sites.
+
+The shared hold has six known item counters (0–99), four targeted consumables and two recovered weapons. Port purchase/sale/use/equip must validate before mutation and roll back all affected state after a required save failure. Do not waste an item on full needs/health or a level-100 pirate. Reject dead/enemy/overboard/transit targets. Encounter seeds produce at most four items without changing campaign RNG; plunder/capture claim exactly once, and full stacks sell only the excess with visible feedback. Cleared revisits produce none. [Values, contracts and verification](../design/loot-and-seeded-world.md).

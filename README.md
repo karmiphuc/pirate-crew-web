@@ -38,7 +38,8 @@ Run `npm run build && npm run test:hosting` to test the production bundle at bot
 
 ## Play
 
-- Recruit at the harbour, buy provisions in the market, and rest at the tavern to heal and repair.
+- Recruit at the harbour, buy provisions and items in the market, and rest at the tavern to heal and repair.
+- **Ship’s hold**: choose a living pirate to use rum, Elixir, bone meal or a feather. Recovered sabres/flintlocks transfer to one pirate’s weapon locker when equipped in port. Purchases and sales require owned stock; full-stat use keeps the item.
 - **Build ship**: add/remove hull or ladder parts, or choose **Move galley/cannon/clinic** to relocate a station. Apply only a connected, reachable refit. Hull additions consume timber atomically.
 - **Chart a course**: select a location, inspect food/wages, then set sail. Castaway Cay is an unguarded island; the Crooked Cutlass is the easiest ship battle.
 - Click a pirate or crew card to select. Shift-click adds/removes canvas pirates. Click a deck to move, or an enemy to attack. **Select crew → Board ship** sends the whole crew across.
@@ -46,7 +47,7 @@ Run `npm run build && npm run test:hosting` to test the production bundle at bot
 - Cannoneers walk to the cannon, load, and fire using ammunition. Enemy broadsides damage hull and crew; shipwrights use timber for repairs. Dirty decks lower morale, and raw provisions need cooking.
 - **Go ashore** at an island, defeat any guards, then **Collect chest**. After a battle or chest pickup, **Retreat** every survivor, then **Plunder / take spoils**. Choose **Capture ship** to take an intact enemy hull instead. **Break off** leaves without loot.
 - **Space** pauses. Movement/boarding orders can be queued while paused; cannon fire and battle healing require resume. **Escape** closes a panel or toggles pause.
-- Plunder brings gold, timber, ammunition, and crew experience. Capture replaces your hull and yields no salvage timber. Defeat all four pirate lords to win a new campaign.
+- Plunder brings gold, timber, ammunition, crew experience and seeded owned items. The aftermath previews items before claim; cleared revisits grant no fresh loot. Capture replaces your hull and yields no salvage timber. Defeat all four pirate lords to win a new campaign.
 - Hotkeys: **Q** select crew, **B** board/land, **R** return, **C** cannon, **F** chest, **P** plunder, **I** crew, **M** map. Settings controls sound effects and reduced motion.
 - Checkpoints save at purchases, departure, and victory. Captain death offers the living departure checkpoint. Settings provides restore, previous checkpoint, export/import, and reduced motion.
 
@@ -54,9 +55,9 @@ Only one browser tab can own writable save state. Backgrounding pauses the voyag
 
 ## Current scope
 
-Version 0.10.2: one harbour, ten map locations, three pirate ship encounters, two explorable islands, four pirate lords, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/fishing/repairs/healing, destructible planks, one-gap jumps, lower-deck falls, timed rope boarding, swimming/rescue and targeted restoration, hull combat, recruit traits and previews, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1 through version-5 checkpoints migrate without losing their original campaign map.
+Version 0.11.0: one harbour, eighteen seed-generated map locations, seven pirate ship encounters, six explorable islands, four pirate lords, a six-item owned hold, targeted consumables and recovered weapons, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/fishing/repairs/healing, destructible planks, one-gap jumps, lower-deck falls, timed rope boarding, swimming/rescue and targeted restoration, hull combat, recruit traits and previews, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1 through version-6 checkpoints migrate to schema 7 with an empty item hold and their original campaign map. New voyages accept an optional reproducible world seed in Settings.
 
-This is a growing remake, not a verified 1:1 recreation. Art, names, interfaces, terrain, and balance are original. Full equipment/drop inventories, rum/toys, the complete trait catalogue, procedural world topology, music/voice lines, pets, and full original content remain. Boarding crosses a timed rope; trained swimmers and crew rescue lines recover overboard pirates. Navigation uses a deck/ladder graph. The [fidelity tracker](docs/fidelity.md) distinguishes reference behavior, delivered systems, and gaps.
+This is a growing remake, not a verified 1:1 recreation. Art, names, interfaces, terrain, and balance are original. Full item catalogues, simultaneous melee/ranged/accessory slots, toys, the complete trait/stats catalogue, original world topology/discovery/regions, music/voice lines, pets, and full original content remain. The user selected the current Steam release as the reference; its installed build and exact rules have not yet been measured. Boarding crosses a timed rope; trained swimmers and crew rescue lines recover overboard pirates. Navigation uses a deck/ladder graph. The [fidelity tracker](docs/fidelity.md) distinguishes reference behavior, delivered systems, and gaps.
 
 ## Robustness and verification
 
@@ -111,3 +112,7 @@ Version 0.10.1 varies enemy vessels with seeded sloop/brig templates and two-mas
 Cabin vertical clearance now fits the unchanged 56-pixel pirates and their hats, with at least eight pixels above the full frame in authored rooms. Doors, ladders, props and input use the revised vertical scale; saved tile layouts are preserved.
 
 Version 0.10.2 makes ships a third wider and cabins 96 pixels tall, with larger fittings and 26 pixels above the unchanged crew frames. Use **Your ship**, **Other vessel** or **Follow crew** to frame the larger ships. Pirates face either way while walking or fighting and preserve their direction on ladders. [Roomier ship review](docs/design/roomier-ships.md).
+
+Version 0.11.0 adds an owned item hold, targeted consumables, recovered weapon stock, once-only seeded prizes and reproducible eighteen-location regions with variable-width islands. [Behavior, browser captures and limits](docs/design/loot-and-seeded-world.md). Run `npm run test:items:browser` and `npm run test:world:browser` for visible transactions, rollback, reload and an actual island expedition.
+
+![Owned consumables and recovered gear](docs/images/items-hold.webp)

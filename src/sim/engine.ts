@@ -27,6 +27,15 @@ import {
 } from "./model";
 import { validateFurniture, furnitureSupported } from "./furniture";
 import { encounterShip } from "./ship-templates";
+import {
+  ITEMS,
+  ITEM_KINDS,
+  ITEM_STOCK_CAP,
+  type ItemKind,
+  encounterLoot,
+  itemEffectReason,
+  awardExperience,
+} from "./items";
 import { Navigation, Search, validateLayout, intact } from "./navigation";
 export class Simulation {
   private commands: InputCommand[] = [];
@@ -1036,7 +1045,7 @@ export class Simulation {
       notify(s, "These waters are already charted. No fresh loot remains.");
     } else if (node.kind === "island") {
       s.phase = "encounter";
-      s.ships.push(islandTerrain(node.name));
+      s.ships.push(islandTerrain(node.name, node.seed));
       if (node.danger > 1)
         for (let i = 0; i < node.danger; i++) {
           const guard = makePirate(s.nextId++, i, "enemy", node.danger);
@@ -1093,16 +1102,24 @@ export class Simulation {
     this.awardStock("parts", captured ? 0 : node.kind === "island" ? 4 : 6);
     if (node.kind === "island") this.awardStock("food", 5);
     else this.awardStock("ammo", 3);
+    const loot = encounterLoot(node);
+    for (const kind of ITEM_KINDS) {
+      const amount = loot[kind];
+      if (!amount) continue;
+      const stored = Math.min(amount, ITEM_STOCK_CAP - s.itemStock[kind]);
+      s.itemStock[kind] += stored;
+      const sold = amount - stored;
+      if (sold) this.awardGold(sold * Math.floor(ITEMS[kind].price / 2));
+      notify(
+        s,
+        `${ITEMS[kind].name}: ${stored} added to the hold${sold ? `; ${sold} sold because its stack is full` : ""}.`,
+        "good",
+      );
+    }
     for (const p of s.pirates)
       if (p.side === "ally" && p.hp > 0) {
-        p.xp += 30;
+        awardExperience(p, 30);
         p.morale = Math.min(100, p.morale + 12);
-        if (p.level < 100 && p.xp >= p.level * 30) {
-          p.level++;
-          p.damage = Math.min(1000, p.damage + 2);
-          p.maxHp = Math.min(1000, p.maxHp + 8);
-          p.hp = Math.min(p.maxHp, p.hp + 20);
-        }
       }
     this.cleanup();
     s.phase = s.world.filter((n) => n.kind === "boss").every((n) => n.cleared)
@@ -1590,14 +1607,20 @@ export class Simulation {
   equip(id: number, weapon: Weapon) {
     if (this.disposed || !Object.hasOwn(WEAPONS, weapon)) return false;
     const s = this.state,
-      p = s.pirates.find((p) => p.id === id && p.side === "ally");
+      p = s.pirates.find((p) => p.id === id && p.side === "ally" && p.hp > 0);
     if (s.phase !== "port" || !p || p.weapon === weapon) return false;
-    const cost = p.ownedWeapons.includes(weapon) ? 0 : WEAPONS[weapon].price;
+    const recovered =
+      weapon !== "cutlass" &&
+      !p.ownedWeapons.includes(weapon) &&
+      s.itemStock[weapon] > 0;
+    const cost =
+      p.ownedWeapons.includes(weapon) || recovered ? 0 : WEAPONS[weapon].price;
     if (s.gold < cost) {
       notify(s, "Not enough gold for this weapon.", "bad");
       return false;
     }
     s.gold -= cost;
+    if (recovered) s.itemStock[weapon]--;
     if (!p.ownedWeapons.includes(weapon)) p.ownedWeapons.push(weapon);
     p.weapon = weapon;
     notify(
@@ -1686,6 +1709,87 @@ export class Simulation {
         }
     }
     this.resolve(capture);
+    this.touch();
+    return true;
+  }
+  buyItem(kind: ItemKind) {
+    const s = this.state;
+    if (this.disposed || !Object.hasOwn(ITEMS, kind)) return false;
+    if (s.phase !== "port") {
+      notify(s, "Visit the harbour to buy items.", "bad");
+      return false;
+    }
+    if (s.itemStock[kind] >= ITEM_STOCK_CAP) {
+      notify(s, "This item stack is full.", "bad");
+      return false;
+    }
+    if (s.gold < ITEMS[kind].price) {
+      notify(s, "Not enough gold.", "bad");
+      return false;
+    }
+    s.gold -= ITEMS[kind].price;
+    s.itemStock[kind]++;
+    notify(s, `${ITEMS[kind].name} added to the hold.`, "good");
+    this.touch();
+    return true;
+  }
+  sellItem(kind: ItemKind) {
+    const s = this.state;
+    if (this.disposed || !Object.hasOwn(ITEMS, kind)) return false;
+    if (s.phase !== "port" || s.itemStock[kind] <= 0) {
+      notify(s, "Sell an owned item at the harbour.", "bad");
+      return false;
+    }
+    const price = Math.floor(ITEMS[kind].price / 2);
+    if (s.gold + price > 1_000_000_000) {
+      notify(s, "Gold reserve is full; the item was kept.", "bad");
+      return false;
+    }
+    s.itemStock[kind]--;
+    this.awardGold(price);
+    notify(s, `${ITEMS[kind].name} sold for ${price} gold.`, "good");
+    this.touch();
+    return true;
+  }
+  itemUseReason(id: number, kind: ItemKind): string | null {
+    if (this.disposed || !Object.hasOwn(ITEMS, kind)) return "Unknown item.";
+    const s = this.state,
+      p = s.pirates.find((p) => p.id === id && p.side === "ally" && p.hp > 0);
+    if (s.phase === "gameover") return "Restore a living checkpoint first.";
+    if (!p) return "Select a living crew member.";
+    if (this.sea.has(id) || this.falls.has(id))
+      return "Return this pirate safely aboard before using an item.";
+    if (s.itemStock[kind] <= 0) return "None of this item remains in the hold.";
+    return itemEffectReason(p, kind);
+  }
+  useItem(id: number, kind: ItemKind) {
+    const s = this.state,
+      reason = this.itemUseReason(id, kind);
+    if (reason) {
+      if (!this.disposed) notify(s, reason, "bad");
+      return false;
+    }
+    const p = s.pirates.find((p) => p.id === id)!,
+      item = ITEMS[kind];
+    s.itemStock[kind]--;
+    switch (item.effect) {
+      case "health":
+        p.hp = Math.min(
+          p.maxHp,
+          p.hp + Math.max(1, Math.ceil(p.maxHp * item.amount)),
+        );
+        break;
+      case "morale":
+        p.morale = Math.min(100, p.morale + item.amount);
+        break;
+      case "hunger":
+        p.hunger = Math.min(100, p.hunger + item.amount);
+        break;
+      case "experience":
+        awardExperience(p, item.amount);
+        break;
+    }
+    notify(s, `${p.name} used ${item.name}.`, "good");
     this.touch();
     return true;
   }

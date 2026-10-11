@@ -53,3 +53,5 @@ No account or server is required for gameplay. Treat imported saves as untrusted
 Generation tokens invalidate callbacks from old campaigns/scenes. Phase transitions validate before commit; storage barriers precede unsafe encounter entry. Unexpected authoritative invariant failures pause rather than continuing partially resolved combat. Recover from the last valid checkpoint. Only one tab owns writable campaign state.
 
 - [Roomier ships and bidirectional crew](design/roomier-ships.md): presentation grid, native crew scale, camera ownership/input and observed validation.
+
+- [Owned items and generated regions](design/loot-and-seeded-world.md): six fixed campaign stock counters; bounded pure loot/world helpers use local seeds; no generated encounter cache or new renderer resources. Existing application delegation owns hold/map DOM, and explicit save snapshots own transaction rollback.

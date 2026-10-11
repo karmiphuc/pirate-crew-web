@@ -79,3 +79,7 @@ Schemas 1–4 migrate through schema 5, preserving prior fields and validating t
 ## Version 0.10.0 schema 6
 
 Adds exact three-key furnishing stock (0–64 integers) and at most 32 plain `{kind,x,y}` ship fittings. Schema 1–5 migration copies the envelope/ships and introduces empty stock/placements, preserving previous hulls and maps. Validate enums, finite grid coordinates, footprint support, overlap and reachable blueprint floors; sanitize records and snapshot arrays independently. Failed furniture purchases/sales/refits restore stock and placed pieces with gold/timber and keep an editable refit for retry. Never serialize a fitting view or Graphics object.
+
+## Owned item hold, schema 7
+
+Schema 7 requires exactly six plain integer counters (`rum`, `elixir`, `boneMeal`, `feather`, `sabre`, `pistol`), each 0–99. Sanitize/copy explicit fields; reject missing, extra, fractional or out-of-range counters. Schema 1–6 migration is immutable and introduces empty item stock without changing maps, hulls or personal weapon lockers. Whole generated maps persist; loading never reruns the generator. Port transactions and safe-phase use restore stock/gold/crew effects together on failed writes. Battle item use is attempt-local, covered by the departure checkpoint. Once-only prize flags and item ownership must survive reload.

@@ -1,3 +1,6 @@
+import { emptyItemStock, type ItemStock } from "./items";
+import { generateWorld } from "./world";
+
 export const LIMITS = {
   allies: 12,
   enemies: 12,
@@ -169,7 +172,7 @@ export interface Notice {
   tone: "info" | "good" | "bad";
 }
 export interface Campaign {
-  schemaVersion: 6;
+  schemaVersion: 7;
   campaignId: string;
   revision: number;
   tick: number;
@@ -189,6 +192,7 @@ export interface Campaign {
   medicine: number;
   parts: number;
   furnitureStock: FurnitureStock;
+  itemStock: ItemStock;
   notices: Notice[];
   noticeId: number;
   resolved: boolean;
@@ -323,110 +327,9 @@ export function createCampaign(
   campaignId = `voyage-${seed}`,
 ): Campaign {
   seed = seed >>> 0 || 1;
-  const world: WorldNode[] = [
-    {
-      id: 0,
-      x: 17,
-      y: 62,
-      name: "Saltwater Harbour",
-      kind: "port",
-      danger: 0,
-      cleared: false,
-      seed,
-    },
-    {
-      id: 1,
-      x: 35,
-      y: 49,
-      name: "The Crooked Cutlass",
-      kind: "pirate",
-      danger: 1,
-      cleared: false,
-      seed: (seed + 1) >>> 0,
-    },
-    {
-      id: 2,
-      x: 44,
-      y: 76,
-      name: "Castaway Cay",
-      kind: "island",
-      danger: 1,
-      cleared: false,
-      seed: (seed + 2) >>> 0,
-    },
-    {
-      id: 3,
-      x: 60,
-      y: 40,
-      name: "Ratbeard’s Revenge",
-      kind: "pirate",
-      danger: 2,
-      cleared: false,
-      seed: (seed + 3) >>> 0,
-    },
-    {
-      id: 4,
-      x: 69,
-      y: 72,
-      name: "Whispering Shoals",
-      kind: "island",
-      danger: 2,
-      cleared: false,
-      seed: (seed + 4) >>> 0,
-    },
-    {
-      id: 5,
-      x: 76,
-      y: 24,
-      name: "The Scarlet Fleet",
-      kind: "pirate",
-      danger: 3,
-      cleared: false,
-      seed: (seed + 5) >>> 0,
-    },
-    {
-      id: 6,
-      x: 88,
-      y: 53,
-      name: "Admiral Blackthorn",
-      kind: "boss",
-      danger: 4,
-      cleared: false,
-      seed: (seed + 6) >>> 0,
-    },
-    {
-      id: 7,
-      x: 27,
-      y: 20,
-      name: "Captain Ashwake",
-      kind: "boss",
-      danger: 2,
-      cleared: false,
-      seed: (seed + 7) >>> 0,
-    },
-    {
-      id: 8,
-      x: 54,
-      y: 15,
-      name: "Lady Ironwake",
-      kind: "boss",
-      danger: 3,
-      cleared: false,
-      seed: (seed + 8) >>> 0,
-    },
-    {
-      id: 9,
-      x: 86,
-      y: 83,
-      name: "Dread Commodore",
-      kind: "boss",
-      danger: 3,
-      cleared: false,
-      seed: (seed + 9) >>> 0,
-    },
-  ];
+  const world = generateWorld(seed);
   return {
-    schemaVersion: 6,
+    schemaVersion: 7,
     campaignId,
     revision: 0,
     tick: 0,
@@ -446,6 +349,7 @@ export function createCampaign(
     medicine: 5,
     parts: 12,
     furnitureStock: { bunk: 0, table: 0, lantern: 0 },
+    itemStock: emptyItemStock(),
     notices: [
       {
         id: 1,
@@ -470,12 +374,13 @@ export function notify(
   if (s.notices.length > LIMITS.notices) s.notices.shift();
 }
 
-export function islandTerrain(name: string): Ship {
+export function islandTerrain(name: string, seed?: number): Ship {
   const tiles: Tile[] = [];
-  for (let x = 0; x < 21; x++) {
+  const width = seed === undefined ? 21 : 18 + ((seed >>> 0) % 9);
+  for (let x = 0; x < width; x++) {
     tiles.push({ x, y: 4, kind: "hull" });
-    if (x > 0 && x < 20) tiles.push({ x, y: 5, kind: "hull" });
-    if (x > 3 && x < 17) tiles.push({ x, y: 6, kind: "hull" });
+    if (x > 0 && x < width - 1) tiles.push({ x, y: 5, kind: "hull" });
+    if (x > 3 && x < width - 4) tiles.push({ x, y: 6, kind: "hull" });
   }
   return {
     id: 2,

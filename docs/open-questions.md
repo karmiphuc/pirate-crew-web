@@ -17,7 +17,7 @@
 
 ## Scope decisions already made for the baseline
 
-Single player; desktop first; real time with pause; port-only building; checkpoint saves rather than arbitrary combat saves; standard checkpoint recovery after captain death; no backend; original or suitably licensed assets, personal-use remake intent, free/noncommercial sharing with attribution. Ship capture is implemented in v0.2; permadeath remains deferred. Exact original build/version for frame-by-frame and formula fidelity remains unverified.
+Single player; desktop first; real time with pause; port-only building; checkpoint saves rather than arbitrary combat saves; standard checkpoint recovery after captain death; no backend; original or suitably licensed assets, personal-use remake intent, free/noncommercial sharing with attribution. Ship capture is implemented in v0.2; permadeath remains deferred. The user selected the current Steam release as the parity target on 2026-10-11. Exact installed build/version, content catalogue and formulas remain unmeasured; older manuals establish categories only.
 
 ## Risks to watch
 

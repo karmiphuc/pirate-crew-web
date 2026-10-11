@@ -19,9 +19,19 @@
       "fittings": 6
     }
   ],
+  "facing": {
+    "directions": [
+      "left",
+      "right"
+    ],
+    "verticalLeft": 21
+  },
+  "equippedCombatDirections": 6,
+  "pannedSelectionAndMove": "passed",
+  "nativeCameraZoom": 1,
   "cabinHeadroomPx": {
-    "minimum": 8,
-    "checkedActors": 18,
+    "minimum": 26,
+    "checkedActors": 17,
     "nativeSpriteHeight": 56
   },
   "boardingAndLowerCabin": "passed",
@@ -29,8 +39,8 @@
   "capturedCannonAccess": "passed",
   "forcedStaticRedrawMs": {
     "samples": 100,
-    "p95": 1.3999999985098839,
-    "max": 4.5
+    "p95": 1,
+    "max": 2.8000000044703484
   },
   "sceneRestarts": 10,
   "compactOverflow": "passed",
