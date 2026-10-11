@@ -202,7 +202,7 @@ it("schema-eight migration preserves crew, gear, stock, map, damage, and health 
   const before = structuredClone(old),
     migrated = validateSave(old);
   expect(old).toEqual(before);
-  expect(migrated.schemaVersion).toBe(9);
+  expect(migrated.schemaVersion).toBe(10);
   expect(migrated.world).toEqual(before.world);
   expect(migrated.itemStock).toEqual(before.itemStock);
   const p = migrated.pirates[0];

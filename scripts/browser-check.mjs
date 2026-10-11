@@ -746,7 +746,7 @@ try {
   assert.equal((await state()).gold, checkpointGold);
   assert.match((await state()).ships[0].name, /captured/);
   // Verify traits and fishing through the management UI, then exercise the galley loop.
-  assert.equal((await state()).schemaVersion, 9);
+  assert.equal((await state()).schemaVersion, 10);
   assert.deepEqual((await state()).pirates[3].traits, ["swift"]);
   await page.click('[data-action="select"][data-id="6"]');
   await page.click('[data-action="crew-settings"]');
@@ -996,7 +996,7 @@ try {
   assert.match(await page.locator("#toast").textContent(), /quota failure/);
 
   const report = {
-    version: "0.13.0",
+    version: "0.14.0",
     viewport: { width: 1440, height: 1080 },
     renderer: "Chromium SwiftShader (headless software rendering)",
     fullLoop: "passed",
@@ -1012,7 +1012,7 @@ try {
     equipmentFrameBounds: "passed",
     skillAndEquipmentPurchases: "passed",
     fishingAndGalley: "passed",
-    traitsAndSchema9: "passed",
+    traitsAndSchema10: "passed",
     destroyedDeckAndRepair: "passed",
     unsafePortRepairRecovery: "passed",
     islandExplorationAndReturn: "passed",

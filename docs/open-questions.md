@@ -25,7 +25,7 @@ Navigation changes during destruction; tasks fighting explicit orders; repetitiv
 
 ## Future decisions
 
-Tablet controls, cloud saves, monetization, multiplayer, additional campaign regions, and closer reference-game fidelity require new evidence and scope review. Do not treat these as implicit MVP requirements.
+Tablet controls, cloud saves, monetization and multiplayer require new scope decisions. The user has already authorized continued work toward current-Steam feature parity; closer fidelity and additional reference content need evidence and validation, rather than renewed scope permission.
 
 ## Review follow-up
 

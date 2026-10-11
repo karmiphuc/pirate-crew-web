@@ -166,7 +166,7 @@ try {
   await page.reload();
   await readyApp();
   assert.deepEqual(await snapshot(), saved);
-  assert.equal(saved.schema, 9);
+  assert.equal(saved.schema, 10);
   await page.keyboard.press("Digit1");
   assert.deepEqual((await snapshot()).selected, []);
   assert.match(
@@ -284,7 +284,7 @@ try {
   });
   await idle();
   const migrated = await snapshot();
-  assert.equal(migrated.schema, 9);
+  assert.equal(migrated.schema, 10);
   assert.deepEqual(
     [
       migrated.crew[0].maxHp,
@@ -371,11 +371,11 @@ try {
   );
   assert.deepEqual(errors, []);
   const report = {
-    version: "0.13.0",
+    version: "0.14.0",
     attributeSpendingAndLevelRewards: "passed",
     trainingAndGroupQuotaRollback: "passed",
     inspectorOpenState: "passed",
-    schema9Reload: "passed",
+    schema10Reload: "passed",
     emptyGroupNoFallback: "passed",
     modalShortcutGuard: "passed",
     nativeSummaryAndTrainingSpaceActivation: "passed",

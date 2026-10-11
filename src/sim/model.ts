@@ -1,6 +1,12 @@
 import { emptyItemStock, type ItemStock, type Accessory } from "./items";
 import { generateWorld } from "./world";
 import {
+  ranksFor,
+  emptyBookStock,
+  type SkillRanks,
+  type BookStock,
+} from "./skills";
+import {
   emptyAttributes,
   type Attributes,
   type CrewGroup,
@@ -137,6 +143,8 @@ export interface Pirate {
   role: "captain" | "boarder" | "gunner" | "medic";
   duty: Duty;
   skills: Skill[];
+  skillRanks: SkillRanks;
+  skillPointsSpent: number;
   traits: Trait[];
   weapon: Weapon;
   meleeWeapon: Exclude<Weapon, "pistol"> | null;
@@ -184,7 +192,7 @@ export interface Notice {
   tone: "info" | "good" | "bad";
 }
 export interface Campaign {
-  schemaVersion: 9;
+  schemaVersion: 10;
   campaignId: string;
   revision: number;
   tick: number;
@@ -205,6 +213,7 @@ export interface Campaign {
   parts: number;
   furnitureStock: FurnitureStock;
   itemStock: ItemStock;
+  bookStock: BookStock;
   notices: Notice[];
   noticeId: number;
   resolved: boolean;
@@ -285,6 +294,12 @@ export function makePirate(
   danger = 1,
 ): Pirate {
   const x = 3 + index * 2;
+  const skills: Skill[] =
+    index === 1
+      ? ["guard", "cook"]
+      : index === 2
+        ? ["guard", "gunner"]
+        : ["guard"];
   return {
     id,
     name:
@@ -303,12 +318,9 @@ export function makePirate(
         : index === 2
           ? "gunner"
           : "guard",
-    skills:
-      index === 1
-        ? ["guard", "cook"]
-        : index === 2
-          ? ["guard", "gunner"]
-          : ["guard"],
+    skills,
+    skillRanks: ranksFor(skills),
+    skillPointsSpent: 0,
     weapon: index === 2 ? "pistol" : "cutlass",
     meleeWeapon: "cutlass",
     rangedWeapon: index === 2 ? "pistol" : null,
@@ -348,7 +360,7 @@ export function createCampaign(
   seed = seed >>> 0 || 1;
   const world = generateWorld(seed);
   return {
-    schemaVersion: 9,
+    schemaVersion: 10,
     campaignId,
     revision: 0,
     tick: 0,
@@ -369,6 +381,7 @@ export function createCampaign(
     parts: 12,
     furnitureStock: { bunk: 0, table: 0, lantern: 0 },
     itemStock: emptyItemStock(),
+    bookStock: emptyBookStock(),
     notices: [
       {
         id: 1,

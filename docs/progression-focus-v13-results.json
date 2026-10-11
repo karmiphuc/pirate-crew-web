@@ -1,0 +1,54 @@
+{
+  "version": "0.13.0",
+  "attributeSpendingAndLevelRewards": "passed",
+  "trainingAndGroupQuotaRollback": "passed",
+  "inspectorOpenState": "passed",
+  "schema9Reload": "passed",
+  "emptyGroupNoFallback": "passed",
+  "modalShortcutGuard": "passed",
+  "nativeSummaryAndTrainingSpaceActivation": "passed",
+  "selectedGroupCanvasOrder": "passed",
+  "activeGroupFailureSelectionRestore": "passed",
+  "actualAgilityCriticalPosesBothDirections": [
+    {
+      "left": true,
+      "status": "Critical shot",
+      "cooldown": 11,
+      "frame": "pistol-attack",
+      "facing": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "left": false,
+      "status": "Critical shot",
+      "cooldown": 11,
+      "frame": "pistol-attack",
+      "facing": [
+        false,
+        false,
+        false
+      ]
+    }
+  ],
+  "immutableSchema8ImportReload": "passed",
+  "compactOverflow": "passed",
+  "groupTransactions": 40,
+  "sceneRestarts": 10,
+  "disposal": "passed",
+  "views": {
+    "artwork": true,
+    "sourceImages": 0,
+    "actors": 3,
+    "equipment": 3,
+    "grips": 3,
+    "subscriptions": 4,
+    "clouds": 3,
+    "textures": 10,
+    "shutdownHandlers": 13,
+    "destroyHandlers": 13
+  },
+  "errors": []
+}

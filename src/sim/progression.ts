@@ -31,7 +31,12 @@ export function emptyAttributes(): Attributes {
 }
 export function attackDamage(p: Pirate, weapon: Weapon) {
   const stat = weapon === "pistol" ? p.attributes.dex : p.attributes.str;
-  return p.damage + WEAPONS[weapon].bonus + stat;
+  return (
+    p.damage +
+    WEAPONS[weapon].bonus +
+    stat +
+    Math.max(0, p.skillRanks.guard - 1)
+  );
 }
 export function attackCooldown(p: Pirate, weapon: Weapon) {
   return Math.ceil((WEAPONS[weapon].cooldown * 100) / (100 + p.attributes.agi));

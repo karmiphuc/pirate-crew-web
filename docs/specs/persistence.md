@@ -91,3 +91,7 @@ Persist optional melee (`cutlass`/`sabre`), ranged (`pistol`) and accessory (`bo
 ## Crew progression, schema 9
 
 Schema 9 explicitly copies six integer attributes (0–100), trainingPoints (0–400) and group (1–4). Spent plus unspent points cannot exceed four times level. Schema 8 migrates immutably to zero attributes/points and group 1 while preserving prior stats, slots, lockers, stock and chart; no retroactive leveling. Prior migration paths remain. Reject malformed new attributes/budgets and retain old equipment/stock validation. Failed port training/group writes restore complete checkpoints and the prior selection mode.
+
+## Skill progression, schema 10
+
+Persist exact eight-key skill ranks (learned 1–5, unknown 0), book stock (0–99) and lifetime book-point spends (0–40). Total attribute spends, remaining points and book spends cannot exceed four times level. Recorded book spends must cover all additional ranks and cannot exceed total ranks. Sanitize/copy explicit keys. Immutable bounded schema-nine migration sets prior learned skills to rank one, empty books and zero recorded book spends while preserving previous attributes, points, XP, injuries, groups, map and gear. No retroactive point changes. Buying/selling/reading use awaited port checkpoints; failed writes restore campaign and prior selection together.

@@ -1,0 +1,59 @@
+{
+  "version": "0.14.0",
+  "visibleOverlapAndRecreatedBody": "passed",
+  "deadBodyCannotInterceptDeckOrder": "passed",
+  "swimmingBookAndReload": "passed",
+  "renderedRopeAndSwimmerCanvasSelection": "passed",
+  "invisibleSubmergedBodyExcluded": "passed",
+  "timedRopeAndPause": "passed",
+  "swimmingCropAndStoredWeapons": "passed",
+  "rescueControlAndLine": "passed",
+  "sceneRestartDuringRescue": "passed",
+  "cropAndWeaponRecovery": "passed",
+  "prizeCheckpoint": "passed",
+  "seaRollbackOnQuotaFailure": "passed",
+  "restAndReloadRecovery": "passed",
+  "diagnostics": {
+    "frameMs": {
+      "count": 10,
+      "p50": 15,
+      "p95": 15,
+      "p99": 15
+    },
+    "tickMs": {
+      "count": 0,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0
+    },
+    "stalls": 0,
+    "views": {
+      "artwork": true,
+      "sourceImages": 0,
+      "actors": 2,
+      "equipment": 2,
+      "grips": 2,
+      "subscriptions": 4,
+      "clouds": 3,
+      "textures": 10,
+      "shutdownHandlers": 13,
+      "destroyHandlers": 13
+    },
+    "graphs": 1,
+    "searches": 0,
+    "commands": 1,
+    "audioVoices": 0,
+    "tasks": 0,
+    "falls": 0,
+    "sea": 0,
+    "swimmers": 0,
+    "crossings": 0,
+    "claims": 0,
+    "listeners": 5,
+    "saveWrites": 0,
+    "lock": "owned",
+    "tick": 0,
+    "phase": "port"
+  },
+  "errors": []
+}

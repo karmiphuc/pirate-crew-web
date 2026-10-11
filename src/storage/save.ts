@@ -10,6 +10,13 @@ import {
 } from "../sim/model";
 import { validateFurniture } from "../sim/furniture";
 import { ITEM_KINDS, ITEM_STOCK_CAP, ACCESSORY_KINDS } from "../sim/items";
+import {
+  ranksFor,
+  emptyBookStock,
+  SKILL_RANK_CAP,
+  BOOK_STOCK_CAP,
+  SKILL_POINTS_SPENT_CAP,
+} from "../sim/skills";
 import { Navigation, Search, validateLayout } from "../sim/navigation";
 import { tileNode } from "../sim/model";
 import {
@@ -150,7 +157,8 @@ export function validateSave(value: unknown): Campaign {
       )
     )
       throw new Error("Invalid legacy item stock.");
-    if (!Array.isArray(value.pirates)) throw new Error("Invalid legacy crew.");
+    if (!Array.isArray(value.pirates) || value.pirates.length > LIMITS.allies)
+      throw new Error("Invalid legacy crew.");
     value = {
       ...value,
       schemaVersion: 8,
@@ -186,9 +194,27 @@ export function validateSave(value: unknown): Campaign {
       ),
     };
   }
+  if (record(value) && value.schemaVersion === 9) {
+    if (!Array.isArray(value.pirates) || value.pirates.length > LIMITS.allies)
+      throw new Error("Invalid legacy crew.");
+    value = {
+      ...value,
+      schemaVersion: 10,
+      bookStock: emptyBookStock(),
+      pirates: value.pirates.map((p) => {
+        if (
+          !record(p) ||
+          !Array.isArray(p.skills) ||
+          p.skills.length > SKILLS.length
+        )
+          throw new Error("Invalid legacy skills.");
+        return { ...p, skillRanks: ranksFor(p.skills), skillPointsSpent: 0 };
+      }),
+    };
+  }
   if (
     !record(value) ||
-    value.schemaVersion !== 9 ||
+    value.schemaVersion !== 10 ||
     !text(value.campaignId) ||
     !["port", "travel", "victory", "won"].includes(String(value.phase))
   )
@@ -209,6 +235,20 @@ export function validateSave(value: unknown): Campaign {
   for (const key of ["gold", "food", "meals", "ammo", "medicine", "parts"])
     if (!integer(value[key], 0, key === "gold" ? MAX : 999))
       throw new Error(`Invalid inventory: ${key}.`);
+  if (
+    !record(value.bookStock) ||
+    Object.keys(value.bookStock).length !== SKILLS.length ||
+    SKILLS.some(
+      (k) =>
+        !Object.hasOwn(value.bookStock as object, k) ||
+        !integer(
+          (value.bookStock as Record<string, unknown>)[k],
+          0,
+          BOOK_STOCK_CAP,
+        ),
+    )
+  )
+    throw new Error("Invalid skill book stock.");
   if (
     !record(value.itemStock) ||
     Object.keys(value.itemStock).length !== ITEM_KINDS.length ||
@@ -393,6 +433,32 @@ export function validateSave(value: unknown): Campaign {
     )
       throw new Error("Invalid crew identity.");
     if (
+      !record(p.skillRanks) ||
+      Object.keys(p.skillRanks).length !== SKILLS.length ||
+      SKILLS.some(
+        (k) =>
+          !Object.hasOwn(p.skillRanks as object, k) ||
+          !integer(
+            (p.skillRanks as Record<string, unknown>)[k],
+            (p.skills as unknown[]).includes(k) ? 1 : 0,
+            (p.skills as unknown[]).includes(k) ? SKILL_RANK_CAP : 0,
+          ),
+      ) ||
+      !integer(p.skillPointsSpent, 0, SKILL_POINTS_SPENT_CAP) ||
+      p.skillPointsSpent <
+        SKILLS.reduce(
+          (n, k) =>
+            n + Math.max(0, (p.skillRanks as Record<string, number>)[k] - 1),
+          0,
+        ) ||
+      p.skillPointsSpent >
+        SKILLS.reduce(
+          (n, k) => n + (p.skillRanks as Record<string, number>)[k],
+          0,
+        )
+    )
+      throw new Error("Invalid skill progression.");
+    if (
       !record(p.attributes) ||
       Object.keys(p.attributes).length !== ATTRIBUTE_KEYS.length ||
       ATTRIBUTE_KEYS.some(
@@ -411,7 +477,8 @@ export function validateSave(value: unknown): Campaign {
         (sum, k) => sum + (p.attributes as Record<string, number>)[k],
         0,
       ) +
-        p.trainingPoints >
+        p.trainingPoints +
+        p.skillPointsSpent >
         p.level * POINTS_PER_LEVEL
     )
       throw new Error("Invalid crew progression.");
@@ -460,7 +527,7 @@ export function validateSave(value: unknown): Campaign {
       throw new Error("Invalid journal.");
   // Only explicit fields enter the application. Unknown properties are discarded.
   return {
-    schemaVersion: 9,
+    schemaVersion: 10,
     campaignId: state.campaignId,
     revision: state.revision,
     tick: state.tick,
@@ -491,6 +558,10 @@ export function validateSave(value: unknown): Campaign {
       role: p.role,
       duty: p.duty,
       skills: [...p.skills],
+      skillRanks: Object.fromEntries(
+        SKILLS.map((k) => [k, p.skillRanks[k]]),
+      ) as Campaign["pirates"][number]["skillRanks"],
+      skillPointsSpent: p.skillPointsSpent,
       traits: [...p.traits],
       weapon: p.weapon,
       meleeWeapon: p.meleeWeapon,
@@ -547,6 +618,9 @@ export function validateSave(value: unknown): Campaign {
     itemStock: Object.fromEntries(
       ITEM_KINDS.map((k) => [k, state.itemStock[k]]),
     ) as Campaign["itemStock"],
+    bookStock: Object.fromEntries(
+      SKILLS.map((k) => [k, state.bookStock[k]]),
+    ) as Campaign["bookStock"],
     notices: state.notices.map((n) => ({
       id: n.id,
       text: n.text,

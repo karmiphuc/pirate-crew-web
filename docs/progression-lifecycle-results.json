@@ -1,0 +1,103 @@
+{
+  "version": "0.13.0",
+  "viewport": {
+    "width": 1440,
+    "height": 1080
+  },
+  "renderer": "Chromium SwiftShader (headless software rendering)",
+  "fullLoop": "passed",
+  "opaquePixelArt": "passed",
+  "idleBlinkAndReducedMotion": "passed",
+  "dynamicEquipmentLayers": "passed",
+  "foregroundGripsAndPistolPoses": "passed",
+  "gripRegistrationBothDirectionsAndMovement": "passed",
+  "idleFacingAndIntegerPortraits": "passed",
+  "combatPosesPauseAndReducedMotion": "passed",
+  "artworkFailureAndReload": "passed",
+  "sourceImageReleased": "passed",
+  "equipmentFrameBounds": "passed",
+  "skillAndEquipmentPurchases": "passed",
+  "fishingAndGalley": "passed",
+  "traitsAndSchema9": "passed",
+  "destroyedDeckAndRepair": "passed",
+  "unsafePortRepairRecovery": "passed",
+  "islandExplorationAndReturn": "passed",
+  "explicitPlunder": "passed",
+  "captureAndReload": "passed",
+  "audioMuteAndVoiceCap": "passed",
+  "panelCycles": 100,
+  "sceneRestarts": 10,
+  "exclusiveSaveTab": "passed",
+  "syntheticVisibility": "passed",
+  "contextLoss": "passed",
+  "encounterViewCycles": 50,
+  "quotaRollback": "passed",
+  "memory": {
+    "heapBefore": {
+      "usedSize": 10567456,
+      "totalSize": 11915264,
+      "embedderHeapUsedSize": 2448400,
+      "backingStorageSize": 12909319
+    },
+    "heapAfter": {
+      "usedSize": 9823988,
+      "totalSize": 10604544,
+      "embedderHeapUsedSize": 2038296,
+      "backingStorageSize": 12909145
+    },
+    "domBefore": {
+      "documents": 1,
+      "nodes": 392,
+      "jsEventListeners": 75
+    },
+    "domAfter": {
+      "documents": 1,
+      "nodes": 421,
+      "jsEventListeners": 75
+    }
+  },
+  "diagnostics": {
+    "frameMs": {
+      "count": 572,
+      "p50": 29.990000000000144,
+      "p95": 40.00000000000036,
+      "p99": 43.340000000000146
+    },
+    "tickMs": {
+      "count": 138,
+      "p50": 0,
+      "p95": 0.10000000149011612,
+      "p99": 0.20000000298023224
+    },
+    "stalls": 0,
+    "views": {
+      "artwork": true,
+      "sourceImages": 0,
+      "actors": 4,
+      "equipment": 4,
+      "grips": 4,
+      "subscriptions": 4,
+      "clouds": 3,
+      "textures": 10,
+      "shutdownHandlers": 13,
+      "destroyHandlers": 13
+    },
+    "graphs": 1,
+    "searches": 0,
+    "commands": 0,
+    "audioVoices": 0,
+    "tasks": 0,
+    "falls": 0,
+    "sea": 0,
+    "swimmers": 0,
+    "crossings": 0,
+    "claims": 0,
+    "listeners": 5,
+    "saveWrites": 0,
+    "lock": "owned",
+    "tick": 13832,
+    "phase": "port"
+  },
+  "errors": [],
+  "noLivingSelection": "passed"
+}

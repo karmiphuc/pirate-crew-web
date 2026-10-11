@@ -48,6 +48,26 @@ try {
     }),
     errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
+  const clickBody = async (id, lift = 30) => {
+    const point = await page.evaluate(
+      ({ id, lift }) => {
+        const a = window.__privateer,
+          scene = a.game.scene.getScene("sea"),
+          body = scene.actors.get(id),
+          camera = scene.cameras.main;
+        return {
+          x: body.x - camera.scrollX,
+          y: body.y - lift - camera.scrollY,
+        };
+      },
+      { id, lift },
+    );
+    const rect = await page.locator("canvas").boundingBox();
+    await page.mouse.click(
+      rect.x + (point.x * rect.width) / 1280,
+      rect.y + (point.y * rect.height) / 640,
+    );
+  };
   await page.goto(base);
   await page.waitForFunction(
     () =>
@@ -75,7 +95,7 @@ try {
   );
   assert.equal(
     await page.evaluate(() => window.__privateer.state().schemaVersion),
-    8,
+    10,
   );
   assert.equal(
     await page.evaluate(() =>
@@ -115,6 +135,14 @@ try {
   await page
     .locator(".voyage")
     .screenshot({ path: "artifacts/rope-crossing.png" });
+  await page.evaluate(() => {
+    window.__privateer.selection = [4];
+    window.__privateer.renderUI(true);
+  });
+  await clickBody(3);
+  assert.deepEqual(await page.evaluate(() => window.__privateer.selected()), [
+    3,
+  ]);
   const ropeTick = await page.evaluate(() => window.__privateer.state().tick);
   await page.waitForTimeout(150);
   assert.equal(
@@ -151,6 +179,23 @@ try {
     gripVisible: false,
   });
   await page.locator(".voyage").screenshot({ path: "artifacts/swimming.png" });
+  await page.evaluate(() => {
+    window.__privateer.selection = [4];
+    window.__privateer.renderUI(true);
+  });
+  await clickBody(3, 40);
+  assert.deepEqual(await page.evaluate(() => window.__privateer.selected()), [
+    3,
+  ]);
+  await page.evaluate(() => {
+    window.__privateer.selection = [4];
+    window.__privateer.renderUI(true);
+  });
+  await clickBody(3, 5);
+  assert.deepEqual(await page.evaluate(() => window.__privateer.selected()), [
+    4,
+  ]);
+
   await page.evaluate(() => {
     const app = window.__privateer;
     for (let i = 0; i < 140; i++) app.sim.tick();
@@ -270,8 +315,70 @@ try {
     ),
     true,
   );
+  // Actual display order, including a body recreated after rollback, decides overlaps.
+  await page.evaluate(async () => {
+    const a = window.__privateer,
+      { createCampaign } = await import("/src/sim/model.ts"),
+      s = createCampaign();
+    s.pirates[0].x = s.pirates[0].previousX = 8;
+    s.pirates[1].x = s.pirates[1].previousX = 8;
+    s.pirates[2].x = s.pirates[2].previousX = 16;
+    a.replace(s);
+    a.paused = true;
+    a.game.scene.getScene("sea").update(0, 0);
+    a.renderUI(true);
+  });
+  await clickBody(4);
+  assert.deepEqual(await page.evaluate(() => window.__privateer.selected()), [
+    4,
+  ]);
+  await page.evaluate(() => {
+    const a = window.__privateer,
+      scene = a.game.scene.getScene("sea"),
+      p = a.state().pirates[0];
+    p.hp = 0;
+    scene.update(0, 0);
+    p.hp = 90;
+    scene.update(0, 0);
+  });
+  await clickBody(3);
+  assert.deepEqual(await page.evaluate(() => window.__privateer.selected()), [
+    3,
+  ]);
+  const ghost = await page.evaluate(() => {
+    const a = window.__privateer,
+      scene = a.game.scene.getScene("sea"),
+      p = a.state().pirates[1];
+    p.x = p.previousX = 11;
+    scene.update(0, 0);
+    const b = scene.actors.get(4),
+      c = scene.cameras.main,
+      point = { x: b.x - c.scrollX, y: b.y - 30 - c.scrollY };
+    p.hp = 0;
+    scene.update(0, 0);
+    a.selection = [3];
+    a.renderUI(true);
+    return point;
+  });
+  const canvas = await page.locator("canvas").boundingBox();
+  await page.mouse.click(
+    canvas.x + (ghost.x * canvas.width) / 1280,
+    canvas.y + (ghost.y * canvas.height) / 640,
+  );
+  assert.equal(
+    await page.evaluate(() => window.__privateer.sim.commandCount),
+    1,
+  );
+  assert.deepEqual(await page.evaluate(() => window.__privateer.selected()), [
+    3,
+  ]);
   const report = {
+    version: "0.14.0",
+    visibleOverlapAndRecreatedBody: "passed",
+    deadBodyCannotInterceptDeckOrder: "passed",
     swimmingBookAndReload: "passed",
+    renderedRopeAndSwimmerCanvasSelection: "passed",
+    invisibleSubmergedBodyExcluded: "passed",
     timedRopeAndPause: "passed",
     swimmingCropAndStoredWeapons: "passed",
     rescueControlAndLine: "passed",

@@ -207,7 +207,7 @@ describe("owned item hold", () => {
     delete old.itemStock;
     const before = structuredClone(old),
       migrated = validateSave(old);
-    expect(migrated.schemaVersion).toBe(9);
+    expect(migrated.schemaVersion).toBe(10);
     expect(migrated.itemStock).toEqual(emptyItemStock());
     expect(migrated.world).toEqual(before.world);
     expect(migrated.pirates[0].ownedWeapons).toEqual(

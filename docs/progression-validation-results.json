@@ -1,9 +1,8 @@
 {
-  "version": "0.13.0",
+  "version": "0.14.0",
   "attributeSpendingAndLevelRewards": "passed",
   "trainingAndGroupQuotaRollback": "passed",
   "inspectorOpenState": "passed",
-  "schema9Reload": "passed",
   "emptyGroupNoFallback": "passed",
   "modalShortcutGuard": "passed",
   "nativeSummaryAndTrainingSpaceActivation": "passed",
@@ -50,5 +49,6 @@
     "shutdownHandlers": 13,
     "destroyHandlers": 13
   },
-  "errors": []
+  "errors": [],
+  "schema10Reload": "passed"
 }

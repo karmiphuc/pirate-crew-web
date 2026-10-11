@@ -40,6 +40,16 @@ import {
 } from "./items";
 import { weaponForTarget, clearShot } from "./equipment";
 import {
+  SKILL_NAMES,
+  SKILL_RANK_CAP,
+  BOOK_STOCK_CAP,
+  BOOK_PRICE,
+  SKILL_POINT_COST,
+  skillRate,
+  workUnits,
+  WORK_UNITS_PER_TICK,
+} from "./skills";
+import {
   ATTRIBUTE_KEYS,
   ATTRIBUTE_CAP,
   ATTRIBUTE_INFO,
@@ -56,7 +66,7 @@ export class Simulation {
   private searches = new Map<number, Search>();
   private tasks = new Map<
     number,
-    { duty: Duty; goal: number; progress: number; plank?: number }
+    { duty: Duty; goal: number; progressUnits: number; plank?: number }
   >();
   private claims = new Map<string, number>();
   private falls = new Map<number, number>();
@@ -337,7 +347,11 @@ export class Simulation {
         this.syncSea(p, transit);
         return;
       }
-      transit.y = Math.max(nodeY(transit.targetNode), transit.y - 0.25);
+      transit.y = Math.max(
+        nodeY(transit.targetNode),
+        transit.y -
+          0.25 * (p.skills.includes("swim") ? skillRate(p, "swim") : 1),
+      );
       this.syncSea(p, transit);
       p.status = "Climbing back aboard";
       if (transit.y === nodeY(transit.targetNode)) this.landSea(p, transit);
@@ -355,7 +369,8 @@ export class Simulation {
     ) {
       const goalX = seaX(transit.targetShip, nodeX(transit.targetNode)),
         dx = goalX - transit.x;
-      const speed = transit.mode === "rescue" ? 0.4 : 0.2;
+      const speed =
+        transit.mode === "rescue" ? 0.4 : 0.2 * skillRate(p, "swim");
       transit.x += Math.sign(dx) * Math.min(Math.abs(dx), speed);
       this.syncSea(p, transit);
       if (transit.x === goalX) {
@@ -1432,7 +1447,7 @@ export class Simulation {
       task = {
         duty,
         goal,
-        progress: 0,
+        progressUnits: 0,
         plank: damaged ? tileNode(damaged.x, damaged.y) : undefined,
       };
       this.tasks.set(p.id, task);
@@ -1461,8 +1476,7 @@ export class Simulation {
                 ? "Fishing off the rail"
                 : "Loading cannon";
     // Low morale slows work, without random scheduler decisions or wall-clock timers.
-    task.progress +=
-      (p.morale < 30 ? 0.5 : 1) * (p.traits.includes("industrious") ? 1.25 : 1);
+    task.progressUnits += workUnits(p, duty);
     const duration =
       duty === "gunner"
         ? 40
@@ -1471,7 +1485,7 @@ export class Simulation {
           : duty === "repair"
             ? 80
             : 60;
-    if (task.progress < duration) return true;
+    if (task.progressUnits < duration * WORK_UNITS_PER_TICK) return true;
     if (duty === "cook") {
       s.food--;
       s.meals = Math.min(999, s.meals + 2);
@@ -1524,6 +1538,7 @@ export class Simulation {
       }
     }
     if (duty === "gunner") this.broadside(1);
+    awardExperience(p, 2);
     this.releaseWork(p);
     if (ordered) this.finish(p, "Cannon fired");
     return true;
@@ -1619,17 +1634,18 @@ export class Simulation {
   teach(id: number, duty: Skill) {
     if (this.disposed || !SKILLS.includes(duty)) return false;
     const s = this.state,
-      p = s.pirates.find((p) => p.id === id && p.side === "ally");
-    if (s.phase !== "port" || !p || p.skills.includes(duty) || s.gold < 60) {
+      p = s.pirates.find((p) => p.id === id && p.side === "ally" && p.hp > 0);
+    if (s.phase !== "port" || !p || p.skills.includes(duty)) {
       notify(
         s,
-        "Skill books cost 60 gold at port; known skills need no book.",
+        "Learn a new skill on a living crewmate in port; use rank training for known skills.",
         "bad",
       );
       return false;
     }
-    s.gold -= 60;
+    if (!this.readBook(p, duty)) return false;
     p.skills.push(duty);
+    p.skillRanks[duty] = 1;
     if (duty !== "swim") p.duty = duty;
     p.orders.length = 0;
     this.clearOrder(p);
@@ -1640,6 +1656,79 @@ export class Simulation {
         : `${p.name} learned ${DUTY_NAMES[duty]} and took the duty.`,
       "good",
     );
+    this.touch();
+    return true;
+  }
+  private readBook(p: Pirate, skill: Skill) {
+    const s = this.state;
+    if (
+      p.trainingPoints < SKILL_POINT_COST ||
+      (s.bookStock[skill] === 0 && s.gold < BOOK_PRICE)
+    ) {
+      notify(
+        s,
+        "Reading a skill book needs 1 training point and an owned book or 60 gold.",
+        "bad",
+      );
+      return false;
+    }
+    if (s.bookStock[skill] > 0) s.bookStock[skill]--;
+    else s.gold -= BOOK_PRICE;
+    p.trainingPoints -= SKILL_POINT_COST;
+    p.skillPointsSpent += SKILL_POINT_COST;
+    return true;
+  }
+  trainSkill(id: number, skill: Skill) {
+    if (this.disposed || !SKILLS.includes(skill)) return false;
+    const s = this.state,
+      p = s.pirates.find((p) => p.id === id && p.side === "ally" && p.hp > 0);
+    if (
+      s.phase !== "port" ||
+      !p ||
+      !p.skills.includes(skill) ||
+      p.skillRanks[skill] >= SKILL_RANK_CAP
+    ) {
+      notify(s, "Improve a learned skill in port, up to rank five.", "bad");
+      return false;
+    }
+    if (!this.readBook(p, skill)) return false;
+    p.skillRanks[skill]++;
+    notify(
+      s,
+      `${p.name}: ${SKILL_NAMES[skill]} reaches rank ${p.skillRanks[skill]}.`,
+      "good",
+    );
+    this.touch();
+    return true;
+  }
+  buyBook(skill: Skill) {
+    if (this.disposed || !SKILLS.includes(skill)) return false;
+    const s = this.state;
+    if (
+      s.phase !== "port" ||
+      s.gold < BOOK_PRICE ||
+      s.bookStock[skill] >= BOOK_STOCK_CAP
+    ) {
+      notify(
+        s,
+        "Buy skill books in port for 60 gold; each stack holds at most 99.",
+        "bad",
+      );
+      return false;
+    }
+    s.gold -= BOOK_PRICE;
+    s.bookStock[skill]++;
+    notify(s, `${SKILL_NAMES[skill]} book stored in the hold.`, "good");
+    this.touch();
+    return true;
+  }
+  sellBook(skill: Skill) {
+    if (this.disposed || !SKILLS.includes(skill)) return false;
+    const s = this.state;
+    if (s.phase !== "port" || s.bookStock[skill] < 1) return false;
+    s.bookStock[skill]--;
+    s.gold = Math.min(1_000_000_000, s.gold + BOOK_PRICE / 2);
+    notify(s, `${SKILL_NAMES[skill]} book sold for 30 gold.`, "good");
     this.touch();
     return true;
   }

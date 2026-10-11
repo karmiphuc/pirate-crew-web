@@ -60,3 +60,7 @@ Each actor may carry one blade and one pistol. At cooldown zero, choose melee fo
 ## Version 0.13.0 attribute effects
 
 Base damage plus weapon bonus plus relevant STR/DEX gives attack damage. AGI shortens shared attack intervals by the authored rate in the [progression contract](../design/crew-progression.md); animation uses the same interval. Positive LUCK adds one seeded critical roll only at an unblocked attack boundary; zero LUCK preserves the existing RNG stream. Critical pre-armor damage is multiplied by 1.5 and rounded down, with at least one damage after armor. No unbounded effects are spawned. Current Steam formulas, dodge, accuracy, knockback and independent weapon reloads remain unverified or deferred.
+
+## Version 0.14.0 guard ranks
+
+Guard adds one derived pre-armor attack damage per rank above one for either weapon. This never mutates saved base damage or independent gear/grip rendering. Swimming ranks affect swimming/rail-climb speed, while rescue hauling and rope crossing keep their existing rates. Exact reference effects remain unmeasured; the [skill contract](../design/skill-books.md) identifies authored balance.

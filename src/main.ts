@@ -1,4 +1,5 @@
 import { SEA_VIEW_WIDTH, SEA_VIEW_HEIGHT } from "./game/ship-metrics";
+import { skillsMarkup, bookMarketMarkup, bookHoldMarkup } from "./ui/skills";
 import { SeaTransit } from "./sim/sea";
 import Phaser from "phaser";
 import {
@@ -726,6 +727,9 @@ class Application implements ViewHost {
       case "buy-item":
       case "sell-item":
       case "teach":
+      case "train-skill":
+      case "buy-book":
+      case "sell-book":
       case "train-attribute":
       case "assign-group":
       case "equip":
@@ -758,6 +762,12 @@ class Application implements ViewHost {
             changed = this.sim.buyFurniture(data.kind as FurnitureKind);
           if (action === "teach")
             changed = this.sim.teach(Number(data.id), data.kind as Skill);
+          if (action === "train-skill")
+            changed = this.sim.trainSkill(Number(data.id), data.kind as Skill);
+          if (action === "buy-book")
+            changed = this.sim.buyBook(data.kind as Skill);
+          if (action === "sell-book")
+            changed = this.sim.sellBook(data.kind as Skill);
           if (action === "train-attribute")
             changed = this.sim.trainAttribute(
               Number(data.id),
@@ -930,7 +940,7 @@ class Application implements ViewHost {
       );
       if (!p) body = "<p>Select a crew member first.</p>";
       else
-        body = `<p class="modal-intro"><strong>${escape(p.name)}</strong> · ${p.role} · Level ${p.level} · ${p.xp} XP · Gold ${s.gold}<br>Direct movement and combat orders interrupt work. Choose a duty to resume it.</p>${progressionMarkup(p, s, !!document.querySelector<HTMLDetailsElement>(".progression-panel")?.open)}${loadoutMarkup(p, s)}<h3>Crew traits</h3><p>${p.traits.length ? p.traits.map((t) => `${TRAITS[t].name}: ${TRAITS[t].description}`).join("<br>") : "No special traits."}</p><h3>Duty roster</h3><div class="duty-grid">${DUTIES.map((d) => `<div class="duty-item ${p.duty === d ? "active" : ""}"><strong>${DUTY_NAMES[d]}</strong><p>${{ guard: "Free for boarding and fighting.", cook: "Galley: 1 raw provision → 2 cooked meals.", clean: "Clean decks protect crew morale.", repair: "1 timber repairs 12 hull health and up to 60% plank wear.", medic: "1 medicine restores 25 crew health.", gunner: "Works at the cannon and fires when ready.", fish: "Fishes from the rail: 1 raw provision per catch." }[d]}</p><button data-action="${p.skills.includes(d) ? "duty" : "teach"}" data-id="${p.id}" data-kind="${d}" ${(!p.skills.includes(d) && s.phase !== "port") || p.duty === d ? "disabled" : ""}>${p.duty === d ? "Assigned" : p.skills.includes(d) ? "Assign duty" : "Skill book · 60 gold"}</button></div>`).join("")}</div><h3>Sea safety</h3><p>Swimming lets this pirate return to a reachable rail after falling overboard. Untrained pirates need another crewmate to throw a rescue line; sea exposure can be fatal.</p><button data-action="teach" data-id="${p.id}" data-kind="swim" ${p.skills.includes("swim") || s.phase !== "port" ? "disabled" : ""}>${p.skills.includes("swim") ? "Swimming learned" : "Swimming book · 60 gold"}</button>`;
+        body = `<p class="modal-intro"><strong>${escape(p.name)}</strong> · ${p.role} · Level ${p.level} · ${p.xp} XP · Gold ${s.gold}<br>Direct movement and combat orders interrupt work. Choose a duty to resume it.</p>${progressionMarkup(p, s, !!document.querySelector<HTMLDetailsElement>(".progression-panel")?.open)}${loadoutMarkup(p, s)}<h3>Crew traits</h3><p>${p.traits.length ? p.traits.map((t) => `${TRAITS[t].name}: ${TRAITS[t].description}`).join("<br>") : "No special traits."}</p><h3>Duty roster</h3><div class="duty-grid">${DUTIES.map((d) => `<div class="duty-item ${p.duty === d ? "active" : ""}"><strong>${DUTY_NAMES[d]}</strong><p>${{ guard: "Free for boarding and fighting.", cook: "Galley: 1 raw provision → 2 cooked meals.", clean: "Clean decks protect crew morale.", repair: "1 timber repairs 12 hull health and up to 60% plank wear.", medic: "1 medicine restores 25 crew health.", gunner: "Works at the cannon and fires when ready.", fish: "Fishes from the rail: 1 raw provision per catch." }[d]}</p><button data-action="duty" data-id="${p.id}" data-kind="${d}" ${!p.skills.includes(d) || p.duty === d ? "disabled" : ""}>${p.duty === d ? "Assigned" : p.skills.includes(d) ? "Assign duty" : "Learn skill below"}</button></div>`).join("")}</div><h3>Sea safety</h3><p>Swimming lets this pirate return to a reachable rail after falling overboard. Untrained pirates need another crewmate to throw a rescue line; sea exposure can be fatal.</p>${skillsMarkup(p, s)}`;
     } else if (kind === "hold") {
       title = "Ship’s hold";
       const crew = s.pirates.filter((p) => p.side === "ally" && p.hp > 0),
@@ -946,7 +956,7 @@ class Application implements ViewHost {
         },
       ).join(
         "",
-      )}</div><p class="muted">Recovered gear transfers to one pirate’s locker when equipped in port. Item use during a battle belongs to this attempt; restoring the departure checkpoint restores its inventory too.</p>`;
+      )}</div>${bookHoldMarkup(p, s)}<p class="muted">Recovered gear transfers to one pirate’s locker when equipped in port. Item use during a battle belongs to this attempt; restoring the departure checkpoint restores its inventory too.</p>`;
     } else if (kind === "shop") {
       title = "Harbour market";
       body = `<p class="modal-intro">Provisions for the voyage. Keep a little gold aside for wages.</p><div class="shop-grid">${[
@@ -968,7 +978,7 @@ class Application implements ViewHost {
         },
       ).join(
         "",
-      )}</div><button data-action="hold">Open ship’s hold</button><h3>Cabin furnishings</h3><p>Decorative fittings for the ship builder. Place or remove them on a reachable floor; they do not block your crew.</p><div class="shop-grid">${Object.entries(
+      )}</div>${bookMarketMarkup(s)}<button data-action="hold">Open ship’s hold</button><h3>Cabin furnishings</h3><p>Decorative fittings for the ship builder. Place or remove them on a reachable floor; they do not block your crew.</p><div class="shop-grid">${Object.entries(
         FURNISHINGS,
       )
         .map(

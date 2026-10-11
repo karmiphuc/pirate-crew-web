@@ -232,7 +232,7 @@ describe("swimming training and safe saves", () => {
     const old: any = checkpoint(createCampaign());
     old.schemaVersion = 4;
     const before = JSON.stringify(old);
-    expect(validateSave(old).schemaVersion).toBe(9);
+    expect(validateSave(old).schemaVersion).toBe(10);
     expect(JSON.stringify(old)).toBe(before);
     old.pirates[0].skills.push("swim", "swim");
     expect(() => validateSave(old)).toThrow(/identity/);

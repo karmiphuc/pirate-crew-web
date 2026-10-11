@@ -1,4 +1,5 @@
 import { attackCooldown } from "../sim/progression";
+import { hitPirate } from "./pirate-hit-test";
 import { drawPixelShip } from "./ship-art";
 import {
   SHIP_CELL_WIDTH,
@@ -313,24 +314,15 @@ export class SeaScene extends Phaser.Scene {
     const pointer = (p: Phaser.Input.Pointer) => {
       if (p.downElement !== this.game.canvas) return;
       const world = this.cameras.main.getWorldPoint(p.x, p.y);
-      let id: number | null = null,
-        shipId = 1,
+      const pirates = this.host.state().pirates;
+      const id = hitPirate(pirates, this.actors, world.x, world.y, (body) =>
+        this.children.getIndex(body),
+      );
+      let shipId = 1,
         x = 0,
         y = 0;
-      for (const actor of this.host.state().pirates) {
-        const px =
-            (actor.shipId === 1 ? HOME_X : ENEMY_X) + actor.x * TILE + TILE / 2,
-          py = SHIP_Y + actor.y * TILE_HEIGHT + TILE_HEIGHT;
-        if (
-          Math.abs(world.x - px) < 22 &&
-          world.y > py - 60 &&
-          world.y < py + 8
-        ) {
-          id = actor.id;
-          shipId = actor.shipId;
-          break;
-        }
-      }
+      if (id !== null)
+        shipId = pirates.find((actor) => actor.id === id)!.shipId;
       if (id === null) shipId = world.x >= ENEMY_X - 20 ? 2 : 1;
       x = Math.floor((world.x - (shipId === 1 ? HOME_X : ENEMY_X)) / TILE);
       y = Math.floor((world.y - SHIP_Y) / TILE_HEIGHT);

@@ -206,7 +206,7 @@ try {
   assert.deepEqual(await snapshot(), saved);
   assert.equal(
     await page.evaluate(() => window.__privateer.state().schemaVersion),
-    8,
+    10,
   );
   // Real arrival and one-time prize use fixture defeated foes to isolate inventory ownership.
   const loot = await page.evaluate(async () => {

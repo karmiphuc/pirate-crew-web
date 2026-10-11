@@ -70,3 +70,9 @@ One optional accessory derives effects from its equipped enum, so repeated equip
 ## Version 0.13.0 attributes and groups
 
 Six bounded STR/VIT/INT/DEX/AGI/LUCK attributes, earned point budgets and four persistent groups follow the [progression contract](../design/crew-progression.md). Training and group assignment require living allies in port; both use atomic checkpoint writes. Group selection filters living members, preserves explicit empty groups and copies IDs into the existing command queue. Direct orders retain existing task interruption; changing group alone preserves duty/orders. Exact Steam formulas, ranked skills and reference point rates remain unmeasured or deferred.
+
+## Version 0.14.0 books, ranks and work experience
+
+Eight skills have ranks 0–5, where zero is unlearned. Each book reading spends one matching book (owned first, otherwise 60 gold) and one shared training point. Learning a work skill assigns it; learning Swimming and all known-skill upgrades preserve the current duty. Rank upgrades preserve orders/work. Successful completed jobs award two intelligence-adjusted XP exactly once; interruption, no resources and idle duty award none. Guard derives added damage; work and swim/climb derive added rates. Cap/phase/ownership/key/living-recipient guards apply before consumption. All numeric rules are provisional; see the [book contract](../design/skill-books.md).
+
+Canvas hits follow current rendered body position, not rounded deck positions. Ignore dead/absent/inactive/hidden bodies and the invisible lower portion of cropped swimmers. Actual display order resolves overlaps and actor recreation. Selection and move/attack commands retain existing semantics and bounded queues.

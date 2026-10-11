@@ -105,3 +105,7 @@ Version 0.12.0 adds only fixed carried enums and an at-most-two-entry owned acce
 ## Version 0.13.0 progression ownership
 
 Each pirate owns six fixed attribute numbers, one point counter and one group enum. Derived combat/XP effects run at their existing boundaries, with no stacked modifier cache. Four group controls and a six-card inspector reuse delegated Application input; a closed inspector retains no attribute DOM. Group scans are bounded by the 24-actor cap within the existing 100 ms UI refresh. No extra textures, sprites, subscriptions, timers, workers or pools are introduced. Schema migration bounds crew before copying; imported attribute objects are explicitly reconstructed.
+
+## Version 0.14.0 skill and input ownership
+
+Each pirate owns eight fixed rank numbers and one lifetime-spend counter; the campaign owns eight fixed book counters. Progression runs at existing work, attack and sea boundaries. Work progress uses exact integer units (80 per baseline tick), composing rank fifths, half morale and 5/4 Industrious without fractional drift; the longest job stays below 13,000 units. UI cards reuse existing delegated modal input and dispose with the modal. Hit testing scans at most 24 existing body views only on clicks, with no candidate array, bounds cache or new listener. There are no new textures, timers, pools, workers or retained-world snapshots. Repeat trades, scene restarts and full disposal must retain established resource counts.

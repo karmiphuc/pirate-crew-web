@@ -1,0 +1,93 @@
+{
+  "version": "0.14.0",
+  "unitScenarios": 228,
+  "fleet": {
+    "layouts": [
+      {
+        "kind": "sloop",
+        "parts": 63,
+        "depth": 6,
+        "fittings": 3
+      },
+      {
+        "kind": "brig",
+        "parts": 73,
+        "depth": 8,
+        "fittings": 6
+      },
+      {
+        "kind": "flagship",
+        "parts": 96,
+        "depth": 8,
+        "fittings": 6
+      }
+    ],
+    "facing": {
+      "directions": [
+        "left",
+        "right"
+      ],
+      "verticalLeft": 21
+    },
+    "equippedCombatDirections": 6,
+    "pannedSelectionAndMove": "passed",
+    "cameraFallbackUiWithoutRevision": "passed",
+    "nativeCameraZoom": 1,
+    "cabinHeadroomPx": {
+      "minimum": 26,
+      "checkedActors": 17,
+      "nativeSpriteHeight": 56
+    },
+    "boardingAndLowerCabin": "passed",
+    "retreatCaptureReload": "passed",
+    "capturedCannonAccess": "passed",
+    "forcedStaticRedrawMs": {
+      "samples": 100,
+      "p95": 3.2000000029802322,
+      "max": 18.69999999552965
+    },
+    "sceneRestarts": 10,
+    "compactOverflow": "passed",
+    "disposal": "passed",
+    "views": {
+      "artwork": true,
+      "sourceImages": 0,
+      "actors": 3,
+      "equipment": 3,
+      "grips": 3,
+      "subscriptions": 4,
+      "clouds": 3,
+      "textures": 10,
+      "shutdownHandlers": 13,
+      "destroyHandlers": 13
+    },
+    "errors": []
+  },
+  "fleetTimingScope": "Functional checks overlapped focused capture/production hosting. Redraw numbers are not an isolated benchmark. Fleet behavior/geometry is unchanged by the later hold-book markup addition.",
+  "productionHosting": {
+    "root": "passed",
+    "repositoryPath": "passed",
+    "diagnosticsInProduction": "absent",
+    "scope": "Final book-hold UI build"
+  },
+  "audit": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "dependencies": {
+      "prod": 3,
+      "dev": 97,
+      "optional": 54,
+      "peer": 0,
+      "peerOptional": 0,
+      "total": 99
+    }
+  },
+  "integerWorkBoundary": "Rank-four repair: no output/XP at tick 49, exact one repair/input/XP award at tick 50; no additional award afterward.",
+  "focusedRunScope": "Book/group/fleet functional runs precede the final integer-work correction and descriptive button labels. Final 228-unit, production-hosting and isolated full lifecycle checks include those changes."
+}
