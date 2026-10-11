@@ -62,3 +62,7 @@ Swimming is a passive skill purchased in port; it does not occupy a duty slot. T
 ## Targeted consumables, 0.11.0
 
 Hold use selects one living allied recipient and rejects unsafe sea/fall/transit states. Rum restores morale, Elixir health, bone meal hunger and a feather XP, all clamped. Full-stat/max-level use keeps the item. XP awards cross every earned threshold, bounded by level 100/stat caps. Recovered weapons transfer one shared stock item to one personal locker; switching an owned weapon does not consume another. Simultaneous melee/ranged/accessory slots remain deferred. [Authored values and tests](../design/loot-and-seeded-world.md).
+
+## Carried accessories, 0.12.0
+
+One optional accessory derives effects from its equipped enum, so repeated equip/stow cannot stack bonuses. Boots of Mobility multiply deck/ladder path speed by 1.25, combining with Swift; sea/rope/rescue speed is unchanged. Diaper excludes that living supported home wearer from the hundred-tick dirt contribution. Dead, falling, at-sea and away-vessel pirates add no home dirt. Port-only gear changes are saved atomically and retain individual personal ownership. [Authored values and save rules](../design/crew-loadouts.md).

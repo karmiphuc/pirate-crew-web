@@ -1347,3 +1347,110 @@ footer button {
   color: #304640;
   border: 1px solid #9ba28c;
 }
+
+.loadout-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.loadout-slot {
+  padding: 14px 10px 10px;
+  background: #20383c;
+  border: 1px solid #4c6764;
+  text-align: center;
+  min-width: 0;
+}
+.slot-label {
+  display: block;
+  color: #c8d6c2;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.loadout-slot .item-icon {
+  display: block;
+  margin: auto;
+  width: 56px;
+  height: 56px;
+}
+.loadout-slot h4 {
+  margin: 10px 0 6px;
+  font-size: 13px;
+  color: #ecd9ac;
+}
+.modal-card .loadout-slot p {
+  color: #c8d6c2;
+  font-size: 10px;
+  line-height: 1.6;
+  min-height: 32px;
+}
+.empty-slot {
+  display: block;
+  height: 56px;
+  font-size: 32px;
+  color: #b7c7b4;
+  line-height: 56px;
+}
+.loadout-slot button {
+  width: 100%;
+}
+.modal-card .loadout-hand {
+  font-size: 11px;
+  padding: 10px 0;
+}
+.accessory-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.accessory-grid article {
+  display: flex;
+  align-items: start;
+  gap: 10px;
+  border: 1px solid #c4c2a5;
+  padding: 12px;
+  min-width: 0;
+}
+.accessory-grid article > div {
+  min-width: 0;
+}
+.accessory-grid strong {
+  font-size: 12px;
+}
+.modal-card .accessory-grid p {
+  font-size: 11px;
+}
+@media (max-width: 650px) {
+  .loadout-grid,
+  .accessory-grid {
+    grid-template-columns: 1fr;
+  }
+  .loadout-slot {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 0 12px;
+    text-align: left;
+  }
+  .loadout-slot .item-icon,
+  .loadout-slot .empty-slot {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    margin: auto;
+  }
+  .loadout-slot .slot-label,
+  .loadout-slot h4,
+  .loadout-slot p,
+  .loadout-slot button {
+    grid-column: 2;
+  }
+  .loadout-slot .slot-label {
+    margin-bottom: 0;
+  }
+  .loadout-slot h4 {
+    margin-top: 4px;
+  }
+  .modal-card .loadout-slot p {
+    min-height: 0;
+  }
+}

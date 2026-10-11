@@ -9,7 +9,7 @@ import {
   FURNITURE_STOCK_CAP,
 } from "../sim/model";
 import { validateFurniture } from "../sim/furniture";
-import { emptyItemStock, ITEM_KINDS, ITEM_STOCK_CAP } from "../sim/items";
+import { ITEM_KINDS, ITEM_STOCK_CAP, ACCESSORY_KINDS } from "../sim/items";
 import { Navigation, Search, validateLayout } from "../sim/navigation";
 import { tileNode } from "../sim/model";
 const MAX = 1_000_000_000;
@@ -119,10 +119,50 @@ export function validateSave(value: unknown): Campaign {
     };
   }
   if (record(value) && value.schemaVersion === 6)
-    value = { ...value, schemaVersion: 7, itemStock: emptyItemStock() };
+    value = {
+      ...value,
+      schemaVersion: 7,
+      itemStock: {
+        rum: 0,
+        elixir: 0,
+        boneMeal: 0,
+        feather: 0,
+        sabre: 0,
+        pistol: 0,
+      },
+    };
+  if (record(value) && value.schemaVersion === 7) {
+    const stock = value.itemStock;
+    if (
+      !record(stock) ||
+      Object.keys(stock).length !== 6 ||
+      ["rum", "elixir", "boneMeal", "feather", "sabre", "pistol"].some(
+        (k) =>
+          !Object.hasOwn(stock, k) || !integer(stock[k], 0, ITEM_STOCK_CAP),
+      )
+    )
+      throw new Error("Invalid legacy item stock.");
+    if (!Array.isArray(value.pirates)) throw new Error("Invalid legacy crew.");
+    value = {
+      ...value,
+      schemaVersion: 8,
+      itemStock: { ...stock, boots: 0, diaper: 0 },
+      pirates: value.pirates.map((p) =>
+        record(p)
+          ? {
+              ...p,
+              meleeWeapon: p.weapon === "pistol" ? null : p.weapon,
+              rangedWeapon: p.weapon === "pistol" ? "pistol" : null,
+              accessory: null,
+              ownedAccessories: [],
+            }
+          : p,
+      ),
+    };
+  }
   if (
     !record(value) ||
-    value.schemaVersion !== 7 ||
+    value.schemaVersion !== 8 ||
     !text(value.campaignId) ||
     !["port", "travel", "victory", "won"].includes(String(value.phase))
   )
@@ -148,6 +188,7 @@ export function validateSave(value: unknown): Campaign {
     Object.keys(value.itemStock).length !== ITEM_KINDS.length ||
     ITEM_KINDS.some(
       (k) =>
+        !Object.hasOwn(value.itemStock as object, k) ||
         !integer(
           (value.itemStock as Record<string, unknown>)[k],
           0,
@@ -309,6 +350,18 @@ export function validateSave(value: unknown): Campaign {
       p.ownedWeapons.some((w) => !Object.hasOwn(WEAPONS, String(w))) ||
       new Set(p.ownedWeapons).size !== p.ownedWeapons.length ||
       !p.ownedWeapons.includes(p.weapon) ||
+      (p.meleeWeapon !== null &&
+        !["cutlass", "sabre"].includes(String(p.meleeWeapon))) ||
+      (p.rangedWeapon !== null && p.rangedWeapon !== "pistol") ||
+      (p.meleeWeapon === null && p.rangedWeapon === null) ||
+      (p.meleeWeapon !== null && !p.ownedWeapons.includes(p.meleeWeapon)) ||
+      (p.rangedWeapon !== null && !p.ownedWeapons.includes(p.rangedWeapon)) ||
+      (p.weapon !== p.meleeWeapon && p.weapon !== p.rangedWeapon) ||
+      !Array.isArray(p.ownedAccessories) ||
+      p.ownedAccessories.length > ACCESSORY_KINDS.length ||
+      p.ownedAccessories.some((a) => !ACCESSORY_KINDS.includes(a)) ||
+      new Set(p.ownedAccessories).size !== p.ownedAccessories.length ||
+      (p.accessory !== null && !p.ownedAccessories.includes(p.accessory)) ||
       !integer(p.armor, 0, 8) ||
       !["captain", "boarder", "gunner", "medic"].includes(String(p.role))
     )
@@ -358,7 +411,7 @@ export function validateSave(value: unknown): Campaign {
       throw new Error("Invalid journal.");
   // Only explicit fields enter the application. Unknown properties are discarded.
   return {
-    schemaVersion: 7,
+    schemaVersion: 8,
     campaignId: state.campaignId,
     revision: state.revision,
     tick: state.tick,
@@ -391,6 +444,10 @@ export function validateSave(value: unknown): Campaign {
       skills: [...p.skills],
       traits: [...p.traits],
       weapon: p.weapon,
+      meleeWeapon: p.meleeWeapon,
+      rangedWeapon: p.rangedWeapon,
+      accessory: p.accessory,
+      ownedAccessories: [...p.ownedAccessories],
       ownedWeapons: [...p.ownedWeapons],
       armor: p.armor,
       side: p.side,

@@ -52,3 +52,7 @@ Destroyed geometry, falling, swimming, and unsafe gaps remain deferred as a coup
 ## Version 0.4 structural effects
 
 At damage 100 the actual plank disappears from rendering/navigation. A cannon strike crossing that threshold replaces the affected graph and cancels stale paths/work; the next movement step resolves support or a fall. Repair crossing back below 100 restores support and safely raises occupants. Aggregate hull health still controls sinking. Capture additionally requires intact station access; safe spoils/escape transitions require reachable home survivors. Original projectile physics, general fragment simulation and swimming remain deferred.
+
+## Carried weapon choice, 0.12.0
+
+Each actor may carry one blade and one pistol. At cooldown zero, choose melee for a target within its range, otherwise the carried pistol if available. Keep the prior attack weapon during its shared cooldown; selecting/stowing cannot reset it for extra attacks. Ranged-only actors retain their pistol in close combat; melee-only actors pursue valid reachable targets. Intact hull tile rectangles block a chest-height ranged segment; ladders/destroyed hull/decorative rear cabin art do not. No physics or persistent shot cache is involved. Independent per-weapon reload, handgun ammunition, crit/accuracy/knockback and weapon instance levels remain gaps. [Contract and evidence](../design/crew-loadouts.md).

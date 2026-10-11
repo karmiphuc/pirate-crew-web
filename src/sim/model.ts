@@ -1,4 +1,4 @@
-import { emptyItemStock, type ItemStock } from "./items";
+import { emptyItemStock, type ItemStock, type Accessory } from "./items";
 import { generateWorld } from "./world";
 
 export const LIMITS = {
@@ -134,6 +134,10 @@ export interface Pirate {
   skills: Skill[];
   traits: Trait[];
   weapon: Weapon;
+  meleeWeapon: Exclude<Weapon, "pistol"> | null;
+  rangedWeapon: "pistol" | null;
+  accessory: Accessory | null;
+  ownedAccessories: Accessory[];
   ownedWeapons: Weapon[];
   armor: number;
   side: "ally" | "enemy";
@@ -172,7 +176,7 @@ export interface Notice {
   tone: "info" | "good" | "bad";
 }
 export interface Campaign {
-  schemaVersion: 7;
+  schemaVersion: 8;
   campaignId: string;
   revision: number;
   tick: number;
@@ -298,6 +302,10 @@ export function makePirate(
           ? ["guard", "gunner"]
           : ["guard"],
     weapon: index === 2 ? "pistol" : "cutlass",
+    meleeWeapon: "cutlass",
+    rangedWeapon: index === 2 ? "pistol" : null,
+    accessory: null,
+    ownedAccessories: [],
     ownedWeapons: index === 2 ? ["cutlass", "pistol"] : ["cutlass"],
     traits: side === "ally" && index >= 3 ? [recruitTrait(index)] : [],
     armor: 0,
@@ -329,7 +337,7 @@ export function createCampaign(
   seed = seed >>> 0 || 1;
   const world = generateWorld(seed);
   return {
-    schemaVersion: 7,
+    schemaVersion: 8,
     campaignId,
     revision: 0,
     tick: 0,

@@ -55,3 +55,5 @@ Generation tokens invalidate callbacks from old campaigns/scenes. Phase transiti
 - [Roomier ships and bidirectional crew](design/roomier-ships.md): presentation grid, native crew scale, camera ownership/input and observed validation.
 
 - [Owned items and generated regions](design/loot-and-seeded-world.md): six fixed campaign stock counters; bounded pure loot/world helpers use local seeds; no generated encounter cache or new renderer resources. Existing application delegation owns hold/map DOM, and explicit save snapshots own transaction rollback.
+
+- [Carried loadouts](design/crew-loadouts.md): plain owned slot enums, pure weapon/shot helpers, no cached physics objects, bounded personal accessories and existing independent hand/item rendering. UI markup is a small DOM projection with delegated input; transaction snapshots own rollback.

@@ -8,15 +8,35 @@ export const ITEMS = {
   feather: { name: "Feather", price: 30, effect: "experience", amount: 100 },
   sabre: { name: "Steel sabre", price: 60, effect: "equipment", amount: 0 },
   pistol: { name: "Flintlock", price: 85, effect: "equipment", amount: 0 },
+  boots: {
+    name: "Boots of Mobility",
+    price: 65,
+    effect: "equipment",
+    amount: 0,
+  },
+  diaper: { name: "Diaper", price: 40, effect: "equipment", amount: 0 },
 } as const;
 export type ItemKind = keyof typeof ITEMS;
+export type Accessory = "boots" | "diaper";
+export const ACCESSORY_KINDS = ["boots", "diaper"] as const;
 export type ItemStock = Record<ItemKind, number>;
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[];
 export const ITEM_STOCK_CAP = 99;
 export function emptyItemStock(): ItemStock {
-  return { rum: 0, elixir: 0, boneMeal: 0, feather: 0, sabre: 0, pistol: 0 };
+  return {
+    rum: 0,
+    elixir: 0,
+    boneMeal: 0,
+    feather: 0,
+    sabre: 0,
+    pistol: 0,
+    boots: 0,
+    diaper: 0,
+  };
 }
 export function itemDescription(kind: ItemKind) {
+  if (kind === "boots") return "Walk and climb 25% faster";
+  if (kind === "diaper") return "This pirate adds no dirt to the home deck";
   const item = ITEMS[kind];
   switch (item.effect) {
     case "health":
@@ -34,7 +54,7 @@ export function itemDescription(kind: ItemKind) {
 export function itemEffectReason(p: Pirate, kind: ItemKind): string | null {
   const effect = ITEMS[kind].effect;
   if (effect === "equipment")
-    return "Use Duties & equipment to equip this weapon in port.";
+    return "Use Duties & equipment to equip this item in port.";
   if (effect === "health" && p.hp >= p.maxHp) return "Health is already full.";
   if (effect === "morale" && p.morale >= 100) return "Morale is already full.";
   if (effect === "hunger" && p.hunger >= 100) return "Hunger is already full.";
@@ -69,6 +89,13 @@ export function encounterLoot(
     const kind = ITEM_KINDS.find((k) => stock[k] > 0)!;
     stock[kind]--;
     stock[(seed >>> 0) % 2 === 0 ? "sabre" : "pistol"]++;
+  }
+  if (node.danger >= 2 && (seed >>> 0) % 3 === 0) {
+    const kind = ITEM_KINDS.find(
+      (k) => stock[k] > 0 && ITEMS[k].effect !== "equipment",
+    )!;
+    stock[kind]--;
+    stock[(seed >>> 0) % 2 === 0 ? "boots" : "diaper"]++;
   }
   return stock;
 }

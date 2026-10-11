@@ -36,10 +36,12 @@ import {
   ITEM_KINDS,
   ITEM_STOCK_CAP,
   type ItemKind,
+  type Accessory,
   encounterLoot,
   itemDescription,
 } from "./sim/items";
 import { itemIcon } from "./ui/item-icons";
+import { loadoutMarkup } from "./ui/loadout";
 import {
   acquireWriter,
   checkpoint,
@@ -102,6 +104,7 @@ class Application implements ViewHost {
   private accumulator = 0;
   private uiTime = 0;
   private uiRevision = -1;
+  private uiCameraMode = "";
   private closed = false;
   private generation = 0;
   private bannerPhase = "";
@@ -693,6 +696,8 @@ class Application implements ViewHost {
       case "sell-item":
       case "teach":
       case "equip":
+      case "stow-weapon":
+      case "equip-accessory":
       case "armor":
         await this.guarded(async () => {
           // Rest is allowed to recover a damaged port state that cannot yet be checkpointed.
@@ -720,6 +725,16 @@ class Application implements ViewHost {
             changed = this.sim.teach(Number(data.id), data.kind as Skill);
           if (action === "equip")
             changed = this.sim.equip(Number(data.id), data.kind as Weapon);
+          if (action === "stow-weapon")
+            changed = this.sim.stowWeapon(
+              Number(data.id),
+              data.kind as "melee" | "ranged",
+            );
+          if (action === "equip-accessory")
+            changed = this.sim.equipAccessory(
+              Number(data.id),
+              data.kind === "none" ? null : (data.kind as Accessory),
+            );
           if (action === "armor") changed = this.sim.armor(Number(data.id));
           if (changed) {
             try {
@@ -857,21 +872,13 @@ class Application implements ViewHost {
         )}"/></svg>${s.world.map((n) => `<button data-action="destination" data-id="${n.id}" class="map-node ${n.kind} ${n.cleared ? "cleared" : ""} ${s.location === n.id ? "here" : ""}" style="left:${n.x}%;top:${n.y}%" aria-label="${escape(n.name)}${n.cleared ? ", already explored" : `, danger ${n.danger}`}" aria-pressed="false" title="${escape(n.name)}"><span>${n.kind === "port" ? "⚓" : n.kind === "island" ? "✦" : n.kind === "boss" ? "☠" : "⚔"}</span><small>${escape(n.name)}</small></button>`).join("")}<span class="map-rose">N<br>✧<br>S</span></div><div id="route-details" class="route-details"><span>Select a destination on the chart.</span><small>Raw provisions: ${s.food} · Meals: ${s.meals} · Gold: ${s.gold}</small></div>`;
     } else if (kind === "crew-settings") {
       title = "Crew duties & equipment";
+      cls = "wide";
       const p = s.pirates.find(
         (p) => p.id === this.selection[0] && p.side === "ally",
       );
       if (!p) body = "<p>Select a crew member first.</p>";
       else
-        body = `<p class="modal-intro"><strong>${escape(p.name)}</strong> · ${p.role} · Level ${p.level} · ${p.xp} XP · Gold ${s.gold}<br>Direct movement and combat orders interrupt work. Choose a duty to resume it.</p><h3>Crew traits</h3><p>${p.traits.length ? p.traits.map((t) => `${TRAITS[t].name}: ${TRAITS[t].description}`).join("<br>") : "No special traits."}</p><h3>Duty roster</h3><div class="duty-grid">${DUTIES.map((d) => `<div class="duty-item ${p.duty === d ? "active" : ""}"><strong>${DUTY_NAMES[d]}</strong><p>${{ guard: "Free for boarding and fighting.", cook: "Galley: 1 raw provision → 2 cooked meals.", clean: "Clean decks protect crew morale.", repair: "1 timber repairs 12 hull health and up to 60% plank wear.", medic: "1 medicine restores 25 crew health.", gunner: "Works at the cannon and fires when ready.", fish: "Fishes from the rail: 1 raw provision per catch." }[d]}</p><button data-action="${p.skills.includes(d) ? "duty" : "teach"}" data-id="${p.id}" data-kind="${d}" ${(!p.skills.includes(d) && s.phase !== "port") || p.duty === d ? "disabled" : ""}>${p.duty === d ? "Assigned" : p.skills.includes(d) ? "Assign duty" : "Skill book · 60 gold"}</button></div>`).join("")}</div><h3>Sea safety</h3><p>Swimming lets this pirate return to a reachable rail after falling overboard. Untrained pirates need another crewmate to throw a rescue line; sea exposure can be fatal.</p><button data-action="teach" data-id="${p.id}" data-kind="swim" ${p.skills.includes("swim") || s.phase !== "port" ? "disabled" : ""}>${p.skills.includes("swim") ? "Swimming learned" : "Swimming book · 60 gold"}</button><h3>Weapon locker</h3><div class="settings-grid">${Object.entries(
-          WEAPONS,
-        )
-          .map(
-            ([key, w]) =>
-              `<button data-action="equip" data-id="${p.id}" data-kind="${key}" ${s.phase !== "port" || p.weapon === key ? "disabled" : ""}>${w.name} · ${p.weapon === key ? "Equipped" : p.ownedWeapons.includes(key as Weapon) ? "Equip owned" : key !== "cutlass" && s.itemStock[key as "sabre" | "pistol"] > 0 ? "Equip from hold" : `${w.price} gold`}<small>${w.range > 2 ? "Ranged" : "Melee"} · ${p.damage + w.bonus} damage</small></button>`,
-          )
-          .join(
-            "",
-          )}<button data-action="armor" data-id="${p.id}" ${s.phase !== "port" || p.armor >= 8 ? "disabled" : ""}>Armor · ${p.armor}/8 protection<small>Upgrade +4 · 50 gold</small></button></div><p class="muted">Books and equipment are sold in port. Bought or recovered weapons stay in this pirate’s locker; switching back is free. Work slows below 30 morale.</p>`;
+        body = `<p class="modal-intro"><strong>${escape(p.name)}</strong> · ${p.role} · Level ${p.level} · ${p.xp} XP · Gold ${s.gold}<br>Direct movement and combat orders interrupt work. Choose a duty to resume it.</p>${loadoutMarkup(p, s)}<h3>Crew traits</h3><p>${p.traits.length ? p.traits.map((t) => `${TRAITS[t].name}: ${TRAITS[t].description}`).join("<br>") : "No special traits."}</p><h3>Duty roster</h3><div class="duty-grid">${DUTIES.map((d) => `<div class="duty-item ${p.duty === d ? "active" : ""}"><strong>${DUTY_NAMES[d]}</strong><p>${{ guard: "Free for boarding and fighting.", cook: "Galley: 1 raw provision → 2 cooked meals.", clean: "Clean decks protect crew morale.", repair: "1 timber repairs 12 hull health and up to 60% plank wear.", medic: "1 medicine restores 25 crew health.", gunner: "Works at the cannon and fires when ready.", fish: "Fishes from the rail: 1 raw provision per catch." }[d]}</p><button data-action="${p.skills.includes(d) ? "duty" : "teach"}" data-id="${p.id}" data-kind="${d}" ${(!p.skills.includes(d) && s.phase !== "port") || p.duty === d ? "disabled" : ""}>${p.duty === d ? "Assigned" : p.skills.includes(d) ? "Assign duty" : "Skill book · 60 gold"}</button></div>`).join("")}</div><h3>Sea safety</h3><p>Swimming lets this pirate return to a reachable rail after falling overboard. Untrained pirates need another crewmate to throw a rescue line; sea exposure can be fatal.</p><button data-action="teach" data-id="${p.id}" data-kind="swim" ${p.skills.includes("swim") || s.phase !== "port" ? "disabled" : ""}>${p.skills.includes("swim") ? "Swimming learned" : "Swimming book · 60 gold"}</button>`;
     } else if (kind === "hold") {
       title = "Ship’s hold";
       const crew = s.pirates.filter((p) => p.side === "ally" && p.hp > 0),
@@ -883,11 +890,11 @@ class Application implements ViewHost {
               ? this.sim.itemUseReason(p.id, kind)
               : "Select a living crew member.",
             gear = item.effect === "equipment";
-          return `<article class="hold-item">${itemIcon(kind)}<div><h3>${item.name}<span class="item-count">× ${s.itemStock[kind]}</span></h3><p>${itemDescription(kind)}</p>${gear ? `<button data-action="crew-settings" ${p ? "" : "disabled"}>Open weapon locker</button>` : `<button data-action="use-item" data-kind="${kind}" data-id="${p?.id ?? 0}" ${reason ? "disabled" : ""}>Use on ${escape(p?.name ?? "crew")}</button><small>${escape(reason ?? "One item will be used.")}</small>`}</div></article>`;
+          return `<article class="hold-item">${itemIcon(kind)}<div><h3>${item.name}<span class="item-count">× ${s.itemStock[kind]}</span></h3><p>${itemDescription(kind)}</p>${gear ? `<button data-action="crew-settings" ${p ? "" : "disabled"}>Open equipment locker</button>` : `<button data-action="use-item" data-kind="${kind}" data-id="${p?.id ?? 0}" ${reason ? "disabled" : ""}>Use on ${escape(p?.name ?? "crew")}</button><small>${escape(reason ?? "One item will be used.")}</small>`}</div></article>`;
         },
       ).join(
         "",
-      )}</div><p class="muted">Recovered weapons transfer to one pirate’s locker when equipped in port. Item use during a battle belongs to this attempt; restoring the departure checkpoint restores its inventory too.</p>`;
+      )}</div><p class="muted">Recovered gear transfers to one pirate’s locker when equipped in port. Item use during a battle belongs to this attempt; restoring the departure checkpoint restores its inventory too.</p>`;
     } else if (kind === "shop") {
       title = "Harbour market";
       body = `<p class="modal-intro">Provisions for the voyage. Keep a little gold aside for wages.</p><div class="shop-grid">${[
@@ -991,8 +998,15 @@ class Application implements ViewHost {
   private renderUI(force = false) {
     if (this.closed) return;
     const s = this.state();
-    if (!force && this.uiRevision === s.revision) return;
+    const cameraMode = this.sea?.cameraMode ?? "crew";
+    if (
+      !force &&
+      this.uiRevision === s.revision &&
+      this.uiCameraMode === cameraMode
+    )
+      return;
     this.uiRevision = s.revision;
+    this.uiCameraMode = cameraMode;
     for (const key of ["gold", "food", "ammo", "medicine", "parts"] as const)
       el(key).textContent = String(s[key]);
     el("location").textContent =

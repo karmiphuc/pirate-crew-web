@@ -1,0 +1,210 @@
+{
+  "buildVersion": "0.12.0",
+  "date": "2026-10-11",
+  "timingScope": "Only the separately recorded full integration run is an isolated frame/tick sample. Focused regressions may overlap in SwiftShader.",
+  "productionHosting": {
+    "root": "passed",
+    "repositoryPath": "passed"
+  },
+  "items": {
+    "textContrastMinimum": 6.5857454290956845,
+    "purchasesAndSales": "passed",
+    "purchaseSaleAndUseQuotaRollback": "passed",
+    "targetedUseAndNoWaste": "passed",
+    "recoveredWeaponTransfer": "passed",
+    "saveReloadSchema8": "passed",
+    "battleUseAndOnceOnlyLoot": "passed",
+    "prizeReload": "passed",
+    "holdPanelCycles": 50,
+    "sceneRestarts": 10,
+    "compactOverflow": "passed",
+    "disposal": "passed",
+    "views": {
+      "artwork": true,
+      "sourceImages": 0,
+      "actors": 3,
+      "equipment": 3,
+      "grips": 3,
+      "subscriptions": 4,
+      "clouds": 3,
+      "textures": 10,
+      "shutdownHandlers": 13,
+      "destroyHandlers": 13
+    },
+    "errors": []
+  },
+  "world": {
+    "locations": 18,
+    "seedInputValidation": "passed",
+    "seed42AndReload": "passed",
+    "keyboardRouteSelection": "passed",
+    "actualRoutePreviewAndTravel": "passed",
+    "seededIslandBoardingChestAndReturn": "passed",
+    "clearedRevisitAndReload": "passed",
+    "compactMapOverflow": "passed",
+    "disposal": "passed",
+    "errors": []
+  },
+  "sea": {
+    "swimmingBookAndReload": "passed",
+    "timedRopeAndPause": "passed",
+    "swimmingCropAndStoredWeapons": "passed",
+    "rescueControlAndLine": "passed",
+    "sceneRestartDuringRescue": "passed",
+    "cropAndWeaponRecovery": "passed",
+    "prizeCheckpoint": "passed",
+    "seaRollbackOnQuotaFailure": "passed",
+    "restAndReloadRecovery": "passed",
+    "diagnostics": {
+      "frameMs": {
+        "count": 3,
+        "p50": 15,
+        "p95": 15,
+        "p99": 15
+      },
+      "tickMs": {
+        "count": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "stalls": 0,
+      "views": {
+        "artwork": true,
+        "sourceImages": 0,
+        "actors": 3,
+        "equipment": 3,
+        "grips": 3,
+        "subscriptions": 4,
+        "clouds": 3,
+        "textures": 10,
+        "shutdownHandlers": 13,
+        "destroyHandlers": 13
+      },
+      "graphs": 1,
+      "searches": 0,
+      "commands": 0,
+      "audioVoices": 0,
+      "tasks": 0,
+      "falls": 0,
+      "sea": 0,
+      "swimmers": 0,
+      "crossings": 0,
+      "claims": 0,
+      "listeners": 5,
+      "saveWrites": 0,
+      "lock": "owned",
+      "tick": 378,
+      "phase": "port"
+    },
+    "errors": []
+  },
+  "furniture": {
+    "purchases": "passed",
+    "sale": "passed",
+    "purchaseQuotaRollback": "passed",
+    "draftCancellation": "passed",
+    "invalidFloor": "passed",
+    "refitQuotaRollback": "passed",
+    "refitReload": "passed",
+    "removeToStock": "passed",
+    "sceneRestarts": 10,
+    "compactBuilder": "passed",
+    "disposal": "passed",
+    "views": {
+      "artwork": true,
+      "sourceImages": 0,
+      "actors": 3,
+      "equipment": 3,
+      "grips": 3,
+      "subscriptions": 4,
+      "clouds": 3,
+      "textures": 10,
+      "shutdownHandlers": 13,
+      "destroyHandlers": 13
+    },
+    "errors": []
+  },
+  "ship": {
+    "roofMovement": "passed",
+    "editorCancelCommitReload": "passed",
+    "multideckMovement": "passed",
+    "destroyedRoof": "passed",
+    "damagedBlueprint": "passed",
+    "sceneRestarts": 10,
+    "compactLayout": "passed",
+    "disposal": "passed",
+    "views": {
+      "artwork": true,
+      "sourceImages": 0,
+      "actors": 5,
+      "equipment": 5,
+      "grips": 5,
+      "subscriptions": 4,
+      "clouds": 3,
+      "textures": 10,
+      "shutdownHandlers": 13,
+      "destroyHandlers": 13
+    },
+    "errors": []
+  },
+  "fleet": {
+    "layouts": [
+      {
+        "kind": "sloop",
+        "parts": 63,
+        "depth": 6,
+        "fittings": 3
+      },
+      {
+        "kind": "brig",
+        "parts": 73,
+        "depth": 8,
+        "fittings": 6
+      },
+      {
+        "kind": "flagship",
+        "parts": 96,
+        "depth": 8,
+        "fittings": 6
+      }
+    ],
+    "facing": {
+      "directions": ["left", "right"],
+      "verticalLeft": 21
+    },
+    "equippedCombatDirections": 6,
+    "pannedSelectionAndMove": "passed",
+    "nativeCameraZoom": 1,
+    "cabinHeadroomPx": {
+      "minimum": 26,
+      "checkedActors": 17,
+      "nativeSpriteHeight": 56
+    },
+    "boardingAndLowerCabin": "passed",
+    "retreatCaptureReload": "passed",
+    "capturedCannonAccess": "passed",
+    "forcedStaticRedrawMs": {
+      "samples": 100,
+      "p95": 0.8000000044703484,
+      "max": 23.80000000447035
+    },
+    "sceneRestarts": 10,
+    "compactOverflow": "passed",
+    "disposal": "passed",
+    "views": {
+      "artwork": true,
+      "sourceImages": 0,
+      "actors": 3,
+      "equipment": 3,
+      "grips": 3,
+      "subscriptions": 4,
+      "clouds": 3,
+      "textures": 10,
+      "shutdownHandlers": 13,
+      "destroyHandlers": 13
+    },
+    "errors": [],
+    "cameraFallbackUiWithoutRevision": "passed"
+  }
+}

@@ -107,6 +107,8 @@ try {
     feather: 1,
     sabre: 1,
     pistol: 0,
+    boots: 0,
+    diaper: 0,
   });
   assert.equal((await snapshot()).gold, 276);
   const before = await snapshot();
@@ -204,7 +206,7 @@ try {
   assert.deepEqual(await snapshot(), saved);
   assert.equal(
     await page.evaluate(() => window.__privateer.state().schemaVersion),
-    7,
+    8,
   );
   // Real arrival and one-time prize use fixture defeated foes to isolate inventory ownership.
   const loot = await page.evaluate(async () => {
@@ -332,7 +334,7 @@ try {
     purchaseSaleAndUseQuotaRollback: "passed",
     targetedUseAndNoWaste: "passed",
     recoveredWeaponTransfer: "passed",
-    saveReloadSchema7: "passed",
+    saveReloadSchema8: "passed",
     battleUseAndOnceOnlyLoot: "passed",
     prizeReload: "passed",
     holdPanelCycles: 50,

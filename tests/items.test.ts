@@ -39,6 +39,7 @@ describe("owned item hold", () => {
       sim = new Simulation(s),
       p = s.pirates[0];
     s.itemStock = {
+      ...emptyItemStock(),
       rum: 2,
       elixir: 2,
       boneMeal: 2,
@@ -206,7 +207,7 @@ describe("owned item hold", () => {
     delete old.itemStock;
     const before = structuredClone(old),
       migrated = validateSave(old);
-    expect(migrated.schemaVersion).toBe(7);
+    expect(migrated.schemaVersion).toBe(8);
     expect(migrated.itemStock).toEqual(emptyItemStock());
     expect(migrated.world).toEqual(before.world);
     expect(migrated.pirates[0].ownedWeapons).toEqual(

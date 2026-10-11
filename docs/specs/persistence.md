@@ -83,3 +83,7 @@ Adds exact three-key furnishing stock (0–64 integers) and at most 32 plain `{k
 ## Owned item hold, schema 7
 
 Schema 7 requires exactly six plain integer counters (`rum`, `elixir`, `boneMeal`, `feather`, `sabre`, `pistol`), each 0–99. Sanitize/copy explicit fields; reject missing, extra, fractional or out-of-range counters. Schema 1–6 migration is immutable and introduces empty item stock without changing maps, hulls or personal weapon lockers. Whole generated maps persist; loading never reruns the generator. Port transactions and safe-phase use restore stock/gold/crew effects together on failed writes. Battle item use is attempt-local, covered by the departure checkpoint. Once-only prize flags and item ownership must survive reload.
+
+## Carried loadouts, schema 8
+
+Persist optional melee (`cutlass`/`sabre`), ranged (`pistol`) and accessory (`boots`/`diaper`) slots, the active weapon enum, three-key personal weapon ownership and at most two unique personally owned accessories. Require at least one carried weapon; active and carried gear must be owned and in the correct slot. Shared hold stock expands to eight fixed known integer keys, each 0–99. Schema 1–7 migration is immutable: preserve existing six-kind item stock, maps and lockers, put the formerly active weapon into only its corresponding slot, and initialize empty accessory stock/lockers. Reject malformed legacy stock before extension. Failed equip/stow transactions restore slots, active weapon, ownership, stock and gold together. Renderer resources and ray caches never enter saves.

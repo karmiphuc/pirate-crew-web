@@ -1,6 +1,6 @@
 {
   "name": "pirate-crew-web",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,7 +16,8 @@
     "test:furniture:browser": "node scripts/furniture-browser-check.mjs",
     "test:fleet:browser": "node scripts/fleet-browser-check.mjs",
     "test:items:browser": "node scripts/items-browser-check.mjs",
-    "test:world:browser": "node scripts/world-browser-check.mjs"
+    "test:world:browser": "node scripts/world-browser-check.mjs",
+    "test:equipment:browser": "node scripts/equipment-browser-check.mjs"
   },
   "dependencies": {
     "phaser": "3.90.0"

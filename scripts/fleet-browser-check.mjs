@@ -327,11 +327,35 @@ try {
   });
   await page.click('[data-action="view-away"]');
   await page.click('[data-action="capture"]');
+  const capturedState = await page.evaluate(() => {
+    const app = window.__privateer;
+    return {
+      phase: app.state().phase,
+      ships: app.state().ships.length,
+      mode: app.game.scene.getScene("sea").cameraMode,
+      recent: app.state().notices.slice(-3),
+    };
+  });
+  assert.equal(capturedState.ships, 1, JSON.stringify(capturedState));
+  // Force the legal frame ordering: HUD reads away, then the scene falls back home.
+  const cameraRevision = await page.evaluate(() => {
+    const app = window.__privateer,
+      scene = app.game.scene.getScene("sea");
+    scene.cameraMode = "away";
+    app.renderUI(true);
+    const revision = app.state().revision;
+    scene.update(0, 0);
+    return revision;
+  });
   await page.waitForFunction(
     () =>
       document
         .querySelector('[data-action="view-home"]')
         .getAttribute("aria-pressed") === "true",
+  );
+  assert.equal(
+    await page.evaluate(() => window.__privateer.state().revision),
+    cameraRevision,
   );
   assert.equal(
     await page.locator('[data-action="view-away"]').isVisible(),
@@ -477,6 +501,7 @@ try {
     facing,
     equippedCombatDirections: weaponFacing,
     pannedSelectionAndMove: "passed",
+    cameraFallbackUiWithoutRevision: "passed",
     nativeCameraZoom: 1,
     cabinHeadroomPx: {
       minimum: Math.min(...headroom),

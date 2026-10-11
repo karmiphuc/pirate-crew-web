@@ -47,3 +47,5 @@ Changes that affect several systems should update their contracts and acceptance
 - [Encounter fleet and cabin review](design/ship-fleet.md): seeded sloop/brig hulls, flagship cabins/masts, real hold traversal and capture persistence.
 
 - [Owned items and seeded voyages, 0.11.0](design/loot-and-seeded-world.md): starter consumables, recovered gear, schema 7, deterministic prize ownership, eighteen-location generation and inspected browser flows.
+
+- [Carried weapons and accessories, 0.12.0](design/crew-loadouts.md): independent carried slots, shared attack timing, hull-shot blocking, two passives, immutable migration and transaction ownership.

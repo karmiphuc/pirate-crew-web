@@ -35,7 +35,10 @@ import {
   encounterLoot,
   itemEffectReason,
   awardExperience,
+  ACCESSORY_KINDS,
+  type Accessory,
 } from "./items";
+import { weaponForTarget, clearShot } from "./equipment";
 import { Navigation, Search, validateLayout, intact } from "./navigation";
 export class Simulation {
   private commands: InputCommand[] = [];
@@ -580,7 +583,10 @@ export class Simulation {
     const dx = x - p.x,
       dy = y - p.y;
     const d = Math.hypot(dx, dy);
-    const speed = 0.16 * (p.traits.includes("swift") ? 1.2 : 1);
+    const speed =
+      0.16 *
+      (p.traits.includes("swift") ? 1.2 : 1) *
+      (p.accessory === "boots" ? 1.25 : 1);
     if (d <= speed) {
       p.x = x;
       p.y = y;
@@ -781,9 +787,15 @@ export class Simulation {
     this.releaseWork(p);
     p.targetId = target.id;
     const distance = Math.abs(target.x - p.x) + Math.abs(target.y - p.y);
+    if (p.cooldown === 0) p.weapon = weaponForTarget(p, distance);
     const weapon = WEAPONS[p.weapon];
     const ranged = weapon.range > 2;
-    if (distance <= weapon.range && Math.abs(target.y - p.y) < 0.6) {
+    if (
+      distance <= weapon.range &&
+      Math.abs(target.y - p.y) < 0.6 &&
+      (!ranged ||
+        clearShot(this.state.ships.find((s) => s.id === p.shipId)!, p, target))
+    ) {
       this.searches.delete(p.id);
       p.path.length = 0;
       p.status = ranged ? "Firing pistol" : "Fighting";
@@ -923,7 +935,16 @@ export class Simulation {
     // Needs advance only on active voyages; food is prepared at the galley.
     if (["encounter", "travel"].includes(s.phase) && s.tick % 100 === 0) {
       const home = s.ships[0];
-      home.dirt = Math.min(100, home.dirt + 3);
+      const dirtyCrew = s.pirates.filter(
+        (p) =>
+          p.side === "ally" &&
+          p.hp > 0 &&
+          p.shipId === 1 &&
+          p.accessory !== "diaper" &&
+          !this.sea.has(p.id) &&
+          !this.falls.has(p.id),
+      ).length;
+      home.dirt = Math.min(100, home.dirt + dirtyCrew);
       for (const p of s.pirates)
         if (p.side === "ally" && p.hp > 0) {
           p.hunger = Math.max(
@@ -1622,12 +1643,66 @@ export class Simulation {
     s.gold -= cost;
     if (recovered) s.itemStock[weapon]--;
     if (!p.ownedWeapons.includes(weapon)) p.ownedWeapons.push(weapon);
+    if (weapon === "pistol") p.rangedWeapon = weapon;
+    else p.meleeWeapon = weapon;
     p.weapon = weapon;
     notify(
       s,
-      `${p.name} equipped ${WEAPONS[weapon].name}${cost ? ` for ${cost} gold` : " from their locker"}.`,
+      `${p.name} equipped ${WEAPONS[weapon].name}${cost ? ` for ${cost} gold` : recovered ? " from the hold" : " from their locker"}.`,
       "good",
     );
+    this.touch();
+    return true;
+  }
+  stowWeapon(id: number, slot: "melee" | "ranged") {
+    if (this.disposed || (slot !== "melee" && slot !== "ranged")) return false;
+    const s = this.state,
+      p = s.pirates.find((p) => p.id === id && p.side === "ally" && p.hp > 0);
+    if (s.phase !== "port" || !p) return false;
+    const weapon = slot === "melee" ? p.meleeWeapon : p.rangedWeapon,
+      remaining = slot === "melee" ? p.rangedWeapon : p.meleeWeapon;
+    if (!weapon || !remaining) {
+      notify(
+        s,
+        "Keep at least one weapon equipped; stowing spends nothing.",
+        "bad",
+      );
+      return false;
+    }
+    if (slot === "melee") p.meleeWeapon = null;
+    else p.rangedWeapon = null;
+    if (p.weapon === weapon) p.weapon = remaining;
+    notify(s, `${WEAPONS[weapon].name} stowed in ${p.name}’s locker.`, "good");
+    this.touch();
+    return true;
+  }
+  equipAccessory(id: number, kind: Accessory | null) {
+    if (this.disposed || (kind !== null && !ACCESSORY_KINDS.includes(kind)))
+      return false;
+    const s = this.state,
+      p = s.pirates.find((p) => p.id === id && p.side === "ally" && p.hp > 0);
+    if (s.phase !== "port" || !p || p.accessory === kind) return false;
+    if (kind === null) {
+      p.accessory = null;
+      notify(s, `${p.name} stowed their accessory.`, "good");
+    } else {
+      const owned = p.ownedAccessories.includes(kind),
+        recovered = !owned && s.itemStock[kind] > 0,
+        cost = owned || recovered ? 0 : ITEMS[kind].price;
+      if (s.gold < cost) {
+        notify(s, "Not enough gold for this accessory.", "bad");
+        return false;
+      }
+      s.gold -= cost;
+      if (recovered) s.itemStock[kind]--;
+      if (!owned) p.ownedAccessories.push(kind);
+      p.accessory = kind;
+      notify(
+        s,
+        `${p.name} equipped ${ITEMS[kind].name}${cost ? ` for ${cost} gold` : recovered ? " from the hold" : " from their locker"}.`,
+        "good",
+      );
+    }
     this.touch();
     return true;
   }
