@@ -75,3 +75,7 @@ Legacy diagonal ladder-corner samples snap to the already-validated rounded stan
 ## Version 0.9 schema 5
 
 Schemas 1–4 migrate through schema 5, preserving prior fields and validating the added Swimming skill. Sea transits and rescue ownership remain simulation-owned transient records. Saves and safe voyage/prize transitions refuse active sea owners. Port recovery is transactional: a failed save restores the prior campaign, fall origins and sea records, including elapsed exposure and rescue claims. No storage failure may silently move crew aboard or reset drowning time.
+
+## Version 0.10.0 schema 6
+
+Adds exact three-key furnishing stock (0–64 integers) and at most 32 plain `{kind,x,y}` ship fittings. Schema 1–5 migration copies the envelope/ships and introduces empty stock/placements, preserving previous hulls and maps. Validate enums, finite grid coordinates, footprint support, overlap and reachable blueprint floors; sanitize records and snapshot arrays independently. Failed furniture purchases/sales/refits restore stock and placed pieces with gold/timber and keep an editable refit for retry. Never serialize a fitting view or Graphics object.

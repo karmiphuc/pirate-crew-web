@@ -81,6 +81,21 @@ export const WEAPONS = {
   pistol: { name: "Flintlock", price: 85, bonus: 0, range: 5, cooldown: 22 },
 } as const;
 export type Weapon = keyof typeof WEAPONS;
+export const FURNISHINGS = {
+  bunk: { name: "Cabin bunk", price: 35, width: 2 },
+  table: { name: "Mess table", price: 25, width: 2 },
+  lantern: { name: "Brass lantern", price: 15, width: 1 },
+} as const;
+export type FurnitureKind = keyof typeof FURNISHINGS;
+export const FURNITURE_KINDS = ["bunk", "table", "lantern"] as const;
+export const FURNITURE_PLACED_CAP = 32;
+export const FURNITURE_STOCK_CAP = 64;
+export interface Furniture {
+  x: number;
+  y: number;
+  kind: FurnitureKind;
+}
+export type FurnitureStock = Record<FurnitureKind, number>;
 export interface Ship {
   id: number;
   name: string;
@@ -89,6 +104,7 @@ export interface Ship {
   cannonCooldown: number;
   tiles: Tile[];
   stations: Station[];
+  furnishings: Furniture[];
   hp: number;
   maxHp: number;
   revision: number;
@@ -153,7 +169,7 @@ export interface Notice {
   tone: "info" | "good" | "bad";
 }
 export interface Campaign {
-  schemaVersion: 5;
+  schemaVersion: 6;
   campaignId: string;
   revision: number;
   tick: number;
@@ -172,6 +188,7 @@ export interface Campaign {
   ammo: number;
   medicine: number;
   parts: number;
+  furnitureStock: FurnitureStock;
   notices: Notice[];
   noticeId: number;
   resolved: boolean;
@@ -234,6 +251,11 @@ export function starterShip(id = 1, enemy = false): Ship {
       { x: 14, y: 3, kind: "cannon" },
       { x: 3, y: 3, kind: "food" },
       { x: 8, y: 3, kind: "medical" },
+    ],
+    furnishings: [
+      { x: 0, y: 3, kind: "bunk" },
+      { x: 6, y: 3, kind: "table" },
+      { x: 9, y: 3, kind: "lantern" },
     ],
     hp: 100,
     maxHp: 100,
@@ -404,7 +426,7 @@ export function createCampaign(
     },
   ];
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     campaignId,
     revision: 0,
     tick: 0,
@@ -423,6 +445,7 @@ export function createCampaign(
     ammo: 12,
     medicine: 5,
     parts: 12,
+    furnitureStock: { bunk: 0, table: 0, lantern: 0 },
     notices: [
       {
         id: 1,
@@ -460,6 +483,7 @@ export function islandTerrain(name: string): Ship {
     kind: "island",
     tiles,
     stations: [],
+    furnishings: [],
     hp: 100,
     maxHp: 100,
     dirt: 0,

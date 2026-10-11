@@ -26,6 +26,7 @@ import {
 import { HAND_POSES, WEAPON_GRIPS, type HandPose } from "./weapon-handling";
 import {
   Campaign,
+  Furniture,
   nodeX,
   nodeY,
   Pirate,
@@ -46,6 +47,7 @@ export interface ViewHost {
   seaPosition(id: number): Readonly<SeaTransit> | undefined;
   draft(): Tile[] | null;
   draftStations(): Station[] | null;
+  draftFurniture(): Furniture[] | null;
   reducedMotion(): boolean;
   update(delta: number): number;
   click(
@@ -186,6 +188,7 @@ export class SeaScene extends Phaser.Scene {
   private seenLocation = -1;
   private draftRef: Tile[] | null = null;
   private stationRef: Station[] | null = null;
+  private furnitureRef: Furniture[] | null = null;
   private phaseLabel!: Phaser.GameObjects.Text;
   private shipLabel!: Phaser.GameObjects.Text;
   private enemyLabel!: Phaser.GameObjects.Text;
@@ -346,6 +349,9 @@ export class SeaScene extends Phaser.Scene {
     this.actors.clear();
     this.clouds.length = 0;
     this.seenRevision = -1;
+    this.draftRef = null;
+    this.stationRef = null;
+    this.furnitureRef = null;
   }
   get counters() {
     return {
@@ -635,6 +641,9 @@ export class SeaScene extends Phaser.Scene {
       SHIP_Y,
       TILE,
       draft !== null,
+      ship.id === 1
+        ? (this.host.draftFurniture() ?? ship.furnishings)
+        : ship.furnishings,
     );
   }
 
@@ -649,7 +658,8 @@ export class SeaScene extends Phaser.Scene {
       this.seenPhase !== s.phase ||
       this.seenLocation !== s.location ||
       this.draftRef !== draft ||
-      this.stationRef !== this.host.draftStations()
+      this.stationRef !== this.host.draftStations() ||
+      this.furnitureRef !== this.host.draftFurniture()
     ) {
       this.drawScenery();
       this.seenRevision = s.ships[0].revision;
@@ -658,6 +668,7 @@ export class SeaScene extends Phaser.Scene {
       this.seenLocation = s.location;
       this.draftRef = draft;
       this.stationRef = this.host.draftStations();
+      this.furnitureRef = this.host.draftFurniture();
     }
     const g = this.overlay;
     g.clear();

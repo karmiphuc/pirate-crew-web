@@ -4,7 +4,7 @@ A playable, unofficial browser tribute to Pixel Piracy: build a ship, hire and e
 
 The user's intended use is personal, with any sharing free/noncommercial and properly attributed. This build uses newly drawn procedural pixel art; no Steam assets or reference-game code are included.
 
-![Pixel ship cabins](docs/images/ship-cabins-harbour.webp)
+![Furnished pixel cabins](docs/images/furnished-starter.webp)
 
 ## Run locally
 
@@ -54,7 +54,7 @@ Only one browser tab can own writable save state. Backgrounding pauses the voyag
 
 ## Current scope
 
-Version 0.9.1: one harbour, ten map locations, three pirate ship encounters, two explorable islands, four pirate lords, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/fishing/repairs/healing, destructible planks, one-gap jumps, lower-deck falls, timed rope boarding, swimming/rescue and targeted restoration, hull combat, recruit traits and previews, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1 through version-4 checkpoints migrate without losing their original campaign map.
+Version 0.10.0: one harbour, ten map locations, three pirate ship encounters, two explorable islands, four pirate lords, up to twelve allied pirates, functional station duties, skill books, owned weapon loadouts and armor, cooking/cleaning/fishing/repairs/healing, destructible planks, one-gap jumps, lower-deck falls, timed rope boarding, swimming/rescue and targeted restoration, hull combat, recruit traits and previews, ship capture/plunder, hunger/morale, wages, leveling, tactical pause, refitting, escape, original synthesized sound effects, and local saves. Existing version-1 through version-5 checkpoints migrate without losing their original campaign map.
 
 This is a growing remake, not a verified 1:1 recreation. Art, names, interfaces, terrain, and balance are original. Full equipment/drop inventories, rum/toys, the complete trait catalogue, procedural world topology, music/voice lines, pets, and full original content remain. Boarding crosses a timed rope; trained swimmers and crew rescue lines recover overboard pirates. Navigation uses a deck/ladder graph. The [fidelity tracker](docs/fidelity.md) distinguishes reference behavior, delivered systems, and gaps.
 
@@ -103,3 +103,5 @@ Version 0.9.0 adds timed rope boarding, learnable Swimming, crew rescue lines, b
 ![Actual crew rescue line](docs/images/rescue-line.webp)
 
 Version 0.9.1 rebuilds ships as modular pixel vessels with cabin walls, doors/windows, exterior ladders, carved roof rails and denser timber trim. The starter has two connected cabin roofs; existing hulls retain their saved layout. [Runtime review and design decisions](docs/design/ship-cabins.md). Run `npm run test:ships:browser` for the focused movement/refit/cleanup checks.
+
+Version 0.10.0 adds owned cabin bunks/tables/lanterns, harbour purchases/sales, floor-validated builder placement/removal, once-only plunder salvage and capture transfer. These fittings are decorative; new campaigns start furnished while previous layouts are preserved. [Player flow, runtime captures and schema 6 ownership](docs/design/cabin-furnishings.md). Run `npm run test:furniture:browser` for focused refit/save failure checks.

@@ -9,6 +9,10 @@ import { Soundscape } from "./app/sound";
 import "./style.css";
 import {
   Campaign,
+  Furniture,
+  FurnitureKind,
+  FURNISHINGS,
+  FURNITURE_PLACED_CAP,
   DUTIES,
   DUTY_NAMES,
   TRAITS,
@@ -41,7 +45,7 @@ app.innerHTML = `
 <header class="masthead"><a class="brand" href="#" aria-label="Pixel Privateer home"><span class="brand-mark">☠</span><span><strong>PIXEL PRIVATEER<span class="beta">08</span></strong><small>A PIRATE’S LIFE · UNOFFICIAL BROWSER REMAKE</small></span></a><nav><button data-action="help" class="text-button">Captain’s guide</button><button data-action="settings" class="text-button">⚙ Settings</button><button data-action="save" class="save-button">↓ Save voyage</button></nav></header>
 <main>
  <section class="supplies" aria-label="Ship supplies"><div class="location"><span class="live-dot"></span><span id="location">Saltwater Harbour</span><small id="phase">IN PORT</small></div><div class="resources"><span><i class="coin">●</i><b id="gold">420</b> <small>GOLD</small></span><span><i>▣</i><b id="food">18</b> <small>FOOD</small></span><span><i>●</i><b id="ammo">12</b> <small>AMMO</small></span><span><i>✚</i><b id="medicine">5</b> <small>MEDICINE</small></span><span><i>▰</i><b id="parts">12</b> <small>TIMBER</small></span></div></section>
- <section class="voyage" aria-label="Side-view pirate game"><div class="scene-top"><div><span class="eyebrow">THE WAYWARD GULL</span><h1 id="scene-title">A small ship. A grand adventure.</h1><p id="objective">Stock the hold, gather your crew, and see what lies beyond the harbour.</p></div><button data-action="pause" id="pause" class="pause-button">Ⅱ Pause <kbd>SPACE</kbd></button></div><div id="game"></div><div id="scene-banner" class="scene-banner" hidden></div><div id="build-tools" class="build-tools" hidden><span>SHIPWRIGHT <small>Click grid to place / remove</small></span><button data-action="hull" class="active">Hull</button><button data-action="ladder">Ladder</button><button data-action="station-food">Move galley</button><button data-action="station-cannon">Move cannon</button><button data-action="station-medical">Move clinic</button><button data-action="apply-build" class="primary">Apply refit</button><button data-action="cancel-build">Cancel</button></div><div class="sea-compass" aria-hidden="true">N<br>✧</div><div class="scene-bottom"><span id="hint">Click a pirate to select · Click a deck to move · Space to pause</span><span id="ship-readout"></span><span id="save-state">Preparing logbook…</span></div></section>
+ <section class="voyage" aria-label="Side-view pirate game"><div class="scene-top"><div><span class="eyebrow">THE WAYWARD GULL</span><h1 id="scene-title">A small ship. A grand adventure.</h1><p id="objective">Stock the hold, gather your crew, and see what lies beyond the harbour.</p></div><button data-action="pause" id="pause" class="pause-button">Ⅱ Pause <kbd>SPACE</kbd></button></div><div id="game"></div><div id="scene-banner" class="scene-banner" hidden></div><div id="build-tools" class="build-tools" hidden><span>SHIPWRIGHT <small>Click grid to place / remove</small></span><button data-action="hull" class="active">Hull</button><button data-action="ladder">Ladder</button><button data-action="station-food">Move galley</button><button data-action="station-cannon">Move cannon</button><button data-action="station-medical">Move clinic</button><button data-action="furniture-bunk">Cabin bunk</button><button data-action="furniture-table">Mess table</button><button data-action="furniture-lantern">Brass lantern</button><button data-action="apply-build" class="primary">Apply refit</button><button data-action="cancel-build">Cancel</button></div><div class="sea-compass" aria-hidden="true">N<br>✧</div><div class="scene-bottom"><span id="hint">Click a pirate to select · Click a deck to move · Space to pause</span><span id="ship-readout"></span><span id="save-state">Preparing logbook…</span></div></section>
  <section class="actionbar" aria-label="Crew actions"><div class="command-group"><button data-action="select-all">♟ Select crew</button><button data-action="board" id="board">⚔ Board / go ashore</button><button data-action="cannon" id="cannon">● Fire cannon</button><button data-action="retreat" id="retreat">↶ Retreat</button><button data-action="rescue" hidden>↟ Rescue overboard</button><button data-action="heal">✚ Treat wounds</button><button data-action="collect" id="collect" hidden>✦ Collect chest</button><button data-action="plunder" id="plunder" hidden>✦ Plunder / take spoils</button><button data-action="capture" id="capture" hidden>⚑ Capture ship</button><button data-action="escape" id="escape" hidden>↗ Break off</button></div><div class="command-group"><button data-action="build" id="build">▦ Build ship</button><button data-action="map" class="primary" id="chart">◇ Chart a course <span>→</span></button></div></section>
  <section class="below-deck"><div class="crew-panel"><div class="panel-heading"><h2>Your crew <span id="crew-count">3 / 12</span></h2><button data-action="recruit" id="recruit">+ Recruit <small>70 gold</small></button></div><div id="crew" class="crew-list"></div><div class="port-tools"><button data-action="crew-settings">☷ Duties & equipment</button><button data-action="shop">▣ Harbour market</button><button data-action="rest">☾ Tavern & repairs <small>25 gold</small></button><span id="recruit-preview"></span><span id="crew-summary">Three souls, one horizon.</span></div></div><aside class="log-panel"><div class="panel-heading"><h2>Captain’s log</h2><span id="day">DAY 01</span></div><div id="journal" aria-live="polite"></div></aside></section>
  <footer><span>Built for the love of pirate adventures.</span><button data-action="credits">Pixel Piracy tribute · Credits & attribution ↗</button><span id="diagnostics"></span></footer>
@@ -73,7 +77,8 @@ class Application implements ViewHost {
   private sea: SeaScene | null = null;
   private selection: number[] = [3];
   private draftTiles: Tile[] | null = null;
-  private brush: "hull" | "ladder" | Station["kind"] = "hull";
+  private brush: "hull" | "ladder" | Station["kind"] | FurnitureKind = "hull";
+  private draftFurnitureList: Furniture[] | null = null;
   private draftStationList: Station[] | null = null;
   paused = false;
   private busy = false;
@@ -258,6 +263,9 @@ class Application implements ViewHost {
   draft() {
     return this.draftTiles;
   }
+  draftFurniture() {
+    return this.draftFurnitureList;
+  }
   draftStations() {
     return this.draftStationList;
   }
@@ -301,6 +309,32 @@ class Application implements ViewHost {
     if (this.busy || this.modalKind || !this.storageReady) return;
     if (this.draftTiles) {
       if (shipId !== 1 || x < 0 || x >= 32 || y < 0 || y >= 10) return;
+      if (Object.hasOwn(FURNISHINGS, this.brush)) {
+        const kind = this.brush as FurnitureKind,
+          list = this.draftFurnitureList!;
+        const existing = list.findIndex(
+          (f) => f.y === y && x >= f.x && x < f.x + FURNISHINGS[f.kind].width,
+        );
+        if (existing >= 0) {
+          this.draftFurnitureList = list.filter((_, i) => i !== existing);
+          return;
+        }
+        const available =
+          this.state().furnitureStock[kind] +
+          this.state().ships[0].furnishings.filter((f) => f.kind === kind)
+            .length -
+          list.filter((f) => f.kind === kind).length;
+        if (available <= 0) {
+          this.showToast("Buy this furnishing in the harbour market first.");
+          return;
+        }
+        if (list.length >= FURNITURE_PLACED_CAP) {
+          this.showToast("This ship has reached its furnishing limit.");
+          return;
+        }
+        this.draftFurnitureList = [...list, { x, y, kind }];
+        return;
+      }
       if (this.brush !== "hull" && this.brush !== "ladder") {
         this.draftStationList = this.draftStationList!.map((t) =>
           t.kind === this.brush ? { ...t, x, y } : { ...t },
@@ -311,7 +345,7 @@ class Application implements ViewHost {
       const existing = this.draftTiles.findIndex((t) => t.x === x && t.y === y);
       const next = this.draftTiles.map((t) => ({ ...t }));
       if (existing >= 0) next.splice(existing, 1);
-      else next.push({ x, y, kind: this.brush });
+      else next.push({ x, y, kind: this.brush as "hull" | "ladder" });
       this.draftTiles = next;
       return;
     }
@@ -597,6 +631,8 @@ class Application implements ViewHost {
       case "rest":
       case "upgrade":
       case "buy":
+      case "buy-furniture":
+      case "sell-furniture":
       case "teach":
       case "equip":
       case "armor":
@@ -614,6 +650,10 @@ class Application implements ViewHost {
           if (action === "upgrade")
             changed = this.sim.upgrade(this.selection[0]);
           if (action === "buy") changed = this.sim.buy(data.kind as "food");
+          if (action === "sell-furniture")
+            changed = this.sim.sellFurniture(data.kind as FurnitureKind);
+          if (action === "buy-furniture")
+            changed = this.sim.buyFurniture(data.kind as FurnitureKind);
           if (action === "teach")
             changed = this.sim.teach(Number(data.id), data.kind as Skill);
           if (action === "equip")
@@ -663,6 +703,9 @@ class Application implements ViewHost {
         this.modalWasPaused = this.paused;
         this.paused = true;
         this.draftTiles = this.state().ships[0].tiles.map((t) => ({ ...t }));
+        this.draftFurnitureList = this.state().ships[0].furnishings.map(
+          (f) => ({ ...f }),
+        );
         this.draftStationList = this.state().ships[0].stations.map((t) => ({
           ...t,
         }));
@@ -673,7 +716,12 @@ class Application implements ViewHost {
       case "station-food":
       case "station-cannon":
       case "station-medical":
-        this.brush = action.replace("station-", "") as typeof this.brush;
+      case "furniture-bunk":
+      case "furniture-table":
+      case "furniture-lantern":
+        this.brush = action
+          .replace("station-", "")
+          .replace("furniture-", "") as typeof this.brush;
         el("build-tools")
           .querySelectorAll("button")
           .forEach((b) =>
@@ -690,6 +738,7 @@ class Application implements ViewHost {
           const error = this.sim.edit(
             this.draftTiles,
             this.draftStationList ?? undefined,
+            this.draftFurnitureList ?? undefined,
           );
           if (error) {
             this.showToast(error);
@@ -710,6 +759,7 @@ class Application implements ViewHost {
   private cancelBuild() {
     this.draftTiles = null;
     this.draftStationList = null;
+    this.draftFurnitureList = null;
     el("build-tools").hidden = true;
     this.paused = this.modalWasPaused;
     this.accumulator = 0;
@@ -770,6 +820,15 @@ class Application implements ViewHost {
         .map(
           ([kind, name, amount, price, icon]) =>
             `<div class="shop-item"><i>${icon}</i><h3>${name}</h3><p>${amount}</p><button data-action="buy" data-kind="${kind}" ${s.phase !== "port" ? "disabled" : ""}>Buy · ${price} gold</button></div>`,
+        )
+        .join(
+          "",
+        )} </div><h3>Cabin furnishings</h3><p>Decorative fittings for the ship builder. Place or remove them on a reachable floor; they do not block your crew.</p><div class="shop-grid">${Object.entries(
+        FURNISHINGS,
+      )
+        .map(
+          ([kind, f]) =>
+            `<div class="shop-item"><h3>${f.name}</h3><p>${s.furnitureStock[kind as FurnitureKind]} in hold · ${f.width} floor cells</p><button data-action="buy-furniture" data-kind="${kind}" ${s.phase !== "port" ? "disabled" : ""}>Buy · ${f.price} gold</button><button data-action="sell-furniture" data-kind="${kind}" ${s.phase !== "port" || s.furnitureStock[kind as FurnitureKind] <= 0 ? "disabled" : ""}>Sell owned · ${Math.floor(f.price / 2)} gold</button></div>`,
         )
         .join(
           "",
@@ -900,6 +959,19 @@ class Application implements ViewHost {
     el("ship-readout").textContent =
       `HULL ${Math.ceil(s.ships[0].hp)}/${s.ships[0].maxHp} · DIRT ${s.ships[0].dirt}% · MEALS ${s.meals}${this.sim.swimmerCount ? ` · OVERBOARD ${this.sim.swimmerCount}` : ""}`;
     el("crew-count").textContent = `${crew.length} / 12`;
+    for (const kind of Object.keys(FURNISHINGS) as FurnitureKind[]) {
+      const available =
+        s.furnitureStock[kind] +
+        (this.draftFurnitureList
+          ? s.ships[0].furnishings.filter((f) => f.kind === kind).length -
+            this.draftFurnitureList.filter((f) => f.kind === kind).length
+          : 0);
+      const button = document.querySelector<HTMLButtonElement>(
+        `[data-action="furniture-${kind}"]`,
+      );
+      if (button)
+        button.textContent = `${FURNISHINGS[kind].name} · ${available}`;
+    }
     // Small UI projection only; never clones authoritative world state.
     const rescueButton = document.querySelector<HTMLButtonElement>(
       '[data-action="rescue"]',
@@ -1028,6 +1100,9 @@ class Application implements ViewHost {
     this.closed = true;
     this.generation++;
     this.scope.dispose();
+    this.draftTiles = null;
+    this.draftStationList = null;
+    this.draftFurnitureList = null;
     if (this.toastTimer !== undefined) clearTimeout(this.toastTimer);
     this.sim.dispose();
     this.game?.destroy(true);

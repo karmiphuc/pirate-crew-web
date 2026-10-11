@@ -40,3 +40,7 @@ Prototype rates in content files. Track gold earned/spent, food runway, wages, c
 Validate map, grid, graph, actor, and equipment capacities from [performance contract](performance-and-lifecycle.md). Generate/validate content at setup boundaries; use bounded attempts and a known valid starter fallback if procedural choices fail. Never retry generation indefinitely.
 
 Unvisited encounters retain template IDs and seeds, not instantiated actors/views. Completed encounters retain compact reward/outcome flags. Loot capacity is checked before commit with explicit sell/discard choices; no reward may disappear silently. Inventory and world outcome schemas enforce the same limits as runtime collections.
+
+## Version 0.10.0 construction inventory
+
+Bunk/table/lantern pieces are bought individually at port and sold from owned hold stock for half price rounded down. Fixed three-key stock has a cap of 64 per type; placed pieces cap at 32 per vessel. Refit count deltas consume/return stock atomically. Plunder recovers supported fittings exactly once; full stacks convert that salvage into stated sale gold with feedback. Capture transfers placed records without a second stock reward. These are authored construction transactions, not the full original item/drop economy.

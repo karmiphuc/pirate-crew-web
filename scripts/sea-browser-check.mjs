@@ -75,7 +75,7 @@ try {
   );
   assert.equal(
     await page.evaluate(() => window.__privateer.state().schemaVersion),
-    5,
+    6,
   );
   assert.equal(
     await page.evaluate(() =>

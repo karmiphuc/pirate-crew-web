@@ -19,7 +19,7 @@ This is a dependency-ordered backlog, not a delivery commitment. Initial estimat
 
 ## Next concrete implementation task
 
-The runnable loop and v0.2 systems are implemented. Hull destruction/damaged navigation, fishing, traits, swimming/rescue, and timed boarding are now delivered. Next: owned item/drop inventory and procedural region generation, followed by broader original content and matching against a named reference build. Continue browser/storage/lifecycle verification for each addition.
+The runnable loop and v0.2 systems are implemented. Hull destruction/damaged navigation, fishing, traits, swimming/rescue, and timed boarding are now delivered. A first owned furnishing/construction inventory and salvage system is delivered. Next: general equipment/consumable item drops and procedural region generation, followed by broader original content and matching against a named reference build. Continue browser/storage/lifecycle verification for each addition.
 
 ## Checkpoints
 

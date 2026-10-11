@@ -1,6 +1,10 @@
 import { SeaTransit, seaX, WATER_Y, SEA_TIMEOUT, inWater } from "./sea";
 import {
   Campaign,
+  FurnitureKind,
+  FURNISHINGS,
+  FURNITURE_KINDS,
+  FURNITURE_STOCK_CAP,
   Duty,
   DUTIES,
   Skill,
@@ -22,6 +26,7 @@ import {
   nodeX,
   nodeY,
 } from "./model";
+import { validateFurniture, furnitureSupported } from "./furniture";
 import { Navigation, Search, validateLayout, intact } from "./navigation";
 export class Simulation {
   private commands: InputCommand[] = [];
@@ -1072,6 +1077,23 @@ export class Simulation {
     node.cleared = true;
     s.reward =
       node.kind === "island" ? 80 + node.danger * 30 : 100 + node.danger * 65;
+    if (!captured && node.kind !== "island") {
+      const prize = s.ships[1];
+      for (const item of prize?.furnishings ?? []) {
+        if (!furnitureSupported(prize.tiles, item)) continue;
+        if (s.furnitureStock[item.kind] < FURNITURE_STOCK_CAP)
+          s.furnitureStock[item.kind]++;
+        else {
+          const sold = Math.floor(FURNISHINGS[item.kind].price / 2);
+          this.awardGold(sold);
+          notify(
+            s,
+            `${FURNISHINGS[item.kind].name} stock full; salvage sold for ${sold} gold.`,
+            "good",
+          );
+        }
+      }
+    }
     this.awardGold(s.reward);
     this.awardStock("parts", captured ? 0 : node.kind === "island" ? 4 : 6);
     if (node.kind === "island") this.awardStock("food", 5);
@@ -1650,6 +1672,7 @@ export class Simulation {
         name: `${prize.name} (captured)`,
         tiles: prize.tiles.map((t) => ({ ...t })),
         stations: prize.stations.map((t) => ({ ...t })),
+        furnishings: prize.furnishings.map((f) => ({ ...f })),
         revision: s.ships[0].revision + 1,
         cannonCooldown: 160,
         dirt: 0,
@@ -1691,6 +1714,50 @@ export class Simulation {
     s.gold -= prices[kind];
     s[kind] += amounts[kind];
     notify(s, `${amounts[kind]} ${kind} added to the hold.`, "good");
+    this.touch();
+    return true;
+  }
+  buyFurniture(kind: FurnitureKind) {
+    if (this.disposed || !Object.hasOwn(FURNISHINGS, kind)) return false;
+    const s = this.state,
+      def = FURNISHINGS[kind];
+    if (s.phase !== "port") return false;
+    if (s.gold < def.price || s.furnitureStock[kind] >= FURNITURE_STOCK_CAP) {
+      notify(
+        s,
+        s.gold < def.price
+          ? "Not enough gold for this furnishing."
+          : "Furnishing stock is full.",
+        "bad",
+      );
+      return false;
+    }
+    s.gold -= def.price;
+    s.furnitureStock[kind]++;
+    notify(
+      s,
+      `${def.name} added to your hold. Place it in the ship builder.`,
+      "good",
+    );
+    this.touch();
+    return true;
+  }
+  sellFurniture(kind: FurnitureKind) {
+    if (this.disposed || !Object.hasOwn(FURNISHINGS, kind)) return false;
+    const s = this.state,
+      price = Math.floor(FURNISHINGS[kind].price / 2);
+    if (s.phase !== "port" || s.furnitureStock[kind] <= 0) return false;
+    if (s.gold + price > 1_000_000_000) {
+      notify(
+        s,
+        "Gold storage is full; keep this furnishing in your hold.",
+        "bad",
+      );
+      return false;
+    }
+    s.furnitureStock[kind]--;
+    s.gold += price;
+    notify(s, `${FURNISHINGS[kind].name} sold for ${price} gold.`, "good");
     this.touch();
     return true;
   }
@@ -1797,7 +1864,11 @@ export class Simulation {
     this.touch();
     return true;
   }
-  edit(tiles: Tile[], stations = this.state.ships[0].stations) {
+  edit(
+    tiles: Tile[],
+    stations = this.state.ships[0].stations,
+    furnishings = this.state.ships[0].furnishings,
+  ) {
     if (this.disposed) return "Voyage closed.";
     const s = this.state;
     if (s.phase !== "port") return "Build only in port.";
@@ -1828,6 +1899,24 @@ export class Simulation {
       search.advance(1536);
       if (!search.path) return `${p.name} needs a safe, reachable deck.`;
     }
+    const furnitureError = validateFurniture(
+      ship,
+      tiles,
+      stations,
+      furnishings,
+      true,
+    );
+    if (furnitureError) return furnitureError;
+    const stock = { ...s.furnitureStock };
+    for (const kind of FURNITURE_KINDS) {
+      stock[kind] +=
+        ship.furnishings.filter((f) => f.kind === kind).length -
+        furnishings.filter((f) => f.kind === kind).length;
+      if (stock[kind] < 0)
+        return `Buy more ${FURNISHINGS[kind].name} stock at the harbour.`;
+      if (stock[kind] > FURNITURE_STOCK_CAP)
+        return `No room to return ${FURNISHINGS[kind].name} to the hold.`;
+    }
     const existing = new Map(ship.tiles.map((t) => [tileNode(t.x, t.y), t]));
     const added = tiles.filter(
       (t) => existing.get(tileNode(t.x, t.y))?.kind !== t.kind,
@@ -1844,6 +1933,8 @@ export class Simulation {
       };
     });
     ship.stations = stations.map((t) => ({ ...t }));
+    ship.furnishings = furnishings.map((f) => ({ ...f }));
+    s.furnitureStock = stock;
     this.tasks.clear();
     this.claims.clear();
     this.falls.clear();

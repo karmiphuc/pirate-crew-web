@@ -774,6 +774,8 @@ footer button {
   position: absolute;
   bottom: 58px;
   left: 20px;
+  right: 20px;
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -983,17 +985,19 @@ footer button {
     padding: 5px;
   }
   .build-tools {
-    bottom: 32px;
-    left: 7px;
-    padding: 6px;
+    position: static;
+    padding: 10px 10px 34px;
+    border: 0;
+    border-top: 1px solid #a4b78b;
     gap: 5px;
   }
   .build-tools > span {
     display: none;
   }
   .build-tools button {
-    font-size: 8px;
-    padding: 5px;
+    font-size: 10px;
+    padding: 7px 8px;
+    min-height: 34px;
   }
   .sea-compass {
     display: none;

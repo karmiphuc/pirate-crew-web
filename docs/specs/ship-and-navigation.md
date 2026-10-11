@@ -50,3 +50,7 @@ This supersedes the earlier drowning deferral and immediate overboard-loss behav
 ## Version 0.9.1 cabin presentation
 
 Actual hull roof/floor pairs with at least a three-cell gap derive modular rear-wall spans. Missing/destroyed columns split them. Doors/windows/railings are decorative, never extra standing surfaces. The builder shows the intended blueprint; normal gameplay shows intact parts. New starter layouts add five aft roof cells without changing the existing ladder or station locations; earlier saved layouts are preserved. Real movement through each roof and a two-level refit must pass the focused browser harness. See [ship design review](../design/ship-cabins.md).
+
+## Version 0.10.0 owned furnishings
+
+Up to 32 non-blocking fitting records per ship, with one/two-cell supported/reachable floor footprints and no station/item overlap. Drafts preview three per-kind stock counts; commit validates hull, station, furnishing and ownership changes before spending anything. Moving owned pieces is free; removals return stock once, subject to the 64-per-kind hold bound. Runtime damage hides unsupported art but preserves blueprint ownership; the builder marks unsupported pieces for correction. [Flow and acceptance checks](../design/cabin-furnishings.md).

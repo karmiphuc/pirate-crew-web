@@ -255,7 +255,7 @@ describe("checkpoint evolution", () => {
     });
     const frozen = JSON.stringify(old);
     const migrated = validateSave(old);
-    expect(migrated.schemaVersion).toBe(5);
+    expect(migrated.schemaVersion).toBe(6);
     expect(migrated.meals).toBe(6);
     expect(migrated.gold).toBe(old.gold);
     expect(migrated.world).toEqual(old.world);

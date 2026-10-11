@@ -17,7 +17,7 @@
   "equipmentFrameBounds": "passed",
   "skillAndEquipmentPurchases": "passed",
   "fishingAndGalley": "passed",
-  "traitsAndSchema5": "passed",
+  "traitsAndSchema6": "passed",
   "destroyedDeckAndRepair": "passed",
   "unsafePortRepairRecovery": "passed",
   "islandExplorationAndReturn": "passed",
@@ -33,25 +33,25 @@
   "quotaRollback": "passed",
   "memory": {
     "heapBefore": {
-      "usedSize": 9980520,
-      "totalSize": 11288576,
-      "embedderHeapUsedSize": 2131112,
-      "backingStorageSize": 12708019
+      "usedSize": 9845656,
+      "totalSize": 10244096,
+      "embedderHeapUsedSize": 2071432,
+      "backingStorageSize": 12745588
     },
     "heapAfter": {
-      "usedSize": 9295748,
-      "totalSize": 10502144,
-      "embedderHeapUsedSize": 1943000,
-      "backingStorageSize": 12708071
+      "usedSize": 9349764,
+      "totalSize": 10768384,
+      "embedderHeapUsedSize": 1750336,
+      "backingStorageSize": 12745640
     },
     "domBefore": {
       "documents": 1,
-      "nodes": 332,
+      "nodes": 336,
       "jsEventListeners": 75
     },
     "domAfter": {
       "documents": 1,
-      "nodes": 381,
+      "nodes": 385,
       "jsEventListeners": 75
     }
   },
@@ -59,14 +59,14 @@
     "frameMs": {
       "count": 600,
       "p50": 24.98999999999978,
-      "p95": 30,
-      "p99": 31.670000000000073
+      "p95": 31.67999999999993,
+      "p99": 34.990000000000144
     },
     "tickMs": {
-      "count": 131,
+      "count": 129,
       "p50": 0,
       "p95": 0.10000000149011612,
-      "p99": 0.10000000149011612
+      "p99": 0.20000000298023224
     },
     "stalls": 0,
     "views": {
@@ -94,7 +94,7 @@
     "listeners": 5,
     "saveWrites": 0,
     "lock": "owned",
-    "tick": 13752,
+    "tick": 13496,
     "phase": "port"
   },
   "errors": []

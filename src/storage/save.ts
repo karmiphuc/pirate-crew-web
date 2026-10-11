@@ -5,7 +5,10 @@ import {
   SKILLS,
   WEAPONS,
   TRAITS,
+  FURNITURE_KINDS,
+  FURNITURE_STOCK_CAP,
 } from "../sim/model";
+import { validateFurniture } from "../sim/furniture";
 import { Navigation, Search, validateLayout } from "../sim/navigation";
 import { tileNode } from "../sim/model";
 const MAX = 1_000_000_000;
@@ -102,9 +105,21 @@ export function validateSave(value: unknown): Campaign {
   }
   if (record(value) && value.schemaVersion === 4)
     value = { ...value, schemaVersion: 5 };
+  if (record(value) && value.schemaVersion === 5) {
+    if (!Array.isArray(value.ships) || value.ships.length !== 1)
+      throw new Error("Invalid legacy ships.");
+    value = {
+      ...value,
+      schemaVersion: 6,
+      furnitureStock: { bunk: 0, table: 0, lantern: 0 },
+      ships: value.ships.map((s) =>
+        record(s) ? { ...s, furnishings: [] } : s,
+      ),
+    };
+  }
   if (
     !record(value) ||
-    value.schemaVersion !== 5 ||
+    value.schemaVersion !== 6 ||
     !text(value.campaignId) ||
     !["port", "travel", "victory", "won"].includes(String(value.phase))
   )
@@ -125,6 +140,19 @@ export function validateSave(value: unknown): Campaign {
   for (const key of ["gold", "food", "meals", "ammo", "medicine", "parts"])
     if (!integer(value[key], 0, key === "gold" ? MAX : 999))
       throw new Error(`Invalid inventory: ${key}.`);
+  if (
+    !record(value.furnitureStock) ||
+    Object.keys(value.furnitureStock).length !== 3 ||
+    FURNITURE_KINDS.some(
+      (k) =>
+        !integer(
+          (value.furnitureStock as Record<string, unknown>)[k],
+          0,
+          FURNITURE_STOCK_CAP,
+        ),
+    )
+  )
+    throw new Error("Invalid furnishing stock.");
   if (
     typeof value.resolved !== "boolean" ||
     !Array.isArray(value.world) ||
@@ -212,7 +240,20 @@ export function validateSave(value: unknown): Campaign {
     stations.add(String(t.kind));
     stationNodes.add(tileNode(t.x as number, t.y as number));
   }
+  if (
+    !Array.isArray(ship.furnishings) ||
+    ship.furnishings.some((f) => !record(f))
+  )
+    throw new Error("Invalid furnishings.");
   const state = value as unknown as Campaign;
+  const furnitureError = validateFurniture(
+    state.ships[0],
+    state.ships[0].tiles,
+    state.ships[0].stations,
+    state.ships[0].furnishings,
+    true,
+  );
+  if (furnitureError) throw new Error(furnitureError);
   const layoutError = validateLayout(
     state.ships[0],
     state.ships[0].tiles,
@@ -301,7 +342,7 @@ export function validateSave(value: unknown): Campaign {
       throw new Error("Invalid journal.");
   // Only explicit fields enter the application. Unknown properties are discarded.
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     campaignId: state.campaignId,
     revision: state.revision,
     tick: state.tick,
@@ -324,6 +365,7 @@ export function validateSave(value: unknown): Campaign {
         damage: t.damage ?? 0,
       })),
       stations: s.stations.map((t) => ({ x: t.x, y: t.y, kind: t.kind })),
+      furnishings: s.furnishings.map((f) => ({ x: f.x, y: f.y, kind: f.kind })),
     })),
     pirates: state.pirates.map((p) => ({
       id: p.id,
@@ -374,6 +416,7 @@ export function validateSave(value: unknown): Campaign {
     ammo: state.ammo,
     medicine: state.medicine,
     parts: state.parts,
+    furnitureStock: { ...state.furnitureStock },
     notices: state.notices.map((n) => ({
       id: n.id,
       text: n.text,

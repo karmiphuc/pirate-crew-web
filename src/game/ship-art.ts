@@ -1,4 +1,12 @@
-import { LIMITS, Ship, Station, Tile } from "../sim/model";
+import {
+  FURNISHINGS,
+  Furniture,
+  LIMITS,
+  Ship,
+  Station,
+  Tile,
+} from "../sim/model";
+import { furnitureSupported } from "../sim/furniture";
 import { intact } from "../sim/navigation";
 
 /** Static, presentation-only architecture. Never retained by a scene or saved. */
@@ -77,6 +85,7 @@ export function drawPixelShip(
   oy: number,
   unit: number,
   blueprint = false,
+  furniture: readonly Furniture[] = ship.furnishings,
 ) {
   const c = ship.id === 1 ? WARM : HOSTILE;
   const r = (x: number, y: number, w: number, h: number, color: number) => {
@@ -403,5 +412,47 @@ export function drawPixelShip(
       r(x + 5, y - 10, 10, 4, c.paint);
       r(x, y - 2, 20, 2, c.trim);
     }
+  }
+  for (const f of furniture) {
+    const supported = furnitureSupported(tiles, f);
+    if (!supported && !blueprint) continue;
+    const x = ox + f.x * unit,
+      y = oy + (f.y + 1) * unit;
+    if (f.kind === "bunk") {
+      r(x + 1, y - 26, 3, 26, c.dark);
+      r(x + 32, y - 18, 3, 18, c.dark);
+      r(x + 4, y - 19, 28, 15, c.trim);
+      r(x + 4, y - 19, 28, 3, 0xe7d4aa);
+      r(x + 5, y - 19, 9, 4, 0xf4e7c4);
+      r(x + 15, y - 16, 17, 9, c.paint);
+      r(x + 16, y - 15, 14, 1, 0xc77c59);
+      r(x + 4, y - 5, 28, 3, c.light);
+      r(x + 2, y - 25, 1, 22, c.sun);
+      r(x + 33, y - 17, 1, 17, c.light);
+    } else if (f.kind === "table") {
+      r(x + 2, y - 23, 32, 5, c.dark);
+      r(x + 3, y - 23, 30, 2, c.sun);
+      r(x + 6, y - 18, 3, 18, c.trim);
+      r(x + 27, y - 18, 3, 18, c.trim);
+      r(x + 7, y - 16, 1, 16, c.light);
+      r(x + 28, y - 16, 1, 16, c.light);
+      r(x + 10, y - 10, 17, 2, c.dark);
+      r(x + 11, y - 27, 13, 4, 0xd2c198);
+      r(x + 14, y - 26, 5, 1, 0x849b84);
+      r(x + 26, y - 28, 4, 5, 0xeee0b1);
+      r(x + 30, y - 27, 2, 3, c.sun);
+    } else {
+      r(x + 8, y - 52, 2, 11, c.dark);
+      r(x + 5, y - 43, 9, 3, c.dark);
+      r(x + 4, y - 39, 11, 15, c.dark);
+      r(x + 5, y - 38, 9, 13, 0xbb8947);
+      r(x + 7, y - 36, 5, 9, 0xf4cf78);
+      r(x + 8, y - 34, 3, 6, 0xffe8a3);
+      r(x + 4, y - 25, 11, 2, c.sun);
+      r(x + 6, y - 40, 7, 1, c.sun);
+      r(x + 7, y - 36, 1, 10, c.wood);
+      r(x + 11, y - 36, 1, 10, c.wood);
+    }
+    if (!supported) r(x, y - 2, FURNISHINGS[f.kind].width * unit, 2, 0xd57560);
   }
 }
