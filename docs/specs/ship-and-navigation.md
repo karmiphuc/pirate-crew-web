@@ -46,3 +46,7 @@ Repairs choose locally reachable candidates instead of scanning all graph nodes 
 ## Version 0.9 delivered sea traversal
 
 This supersedes the earlier drowning deferral and immediate overboard-loss behavior. Boarding uses forty ticks of interpolated traversal, starts spaced at least six ticks apart, a common direction per active group, endpoint revalidation and at most one landing per tick. Destination loss returns to a surviving origin; origin loss falls into water. A bounded sea owner holds position/mode, IDs, exposure ticks and a rescue claim until safe landing, death or teardown. Passive Swimming permits self-recovery; untrained crew need a selected home crewmate and an uninterrupted line. Graph revisions invalidate cached water landings. Safe transitions reject every active sea owner. [Detailed values and limitations](../design/sea-traversal.md).
+
+## Version 0.9.1 cabin presentation
+
+Actual hull roof/floor pairs with at least a three-cell gap derive modular rear-wall spans. Missing/destroyed columns split them. Doors/windows/railings are decorative, never extra standing surfaces. The builder shows the intended blueprint; normal gameplay shows intact parts. New starter layouts add five aft roof cells without changing the existing ladder or station locations; earlier saved layouts are preserved. Real movement through each roof and a two-level refit must pass the focused browser harness. See [ship design review](../design/ship-cabins.md).

@@ -39,3 +39,5 @@ Changes that affect several systems should update their contracts and acceptance
 - [Weapon handling and visible grips, 0.8.1](design/weapon-handling.md) — actual runtime poses, character anchors, and hand-layer ownership.
 
 - [Boarding, swimming and sea rescue, 0.9.0](design/sea-traversal.md) — gameplay, captured runtime, save migration and ownership.
+
+- [Pixel ship cabins](design/ship-cabins.md): reference observations, before/after runtime review, modular rooms and resource ownership.

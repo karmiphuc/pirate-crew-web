@@ -33,16 +33,16 @@
   "quotaRollback": "passed",
   "memory": {
     "heapBefore": {
-      "usedSize": 9219096,
-      "totalSize": 13238272,
-      "embedderHeapUsedSize": 2050456,
-      "backingStorageSize": 12687274
+      "usedSize": 9980520,
+      "totalSize": 11288576,
+      "embedderHeapUsedSize": 2131112,
+      "backingStorageSize": 12708019
     },
     "heapAfter": {
-      "usedSize": 9173316,
-      "totalSize": 10616832,
-      "embedderHeapUsedSize": 1770032,
-      "backingStorageSize": 12687326
+      "usedSize": 9295748,
+      "totalSize": 10502144,
+      "embedderHeapUsedSize": 1943000,
+      "backingStorageSize": 12708071
     },
     "domBefore": {
       "documents": 1,
@@ -58,12 +58,12 @@
   "diagnostics": {
     "frameMs": {
       "count": 600,
-      "p50": 23.340000000000146,
-      "p95": 30.009999999999856,
-      "p99": 33.32999999999993
+      "p50": 24.98999999999978,
+      "p95": 30,
+      "p99": 31.670000000000073
     },
     "tickMs": {
-      "count": 128,
+      "count": 131,
       "p50": 0,
       "p95": 0.10000000149011612,
       "p99": 0.10000000149011612
@@ -94,7 +94,7 @@
     "listeners": 5,
     "saveWrites": 0,
     "lock": "owned",
-    "tick": 13722,
+    "tick": 13752,
     "phase": "port"
   },
   "errors": []

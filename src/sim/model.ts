@@ -219,7 +219,9 @@ export function starterShip(id = 1, enemy = false): Ship {
   for (let x = 0; x < 18; x++) tiles.push({ x, y: 4, kind: "hull" });
   for (let x = 2; x < 16; x++) tiles.push({ x, y: 5, kind: "hull" });
   for (let x = 4; x < 14; x++) tiles.push({ x, y: 6, kind: "hull" });
-  for (let x = 6; x < 11; x++) tiles.push({ x, y: 1, kind: "hull" });
+  // Two real cabin roofs, linked by the existing exterior ladder.
+  for (let x = 0; x < 11; x++)
+    if (x !== 5) tiles.push({ x, y: 1, kind: "hull" });
   for (let y = 1; y <= 3; y++) tiles.push({ x: 5, y, kind: "ladder" });
   return {
     id,

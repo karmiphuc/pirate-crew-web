@@ -1,3 +1,4 @@
+import { drawPixelShip } from "./ship-art";
 import { SeaTransit, SHIP_SEPARATION, inWater, seaX } from "../sim/sea";
 import Phaser from "phaser";
 import {
@@ -331,7 +332,7 @@ export class SeaScene extends Phaser.Scene {
   }
   private release() {
     this.artReady = false;
-    this.cache.custom["crew-source"]?.remove("sheet");
+    this.cache?.custom?.["crew-source"]?.remove("sheet");
     this.scope.dispose();
     for (let i = 0; i < 4; i++)
       document.documentElement.style.removeProperty(`--pirate-${i}`);
@@ -349,7 +350,7 @@ export class SeaScene extends Phaser.Scene {
   get counters() {
     return {
       artwork: this.artReady,
-      sourceImages: this.cache.custom["crew-source"]?.getKeys().length ?? 0,
+      sourceImages: this.cache?.custom?.["crew-source"]?.getKeys().length ?? 0,
       actors: this.actors.size,
       equipment: this.equipment.size,
       grips: this.grips.size,
@@ -406,6 +407,21 @@ export class SeaScene extends Phaser.Scene {
     this.enemyLabel.setText(
       s.ships.length > 1 ? s.ships[1].name.toUpperCase() : "",
     );
+    for (const [index, label] of [this.shipLabel, this.enemyLabel].entries()) {
+      const ship = s.ships[index];
+      if (!ship) continue;
+      const hull = (index === 0 ? (draft ?? ship.tiles) : ship.tiles).filter(
+        (t) => t.kind === "hull" && ((index === 0 && draft) || intact(t)),
+      );
+      if (!hull.length) continue;
+      const left = Math.min(...hull.map((t) => t.x));
+      const right = Math.max(...hull.map((t) => t.x));
+      const bottom = SHIP_Y + (Math.max(...hull.map((t) => t.y)) + 1) * TILE;
+      label.setPosition(
+        (index === 0 ? HOME_X : ENEMY_X) + ((left + right + 1) * TILE) / 2,
+        Math.min(494, Math.max(465, bottom + 16)),
+      );
+    }
     this.phaseLabel.setText(
       s.phase === "port"
         ? "SALTWATER HARBOUR  ·  SAFE WATERS"
@@ -608,230 +624,20 @@ export class SeaScene extends Phaser.Scene {
       this.rect(g, x + 10, y - 11, 1, 3, 0x453831);
       return;
     }
-    const occupied = new Set(
-      tiles.filter((t) => t.kind === "hull").map((t) => `${t.x}:${t.y}`),
+    drawPixelShip(
+      { rect: (x, y, w, h, color) => this.rect(g, x, y, w, h, color) },
+      ship,
+      tiles,
+      ship.id === 1
+        ? (this.host.draftStations() ?? ship.stations)
+        : ship.stations,
+      ox,
+      SHIP_Y,
+      TILE,
+      draft !== null,
     );
-    const mast = ox + 9 * TILE + 8,
-      friendly = ship.id === 1;
-    if (tiles.length) {
-      const hull = tiles.filter((t) => t.kind === "hull");
-      if (hull.length) {
-        const low = Math.max(...hull.map((t) => t.y)) + 1,
-          minX = Math.min(...hull.map((t) => t.x)),
-          maxX = Math.max(...hull.map((t) => t.x)),
-          center = ox + ((minX + maxX + 1) * TILE) / 2;
-        g.fillStyle(0x0e333c, 0.3);
-        g.fillEllipse(
-          center,
-          SHIP_Y + low * TILE + 3,
-          (maxX - minX + 1) * TILE * 0.9,
-          15,
-        );
-        for (const t of hull) {
-          if (occupied.has(`${t.x}:${t.y + 1}`)) continue;
-          g.lineStyle(1, 0xb9d6bd, 0.4);
-          g.lineBetween(
-            ox + t.x * TILE + 3,
-            SHIP_Y + (t.y + 1) * TILE + 1,
-            ox + (t.x + 1) * TILE - 2,
-            SHIP_Y + (t.y + 1) * TILE + 2,
-          );
-        }
-      }
-    }
-    // Bent cloth contours, seams, rigging and contrasting mast light create depth.
-    this.rect(g, mast - 4, 108, 9, 264, 0x342f29);
-    this.rect(g, mast - 2, 109, 3, 263, 0xa28254);
-    this.rect(g, ox + 5 * TILE, 154, 181, 5, 0x403329);
-    this.rect(g, ox + 5 * TILE, 154, 181, 1, 0xb79a68);
-    const cloth: Phaser.Types.Math.Vector2Like[] = [];
-    const left = ox + 5 * TILE,
-      right = ox + 15 * TILE;
-    cloth.push({ x: left, y: 160 }, { x: right, y: 160 });
-    for (let i = 0; i <= 12; i++) {
-      const t = i / 12;
-      cloth.push({ x: right - 12 * Math.sin(Math.PI * t), y: 160 + 137 * t });
-    }
-    for (let i = 0; i <= 16; i++) {
-      const t = i / 16;
-      cloth.push({
-        x: right + (left - right) * t,
-        y: 297 - 12 * Math.sin(Math.PI * t),
-      });
-    }
-    for (let i = 0; i <= 12; i++) {
-      const t = i / 12;
-      cloth.push({ x: left + 10 * Math.sin(Math.PI * t), y: 297 - 137 * t });
-    }
-    g.fillStyle(friendly ? 0xe7d7ac : 0x34484c);
-    g.fillPoints(cloth, true);
-    g.lineStyle(2, friendly ? 0xb4a078 : 0x172b32);
-    g.strokePoints(cloth, true);
-    g.fillStyle(friendly ? 0x9e805a : 0x132730, 0.16);
-    g.fillPoints(
-      [
-        { x: right - 20, y: 162 },
-        { x: right - 5, y: 162 },
-        { x: right - 16, y: 280 },
-        { x: right - 3, y: 297 },
-        { x: right - 31, y: 293 },
-      ],
-      true,
-    );
-    g.fillStyle(0xffedc5, friendly ? 0.24 : 0.04);
-    g.fillPoints(
-      [
-        { x: left + 13, y: 162 },
-        { x: left + 48, y: 162 },
-        { x: left + 55, y: 280 },
-        { x: left + 18, y: 290 },
-      ],
-      true,
-    );
-    // Narrow fabric panels and sunlit hem, avoiding a flat triangular sail.
-    for (let i = 1; i < 5; i++) {
-      const x = left + ((right - left) * i) / 5;
-      g.lineStyle(1, friendly ? 0xcbb991 : 0x4d6465, 0.65);
-      g.lineBetween(x, 162, x + 3 * Math.sin(i), 287);
-    }
-    g.lineStyle(2, 0xf1dfb7, 0.7);
-    g.lineBetween(left + 3, 162, right - 3, 162);
-    g.lineStyle(1, 0xb2a381, 0.8);
-    g.lineBetween(mast, 111, ox + TILE, SHIP_Y + 4 * TILE);
-    g.lineBetween(mast, 111, ox + 17 * TILE, SHIP_Y + 4 * TILE);
-    g.lineBetween(left, 155, ox + 3 * TILE, SHIP_Y + 4 * TILE);
-    g.lineBetween(right, 155, ox + 16 * TILE, SHIP_Y + 4 * TILE);
-    // A small skull emblem uses rounded eye sockets and bones.
-    g.fillStyle(friendly ? 0x687366 : 0xd6ccad);
-    g.fillEllipse(mast, 219, 32, 27);
-    this.rect(g, mast - 11, 225, 22, 9, friendly ? 0x687366 : 0xd6ccad);
-    g.fillStyle(friendly ? 0xe7d7ac : 0x34484c);
-    g.fillCircle(mast - 7, 218, 4);
-    g.fillCircle(mast + 7, 218, 4);
-    for (let x = -6; x <= 6; x += 6)
-      this.rect(g, mast + x - 1, 229, 2, 5, friendly ? 0xe7d7ac : 0x34484c);
-    g.lineStyle(3, friendly ? 0x687366 : 0xd6ccad);
-    g.lineBetween(mast - 18, 244, mast + 18, 254);
-    g.lineBetween(mast - 18, 254, mast + 18, 244);
-    g.fillStyle(friendly ? 0xa85746 : 0x27343c);
-    g.fillPoints(
-      [
-        { x: mast + 4, y: 111 },
-        { x: mast + 49, y: 113 },
-        { x: mast + 38, y: 122 },
-        { x: mast + 49, y: 130 },
-        { x: mast + 4, y: 127 },
-      ],
-      true,
-    );
-    for (const t of tiles) {
-      const x = ox + t.x * TILE,
-        y = SHIP_Y + t.y * TILE;
-      if (t.kind === "ladder") {
-        this.rect(g, x + 3, y, 3, TILE, 0xb7a276);
-        this.rect(g, x + 12, y, 3, TILE, 0xb7a276);
-        this.rect(g, x + 4, y + 4, 10, 2, 0x7b6349);
-        this.rect(g, x + 4, y + 12, 10, 2, 0x7b6349);
-      } else {
-        const exposed = !occupied.has(`${t.x}:${t.y - 1}`),
-          bottom = !occupied.has(`${t.x}:${t.y + 1}`);
-        const leftEdge = !occupied.has(`${t.x - 1}:${t.y}`),
-          rightEdge = !occupied.has(`${t.x + 1}:${t.y}`);
-        const tone = friendly
-          ? t.y % 2
-            ? 0x70513c
-            : 0x856044
-          : t.y % 2
-            ? 0x453d35
-            : 0x655045;
-        g.fillStyle(tone);
-        g.fillPoints(
-          [
-            { x, y },
-            { x: x + TILE, y },
-            { x: x + TILE, y: y + TILE - (bottom && rightEdge ? 6 : 0) },
-            { x: x + TILE - (bottom && rightEdge ? 5 : 0), y: y + TILE },
-            { x: x + (bottom && leftEdge ? 5 : 0), y: y + TILE },
-            { x, y: y + TILE - (bottom && leftEdge ? 6 : 0) },
-          ],
-          true,
-        );
-        if (exposed) {
-          this.rect(g, x, y, TILE, 3, 0xc1a073);
-          this.rect(g, x, y + 3, TILE, 2, 0x382e28);
-        }
-        this.rect(g, x, y + 9, TILE, 1, 0x49392e);
-        if ((t.x + t.y) % 3 === 0) this.rect(g, x + 8, y + 2, 1, 6, 0x49392e);
-        if ((t.x + t.y) % 3 === 1) this.rect(g, x + 3, y + 10, 1, 7, 0x3d302b);
-        for (let i = 0; i < 2; i++) {
-          const grain = (t.x * 13 + t.y * 7 + i * 5) % 12;
-          this.rect(g, x + grain, y + 5 + i * 8, 4, 1, 0xb48b5e, 0.3);
-        }
-        if (bottom) {
-          this.rect(g, x + 3, y + TILE - 2, TILE - 6, 2, 0x312e2b);
-        }
-      }
-    }
-    for (const tx of [7, 10, 13])
-      if (occupied.has(`${tx}:5`)) {
-        const x = ox + tx * TILE + 9,
-          y = SHIP_Y + 5 * TILE + 8;
-        g.fillStyle(0x332f28);
-        g.fillCircle(x, y, 4);
-        g.lineStyle(1, 0xb3925d);
-        g.strokeCircle(x, y, 4);
-        g.fillStyle(0x416768);
-        g.fillCircle(x, y, 2);
-      }
-    for (const station of ship.id === 1
-      ? (this.host.draftStations() ?? ship.stations)
-      : ship.stations) {
-      const x = ox + station.x * TILE,
-        y = SHIP_Y + (station.y + 1) * TILE;
-      if (station.kind === "cannon") {
-        g.fillStyle(0x1e2d33);
-        g.fillRoundedRect(x - 4, y - 17, 34, 11, 4);
-        this.rect(g, x - 1, y - 16, 29, 2, 0x859794);
-        this.rect(g, x + 26, y - 17, 5, 11, 0x13232b);
-        this.rect(g, x, y - 8, 24, 5, 0x76523a);
-        this.rect(g, x + 2, y - 7, 20, 1, 0xc39a62);
-        for (const wheel of [x + 3, x + 21]) {
-          g.fillStyle(0x282b2a);
-          g.fillCircle(wheel, y - 3, 5);
-          g.lineStyle(1, 0xa08059);
-          g.strokeCircle(wheel, y - 3, 3);
-          g.fillStyle(0xd2b47b);
-          g.fillCircle(wheel, y - 3, 1);
-        }
-      }
-      if (station.kind === "food") {
-        g.fillStyle(0x3a342b);
-        g.fillEllipse(x + 8, y - 1, 20, 4);
-        g.fillStyle(0x846344);
-        g.fillRoundedRect(x, y - 20, 17, 20, 5);
-        g.fillStyle(0xb49665);
-        g.fillEllipse(x + 8.5, y - 18, 16, 5);
-        g.lineStyle(1, 0x514332);
-        g.strokeEllipse(x + 8.5, y - 18, 16, 5);
-        g.lineBetween(x + 5, y - 15, x + 5, y - 3);
-        g.lineBetween(x + 11, y - 15, x + 11, y - 3);
-        this.rect(g, x, y - 13, 17, 2, 0x3b4b47);
-        this.rect(g, x, y - 5, 17, 2, 0x3b4b47);
-        this.rect(g, x + 1, y - 13, 15, 1, 0x899486);
-      }
-      if (station.kind === "medical") {
-        g.fillStyle(0x524237);
-        g.fillRoundedRect(x + 5, y - 21, 10, 7, 2);
-        g.fillStyle(0xd1c49c);
-        g.fillRoundedRect(x - 1, y - 17, 22, 17, 3);
-        this.rect(g, x, y - 4, 20, 3, 0xa08b66);
-        this.rect(g, x + 2, y - 15, 2, 14, 0x917451);
-        this.rect(g, x + 16, y - 15, 2, 14, 0x917451);
-        this.rect(g, x + 8, y - 14, 4, 11, 0xad5244);
-        this.rect(g, x + 4, y - 10, 12, 4, 0xad5244);
-      }
-    }
   }
+
   update(_time: number, delta: number) {
     if (!this.artReady) return;
     const alpha = this.host.update(delta),
@@ -883,11 +689,12 @@ export class SeaScene extends Phaser.Scene {
     for (const ship of s.ships)
       if (ship.kind === "ship") {
         const ox = ship.id === 1 ? HOME_X : ENEMY_X;
-        this.rect(g, ox + 25, 482, 240, 5, 0x1e3f47);
+        const label = ship.id === 1 ? this.shipLabel : this.enemyLabel;
+        this.rect(g, label.x - 120, label.y + 17, 240, 5, 0x1e3f47);
         this.rect(
           g,
-          ox + 25,
-          482,
+          label.x - 120,
+          label.y + 17,
           (240 * ship.hp) / ship.maxHp,
           5,
           ship.hp < ship.maxHp * 0.35 ? 0xd88066 : 0xa7bd84,

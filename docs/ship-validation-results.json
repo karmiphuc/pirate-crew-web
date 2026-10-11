@@ -1,0 +1,23 @@
+{
+  "roofMovement": "passed",
+  "editorCancelCommitReload": "passed",
+  "multideckMovement": "passed",
+  "destroyedRoof": "passed",
+  "damagedBlueprint": "passed",
+  "sceneRestarts": 10,
+  "compactLayout": "passed",
+  "disposal": "passed",
+  "views": {
+    "artwork": true,
+    "sourceImages": 0,
+    "actors": 5,
+    "equipment": 5,
+    "grips": 5,
+    "subscriptions": 4,
+    "clouds": 3,
+    "textures": 10,
+    "shutdownHandlers": 13,
+    "destroyHandlers": 13
+  },
+  "errors": []
+}
