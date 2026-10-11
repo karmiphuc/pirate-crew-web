@@ -36,3 +36,5 @@ Version 0.1.0 delivers the expedition loop plus substantial portions of B01–B0
 ## Fidelity checkpoint 0.2
 
 Delivered station duties and claims, skill books, owned weapon choices/armor, movable stations, hull combat/repair/sinking, safe explicit plunder/capture, walkable islands and guards, four pirate lords, original effects, and schema-1 migration. See [fidelity tracker](fidelity.md) for the remaining gaps. No claim of full original-game equivalence is made.
+
+Version 0.10.1 adds distinct authored encounter hull templates (sloop/brig/flagship), connected holds/forecastle ladders, retained capture geometry and static identity invalidation. This expands ship variety without claiming procedural regions or original structural physics. [Evidence](design/ship-fleet.md).

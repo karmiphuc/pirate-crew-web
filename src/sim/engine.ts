@@ -20,13 +20,13 @@ import {
   Order,
   Pirate,
   random,
-  starterShip,
   Tile,
   tileNode,
   nodeX,
   nodeY,
 } from "./model";
 import { validateFurniture, furnitureSupported } from "./furniture";
+import { encounterShip } from "./ship-templates";
 import { Navigation, Search, validateLayout, intact } from "./navigation";
 export class Simulation {
   private commands: InputCommand[] = [];
@@ -1051,12 +1051,7 @@ export class Simulation {
       );
     } else {
       s.phase = "encounter";
-      const ship = starterShip(2, true);
-      ship.name = node.name;
-      ship.hp = ship.maxHp = 100 + (node.danger - 1) * 20;
-      if (node.danger > 1)
-        for (let x = 18; x < 18 + node.danger; x++)
-          ship.tiles.push({ x, y: 4, kind: "hull" });
+      const ship = encounterShip(node);
       s.ships.push(ship);
       const count = node.kind === "boss" ? 5 : node.danger + 1;
       for (let i = 0; i < count; i++)

@@ -54,3 +54,9 @@ Actual hull roof/floor pairs with at least a three-cell gap derive modular rear-
 ## Version 0.10.0 owned furnishings
 
 Up to 32 non-blocking fitting records per ship, with one/two-cell supported/reachable floor footprints and no station/item overlap. Drafts preview three per-kind stock counts; commit validates hull, station, furnishing and ownership changes before spending anything. Moving owned pieces is free; removals return stock once, subject to the 64-per-kind hold bound. Runtime damage hides unsupported art but preserves blueprint ownership; the builder marks unsupported pieces for correction. [Flow and acceptance checks](../design/cabin-furnishings.md).
+
+## Version 0.10.1 encountered fleet
+
+Danger-one cutters retain the starter layout. Other encounter seeds choose an authored sloop/brig; danger-three/four bosses use a flagship. Templates fit within 24 × 9 cells with at most 96 parts, connected spawn/roof/hold/station nodes, and three or six owned fittings. Arrival constructs only the current vessel without consuming campaign RNG. Capture preserves existing plain geometry; schema remains 6 and old home ships are unchanged. Wide/deep geometry derives a second mast; intermediate floors omit interior rooftop rails. Static invalidation also checks ship identity and clears both references on shutdown. [Reviewed runtime](../design/ship-fleet.md).
+
+The presentation grid is 18 pixels wide × 26 pixels high, with origin Y 248. A three-cell cabin provides 78 pixels vertically: 14 for the cornice, 56 for the full crew frame and at least eight above hats. Pointer, actor, grid, prop and rope projection must agree. Shrinking actors is not an acceptable clearance fix. Decorative jumps under beams are limited by the nearest intact ceiling across the actor width. Logical navigation and persisted tile coordinates remain unchanged.

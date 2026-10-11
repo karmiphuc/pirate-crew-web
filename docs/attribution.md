@@ -23,3 +23,5 @@ Pixel Piracy is the reference game. Historical development is credited to Quadro
 Prefer original or compatible licensed materials for the prototype. Preserve license notices alongside actual included assets and expose credits in-game when implemented. Final project licensing must distinguish our own material from third-party material.
 
 Free/noncommercial use and attribution alone do not automatically establish permission for third-party content. Reference: [U.S. Copyright Office reuse FAQ](https://www.copyright.gov/help/faq/faq-fairuse.html). No legal determination of this specific remake is made here.
+
+Version 0.10.1's sloop/brig/flagship blueprints in `src/sim/ship-templates.ts`, multi-mast rigging and repeated cabin windows are original project-authored geometry/art. [Fleet review](design/ship-fleet.md) distinguishes that interpretation from the reference screenshot and records browser screenshots generated from our own runnable game. No reference-game artwork or blueprints were imported.

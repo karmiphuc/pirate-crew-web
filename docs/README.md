@@ -43,3 +43,5 @@ Changes that affect several systems should update their contracts and acceptance
 - [Pixel ship cabins](design/ship-cabins.md): reference observations, before/after runtime review, modular rooms and resource ownership.
 
 - [Owned cabin furnishings](design/cabin-furnishings.md): stock, placement, salvage, schema 6 and runtime/save checks.
+
+- [Encounter fleet and cabin review](design/ship-fleet.md): seeded sloop/brig hulls, flagship cabins/masts, real hold traversal and capture persistence.

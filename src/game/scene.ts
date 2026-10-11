@@ -1,4 +1,10 @@
 import { drawPixelShip } from "./ship-art";
+import {
+  SHIP_CELL_WIDTH,
+  SHIP_CELL_HEIGHT,
+  SHIP_ORIGIN_Y,
+  cabinJumpHeight,
+} from "./ship-metrics";
 import { SeaTransit, SHIP_SEPARATION, inWater, seaX } from "../sim/sea";
 import Phaser from "phaser";
 import {
@@ -37,10 +43,11 @@ import {
 } from "../sim/model";
 import { intact } from "../sim/navigation";
 import { Lifetime } from "../app/lifetime";
-export const TILE = 18;
+export const TILE = SHIP_CELL_WIDTH;
+export const TILE_HEIGHT = SHIP_CELL_HEIGHT;
 export const HOME_X = 230;
 export const ENEMY_X = HOME_X + SHIP_SEPARATION * TILE;
-export const SHIP_Y = 300;
+export const SHIP_Y = SHIP_ORIGIN_Y;
 export interface ViewHost {
   state(): Campaign;
   selected(): readonly number[];
@@ -184,6 +191,8 @@ export class SeaScene extends Phaser.Scene {
   private grips = new Map<number, Phaser.GameObjects.Sprite>();
   private seenEnemyRevision = -1;
   private seenRevision = -1;
+  private seenHomeShip: Ship | null = null;
+  private seenEnemyShip: Ship | null = null;
   private seenPhase = "";
   private seenLocation = -1;
   private draftRef: Tile[] | null = null;
@@ -299,7 +308,7 @@ export class SeaScene extends Phaser.Scene {
       for (const actor of this.host.state().pirates) {
         const px =
             (actor.shipId === 1 ? HOME_X : ENEMY_X) + actor.x * TILE + TILE / 2,
-          py = SHIP_Y + actor.y * TILE + TILE;
+          py = SHIP_Y + actor.y * TILE_HEIGHT + TILE_HEIGHT;
         if (Math.abs(p.x - px) < 22 && p.y > py - 60 && p.y < py + 8) {
           id = actor.id;
           shipId = actor.shipId;
@@ -308,7 +317,7 @@ export class SeaScene extends Phaser.Scene {
       }
       if (id === null) shipId = p.x >= ENEMY_X - 20 ? 2 : 1;
       x = Math.floor((p.x - (shipId === 1 ? HOME_X : ENEMY_X)) / TILE);
-      y = Math.floor((p.y - SHIP_Y) / TILE);
+      y = Math.floor((p.y - SHIP_Y) / TILE_HEIGHT);
       this.host.click(
         shipId,
         x,
@@ -352,6 +361,8 @@ export class SeaScene extends Phaser.Scene {
     this.draftRef = null;
     this.stationRef = null;
     this.furnitureRef = null;
+    this.seenHomeShip = null;
+    this.seenEnemyShip = null;
   }
   get counters() {
     return {
@@ -399,14 +410,14 @@ export class SeaScene extends Phaser.Scene {
           HOME_X + x * TILE,
           SHIP_Y,
           HOME_X + x * TILE,
-          SHIP_Y + 10 * TILE,
+          SHIP_Y + 10 * TILE_HEIGHT,
         );
       for (let y = 0; y <= 10; y++)
         g.lineBetween(
           HOME_X,
-          SHIP_Y + y * TILE,
+          SHIP_Y + y * TILE_HEIGHT,
           HOME_X + 32 * TILE,
-          SHIP_Y + y * TILE,
+          SHIP_Y + y * TILE_HEIGHT,
         );
     }
     this.shipLabel.setText(s.ships[0].name.toUpperCase());
@@ -422,7 +433,8 @@ export class SeaScene extends Phaser.Scene {
       if (!hull.length) continue;
       const left = Math.min(...hull.map((t) => t.x));
       const right = Math.max(...hull.map((t) => t.x));
-      const bottom = SHIP_Y + (Math.max(...hull.map((t) => t.y)) + 1) * TILE;
+      const bottom =
+        SHIP_Y + (Math.max(...hull.map((t) => t.y)) + 1) * TILE_HEIGHT;
       label.setPosition(
         (index === 0 ? HOME_X : ENEMY_X) + ((left + right + 1) * TILE) / 2,
         Math.min(494, Math.max(465, bottom + 16)),
@@ -514,13 +526,13 @@ export class SeaScene extends Phaser.Scene {
     g.fillStyle(0x143e45, 0.35);
     g.fillEllipse(
       center,
-      SHIP_Y + (bottomY + 1) * TILE,
+      SHIP_Y + (bottomY + 1) * TILE_HEIGHT,
       (maxX - minX + 1) * TILE + 24,
       18,
     );
     for (const t of tiles) {
       const x = ox + t.x * TILE,
-        y = SHIP_Y + t.y * TILE;
+        y = SHIP_Y + t.y * TILE_HEIGHT;
       const top = !occupied.has(`${t.x}:${t.y - 1}`),
         bottom = !occupied.has(`${t.x}:${t.y + 1}`),
         left = !occupied.has(`${t.x - 1}:${t.y}`),
@@ -532,10 +544,10 @@ export class SeaScene extends Phaser.Scene {
           { x: x + (top && left ? 6 : 0), y },
           { x: x + TILE - (top && right ? 6 : 0), y },
           { x: x + TILE, y: y + (top && right ? 8 : 0) },
-          { x: x + TILE, y: y + TILE - (bottom && right ? 8 : 0) },
-          { x: x + TILE - (bottom && right ? 8 : 0), y: y + TILE },
-          { x: x + (bottom && left ? 8 : 0), y: y + TILE },
-          { x, y: y + TILE - (bottom && left ? 8 : 0) },
+          { x: x + TILE, y: y + TILE_HEIGHT - (bottom && right ? 8 : 0) },
+          { x: x + TILE - (bottom && right ? 8 : 0), y: y + TILE_HEIGHT },
+          { x: x + (bottom && left ? 8 : 0), y: y + TILE_HEIGHT },
+          { x, y: y + TILE_HEIGHT - (bottom && left ? 8 : 0) },
           { x, y: y + (top && left ? 8 : 0) },
         ],
         true,
@@ -580,11 +592,16 @@ export class SeaScene extends Phaser.Scene {
       }
       if (bottom) {
         g.lineStyle(2, 0xb4d6c1, 0.55);
-        g.lineBetween(x + 3, y + TILE + 1, x + TILE - 2, y + TILE - 1);
+        g.lineBetween(
+          x + 3,
+          y + TILE_HEIGHT + 1,
+          x + TILE - 2,
+          y + TILE_HEIGHT - 1,
+        );
       }
     }
     // Sparse foliage sits behind crew without changing walkable terrain.
-    const ground = SHIP_Y + 4 * TILE;
+    const ground = SHIP_Y + 4 * TILE_HEIGHT;
     for (const tx of [4, 10, 18]) {
       if (!occupied.has(`${tx}:4`)) continue;
       const x = ox + tx * TILE;
@@ -607,9 +624,14 @@ export class SeaScene extends Phaser.Scene {
     if (ship.kind === "island") {
       this.drawIslandTerrain(g, tiles, ox);
       for (const tx of [3, 9, 18])
-        this.drawPalm(g, ox + tx * TILE, SHIP_Y + 4 * TILE, tx === 9 ? 0.8 : 1);
+        this.drawPalm(
+          g,
+          ox + tx * TILE,
+          SHIP_Y + 4 * TILE_HEIGHT,
+          tx === 9 ? 0.8 : 1,
+        );
       const x = ox + 14 * TILE,
-        y = SHIP_Y + 4 * TILE;
+        y = SHIP_Y + 4 * TILE_HEIGHT;
       g.fillStyle(0x302c28);
       g.fillRoundedRect(x - 6, y - 20, 30, 21, 3);
       g.fillStyle(0x805237);
@@ -644,6 +666,7 @@ export class SeaScene extends Phaser.Scene {
       ship.id === 1
         ? (this.host.draftFurniture() ?? ship.furnishings)
         : ship.furnishings,
+      TILE_HEIGHT,
     );
   }
 
@@ -653,6 +676,8 @@ export class SeaScene extends Phaser.Scene {
       s = this.host.state(),
       draft = this.host.draft();
     if (
+      this.seenHomeShip !== s.ships[0] ||
+      this.seenEnemyShip !== (s.ships[1] ?? null) ||
       this.seenRevision !== s.ships[0].revision ||
       this.seenEnemyRevision !== (s.ships[1]?.revision ?? -1) ||
       this.seenPhase !== s.phase ||
@@ -662,6 +687,8 @@ export class SeaScene extends Phaser.Scene {
       this.furnitureRef !== this.host.draftFurniture()
     ) {
       this.drawScenery();
+      this.seenHomeShip = s.ships[0];
+      this.seenEnemyShip = s.ships[1] ?? null;
       this.seenRevision = s.ships[0].revision;
       this.seenEnemyRevision = s.ships[1]?.revision ?? -1;
       this.seenPhase = s.phase;
@@ -677,12 +704,12 @@ export class SeaScene extends Phaser.Scene {
         const crossing = this.host.seaPosition(pirate.id);
         if (crossing?.mode !== "rope") continue;
         const startX = HOME_X + crossing.startX * TILE + 9,
-          startY = SHIP_Y + (crossing.startY + 1) * TILE,
+          startY = SHIP_Y + (crossing.startY + 1) * TILE_HEIGHT,
           endX =
             HOME_X +
             seaX(crossing.targetShip, nodeX(crossing.targetNode)) * TILE +
             9,
-          endY = SHIP_Y + (nodeY(crossing.targetNode) + 1) * TILE;
+          endY = SHIP_Y + (nodeY(crossing.targetNode) + 1) * TILE_HEIGHT;
         g.lineStyle(2, 0xc7b987, 0.85);
         g.beginPath();
         g.moveTo(startX, startY);
@@ -690,7 +717,9 @@ export class SeaScene extends Phaser.Scene {
           const t = i / 12;
           g.lineTo(
             startX + (endX - startX) * t,
-            startY + (endY - startY) * t + Math.sin(Math.PI * t) * 0.6 * TILE,
+            startY +
+              (endY - startY) * t +
+              Math.sin(Math.PI * t) * 0.6 * TILE_HEIGHT,
           );
         }
         g.strokePath();
@@ -713,7 +742,7 @@ export class SeaScene extends Phaser.Scene {
         for (const t of ship.tiles) {
           if (!(t.damage ?? 0) || !intact(t)) continue;
           const x = ox + t.x * TILE,
-            y = SHIP_Y + t.y * TILE;
+            y = SHIP_Y + t.y * TILE_HEIGHT;
           g.lineStyle(2, (t.damage ?? 0) >= 80 ? 0xc36c48 : 0x332f29);
           g.lineBetween(x + 3, y + 2, x + 10, y + 8);
           g.lineBetween(x + 10, y + 8, x + 4, y + 15);
@@ -726,7 +755,7 @@ export class SeaScene extends Phaser.Scene {
           g.lineStyle(2, 0x332f29);
           for (let i = 0; i < cracks; i++) {
             const x = ox + (2 + i * 2) * TILE,
-              y = SHIP_Y + 5 * TILE;
+              y = SHIP_Y + 5 * TILE_HEIGHT;
             g.lineBetween(x, y, x + 5, y + 5);
             g.lineBetween(x + 5, y + 5, x + 1, y + 12);
           }
@@ -735,7 +764,7 @@ export class SeaScene extends Phaser.Scene {
           this.rect(
             g,
             ox + (3 + i * 3) * TILE,
-            SHIP_Y + 4 * TILE - 3,
+            SHIP_Y + 4 * TILE_HEIGHT - 3,
             8,
             3,
             0x756134,
@@ -778,7 +807,8 @@ export class SeaScene extends Phaser.Scene {
         (p.shipId === 1 ? HOME_X : ENEMY_X) +
         (p.previousX + (p.x - p.previousX) * alpha) * TILE +
         9;
-      let y = SHIP_Y + (p.previousY + (p.y - p.previousY) * alpha + 1) * TILE;
+      let y =
+        SHIP_Y + (p.previousY + (p.y - p.previousY) * alpha + 1) * TILE_HEIGHT;
       const next = p.path[0];
       if (next !== undefined && Math.abs(p.y - nodeY(next)) < 0.01) {
         const gx = nodeX(next),
@@ -788,7 +818,9 @@ export class SeaScene extends Phaser.Scene {
           Math.abs(p.x - gx) <= 2 &&
           ship?.tiles.some((t) => t.x === gapX && t.y === p.y + 1 && !intact(t))
         ) {
-          y -= Math.sin((Math.PI * Math.abs(p.x - gx)) / 2) * 12;
+          y -=
+            Math.sin((Math.PI * Math.abs(p.x - gx)) / 2) *
+            cabinJumpHeight(ship.tiles, p.x, p.y + 1);
         }
       }
       const transit = this.host.seaPosition(p.id),
@@ -819,7 +851,7 @@ export class SeaScene extends Phaser.Scene {
                 (HAND_POSES.attack[pirateCharacter(rescuer)][0] -
                   PIRATE_WIDTH / 2),
             SHIP_Y +
-              (rescuer.y + 1) * TILE +
+              (rescuer.y + 1) * TILE_HEIGHT +
               HAND_POSES.attack[pirateCharacter(rescuer)][1] -
               PIRATE_HEIGHT,
             x,

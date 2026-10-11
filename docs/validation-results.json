@@ -33,40 +33,40 @@
   "quotaRollback": "passed",
   "memory": {
     "heapBefore": {
-      "usedSize": 9845656,
-      "totalSize": 10244096,
-      "embedderHeapUsedSize": 2071432,
-      "backingStorageSize": 12745588
+      "usedSize": 10049340,
+      "totalSize": 11108352,
+      "embedderHeapUsedSize": 2073056,
+      "backingStorageSize": 12763471
     },
     "heapAfter": {
-      "usedSize": 9349764,
-      "totalSize": 10768384,
-      "embedderHeapUsedSize": 1750336,
-      "backingStorageSize": 12745640
+      "usedSize": 9488876,
+      "totalSize": 10584064,
+      "embedderHeapUsedSize": 1770464,
+      "backingStorageSize": 12763523
     },
     "domBefore": {
       "documents": 1,
-      "nodes": 336,
+      "nodes": 338,
       "jsEventListeners": 75
     },
     "domAfter": {
       "documents": 1,
-      "nodes": 385,
+      "nodes": 387,
       "jsEventListeners": 75
     }
   },
   "diagnostics": {
     "frameMs": {
       "count": 600,
-      "p50": 24.98999999999978,
-      "p95": 31.67999999999993,
-      "p99": 34.990000000000144
+      "p50": 25,
+      "p95": 33.32000000000007,
+      "p99": 38.32000000000007
     },
     "tickMs": {
       "count": 129,
       "p50": 0,
       "p95": 0.10000000149011612,
-      "p99": 0.20000000298023224
+      "p99": 0.19999999925494194
     },
     "stalls": 0,
     "views": {
@@ -94,7 +94,7 @@
     "listeners": 5,
     "saveWrites": 0,
     "lock": "owned",
-    "tick": 13496,
+    "tick": 14034,
     "phase": "port"
   },
   "errors": []

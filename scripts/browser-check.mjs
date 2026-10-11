@@ -584,7 +584,7 @@ try {
   const canvas = await page.locator("canvas").boundingBox();
   await page.mouse.click(
     canvas.x + ((230 + 4 * 18 + 9) * canvas.width) / 1280,
-    canvas.y + ((300 + 3 * 18 + 9) * canvas.height) / 540,
+    canvas.y + ((248 + 3 * 26 + 13) * canvas.height) / 540,
   );
   await page.click('[data-action="apply-build"]');
   await page.waitForFunction(
